@@ -1,0 +1,62 @@
+# 🗄️ Database Design - The Reading Vault
+
+## Entity Relationship Diagram (ERD) Concepts
+* **Authors** (1) ---- (N) **Books**
+* **Books** (1) ---- (N) **ReadingSessions**
+* **Books** (1) ---- (N) **BookStatusHistory**
+
+## Table Definitions
+
+### 1. Authors
+| Column | Type | Constraints |
+| :--- | :--- | :--- |
+| `id` | INT | Primary Key, Identity(1,1) |
+| `name` | NVARCHAR(255) | NOT NULL, UNIQUE |
+| `nationality` | NVARCHAR(100) |  NULL |
+
+### 2. Books
+| Column | Type | Constraints |
+| :--- | :--- | :--- |
+| `id` | INT | Primary Key, Identity(1,1) |
+| `author_id` | INT | Foreign Key (Authors.id) |
+| `title` | NVARCHAR(255) | NOT NULL |
+| `isbn` | NVARCHAR(20) | NULL |
+| `total_pages` | INT | NULL |
+| `status_id` | INT | Foreign Key (BookStatuses.id) — replaces textual `status` column |
+| `score` | DECIMAL(3,1) | NULL (0.0 to 10.0) |
+| `comment` | NVARCHAR(MAX) | NULL |
+
+### 3. ReadingSessions (KPI Engine)
+| Column | Type | Constraints |
+| :--- | :--- | :--- |
+| `id` | INT | Primary Key, Identity(1,1) |
+| `book_id` | INT | Foreign Key (Books.id) |
+| `date` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `pages_read` | INT | NOT NULL |
+
+### 4. BookStatusHistory
+| Column | Type | Constraints |
+| :--- | :--- | :--- |
+| `id` | INT | Primary Key, Identity(1,1) |
+| `book_id` | INT | Foreign Key (Books.id) |
+| `old_status` | NVARCHAR(50) | CHECK (old_status IN ('READING', 'COMPLETED', 'ABANDONED', 'WISH_LIST')), NULL for new books |
+| `new_status` | NVARCHAR(50) | NOT NULL, CHECK (new_status IN ('READING', 'COMPLETED', 'ABANDONED', 'WISH_LIST')) |
+| `changed_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+
+### 5. BookStatuses (reference table)
+| Column | Type | Constraints |
+| :--- | :--- | :--- |
+| `id` | INT | Primary Key, Identity(1,1) |
+| `internal_code` | NVARCHAR(50) | NOT NULL, UNIQUE (e.g. 'WISH_LIST', 'READING') |
+| `display_name` | NVARCHAR(100) | NOT NULL |
+| `ui_color` | NVARCHAR(7) | NULL — HEX color for UI |
+
+### Indexes 
+- `IX_StatusHistory_BookDate` on `BookStatusHistory(book_id, changed_at)` — intended for status-history queries
+- `IX_ReadingSessions_BookDate` on `ReadingSessions(book_id, date)` — optimizes KPI/time-series queries
+
+### Initial Status Rows 
+- `('WISH_LIST', 'Wish List', '#FFA500')`
+- `('READING', 'Reading', '#007BFF')`
+- `('COMPLETED', 'Completed', '#28A745')`
+- `('ABANDONED', 'Abandoned', '#DC3545')`
