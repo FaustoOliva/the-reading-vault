@@ -1,0 +1,26 @@
+{
+  "name": "the-reading-vault",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier . --write",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "workspaces": [
+    "packages/*"
+  ],
+  "author": "FaustoOliva",
+  "license": "ISC",
+  "dependencies": {
+    "eslint": "9.39.2",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "7.0.1",
+    "globals": "17.0.0",
+    "prettier": "3.7.4"
+  }
+}
