@@ -1,23 +1,32 @@
 export interface BookProps {
-  id: string;
+  id?: number;
+  author_id?: number | null;
   title: string;
-  author?: string;
-  isbn?: string;
-  createdAt?: Date;
+  isbn?: string | null;
+  total_pages?: number | null;
+  status_id?: number | null;
+  score?: number | null;
+  comment?: string | null;
 }
 
 export class Book {
-  public readonly id: string;
+  public readonly id?: number;
+  public author_id?: number | null;
   public title: string;
-  public author?: string;
-  public isbn?: string;
-  public createdAt: Date;
+  public isbn?: string | null;
+  public total_pages?: number | null;
+  public status_id?: number | null;
+  public score?: number | null;
+  public comment?: string | null;
 
   constructor(props: BookProps) {
     this.id = props.id;
+    this.author_id = props.author_id ?? null;
     this.title = props.title;
-    this.author = props.author;
-    this.isbn = props.isbn;
-    this.createdAt = props.createdAt ?? new Date();
+    this.isbn = props.isbn ?? null;
+    this.total_pages = props.total_pages ?? null;
+    this.status_id = props.status_id ?? null;
+    this.score = props.score ?? null;
+    this.comment = props.comment ?? null;
   }
 }

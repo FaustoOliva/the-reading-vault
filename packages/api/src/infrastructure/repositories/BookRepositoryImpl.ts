@@ -8,31 +8,85 @@ export class BookRepositoryImpl implements IBookRepository {
     const result = await pool
       .request()
       .input("id", id)
-      .query("SELECT Id, Title, Author, Isbn, CreatedAt FROM Books WHERE Id = @id");
+      .query(
+        "SELECT id, author_id, title, isbn, total_pages, status_id, score, comment FROM Books WHERE id = @id"
+      );
 
     if (!result.recordset || result.recordset.length === 0) return null;
 
     const row = result.recordset[0];
     return new Book({
-      id: row.Id,
-      title: row.Title,
-      author: row.Author,
-      isbn: row.Isbn,
-      createdAt: row.CreatedAt,
+      id: row.id,
+      author_id: row.author_id,
+      title: row.title,
+      isbn: row.isbn,
+      total_pages: row.total_pages,
+      status_id: row.status_id,
+      score: row.score,
+      comment: row.comment,
     });
   }
 
-  async save(book: Book): Promise<void> {
+  async findAll(): Promise<Book[]> {
     const pool = await DatabaseConfig.getPool();
-    await pool
+    const result = await pool
       .request()
-      .input("id", book.id)
-      .input("title", book.title)
-      .input("author", book.author ?? null)
-      .input("isbn", book.isbn ?? null)
-      .input("createdAt", book.createdAt)
       .query(
-        `INSERT INTO Books (Id, Title, Author, Isbn, CreatedAt) VALUES (@id, @title, @author, @isbn, @createdAt)`
+        "SELECT id, author_id, title, isbn, total_pages, status_id, score, comment FROM Books ORDER BY id DESC"
       );
+
+    if (!result.recordset || result.recordset.length === 0) return [];
+
+    return result.recordset.map((row: any) =>
+      new Book({
+        id: row.id,
+        author_id: row.author_id,
+        title: row.title,
+        isbn: row.isbn,
+        total_pages: row.total_pages,
+        status_id: row.status_id,
+        score: row.score,
+        comment: row.comment,
+      })
+    );
+  }
+
+  async save(book: Book): Promise<number | void> {
+    const pool = await DatabaseConfig.getPool();
+
+    // If id is provided, perform update
+    if (book.id) {
+      await pool
+        .request()
+        .input("id", book.id)
+        .input("author_id", book.author_id ?? null)
+        .input("title", book.title)
+        .input("isbn", book.isbn ?? null)
+        .input("total_pages", book.total_pages ?? null)
+        .input("status_id", book.status_id ?? null)
+        .input("score", book.score ?? null)
+        .input("comment", book.comment ?? null)
+        .query(
+          `UPDATE Books SET author_id=@author_id, title=@title, isbn=@isbn, total_pages=@total_pages, status_id=@status_id, score=@score, comment=@comment WHERE id=@id`
+        );
+      return book.id;
+    }
+
+    // Insert new book and return inserted id
+    const insertResult = await pool
+      .request()
+      .input("author_id", book.author_id ?? null)
+      .input("title", book.title)
+      .input("isbn", book.isbn ?? null)
+      .input("total_pages", book.total_pages ?? null)
+      .input("status_id", book.status_id ?? null)
+      .input("score", book.score ?? null)
+      .input("comment", book.comment ?? null)
+      .query(
+        `INSERT INTO Books (author_id, title, isbn, total_pages, status_id, score, comment) OUTPUT INSERTED.id VALUES (@author_id, @title, @isbn, @total_pages, @status_id, @score, @comment)`
+      );
+
+    const insertedId = insertResult.recordset && insertResult.recordset[0] ? insertResult.recordset[0].id : undefined;
+    return insertedId;
   }
 }

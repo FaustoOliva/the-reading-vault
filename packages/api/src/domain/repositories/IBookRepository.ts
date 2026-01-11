@@ -1,6 +1,7 @@
 import { Book } from "../entities/Book";
 
 export interface IBookRepository {
-  findById(id: string): Promise<Book | null>;
-  save(book: Book): Promise<void>;
+  findById(id: number): Promise<Book | null>;
+  findAll(): Promise<Book[]>;
+  save(book: Book): Promise<number | void>;
 }

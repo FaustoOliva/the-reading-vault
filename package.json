@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "format": "prettier . --write",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "run:api": "cd packages/api && npm run start"
+    "start:api": "npm run start --workspace=api",
+    "dev:api": "npm run dev --workspace=api"
   },
   "keywords": [],
   "workspaces": [
