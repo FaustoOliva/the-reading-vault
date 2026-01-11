@@ -1,7 +1,7 @@
 import { IBookRepository } from "../../domain/repositories/IBookRepository";
 import { Book } from "../../domain/entities/Book";
 
-export class GetAllBooks {
+export class GetBooksUseCase {
   constructor(private bookRepo: IBookRepository) {}
 
   async execute(): Promise<Book[]> {
@@ -9,4 +9,4 @@ export class GetAllBooks {
   }
 }
 
-export default GetAllBooks;
+export default GetBooksUseCase;

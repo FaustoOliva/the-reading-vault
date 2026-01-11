@@ -3,27 +3,33 @@ import { Book } from "../../domain/entities/Book";
 import DatabaseConfig from "../database/DatabaseConfig";
 
 export class BookRepositoryImpl implements IBookRepository {
-  async findById(id: string): Promise<Book | null> {
+  async findById(id: number): Promise<Book | null> {
     const pool = await DatabaseConfig.getPool();
     const result = await pool
       .request()
       .input("id", id)
       .query(
-        "SELECT id, author_id, title, isbn, total_pages, status_id, score, comment FROM Books WHERE id = @id"
+        `SELECT B.id, B.title, B.score, B.author_id,
+                A.name AS author_name,
+                S.display_name AS status_name,
+                S.ui_color
+         FROM Books B
+         LEFT JOIN Authors A ON B.author_id = A.id
+         LEFT JOIN BookStatuses S ON B.status_id = S.id
+         WHERE B.id = @id`
       );
 
     if (!result.recordset || result.recordset.length === 0) return null;
-
     const row = result.recordset[0];
+
     return new Book({
       id: row.id,
       author_id: row.author_id,
       title: row.title,
-      isbn: row.isbn,
-      total_pages: row.total_pages,
-      status_id: row.status_id,
       score: row.score,
-      comment: row.comment,
+      author_name: row.author_name ?? null,
+      status_name: row.status_name ?? null,
+      ui_color: row.ui_color ?? null,
     });
   }
 
@@ -32,7 +38,14 @@ export class BookRepositoryImpl implements IBookRepository {
     const result = await pool
       .request()
       .query(
-        "SELECT id, author_id, title, isbn, total_pages, status_id, score, comment FROM Books ORDER BY id DESC"
+        `SELECT B.id, B.title, B.score, B.author_id,
+                A.name AS author_name,
+                S.display_name AS status_name,
+                S.ui_color
+         FROM Books B
+         LEFT JOIN Authors A ON B.author_id = A.id
+         LEFT JOIN BookStatuses S ON B.status_id = S.id
+         ORDER BY B.id DESC`
       );
 
     if (!result.recordset || result.recordset.length === 0) return [];
@@ -42,11 +55,10 @@ export class BookRepositoryImpl implements IBookRepository {
         id: row.id,
         author_id: row.author_id,
         title: row.title,
-        isbn: row.isbn,
-        total_pages: row.total_pages,
-        status_id: row.status_id,
         score: row.score,
-        comment: row.comment,
+        author_name: row.author_name ?? null,
+        status_name: row.status_name ?? null,
+        ui_color: row.ui_color ?? null,
       })
     );
   }
@@ -86,7 +98,10 @@ export class BookRepositoryImpl implements IBookRepository {
         `INSERT INTO Books (author_id, title, isbn, total_pages, status_id, score, comment) OUTPUT INSERTED.id VALUES (@author_id, @title, @isbn, @total_pages, @status_id, @score, @comment)`
       );
 
-    const insertedId = insertResult.recordset && insertResult.recordset[0] ? insertResult.recordset[0].id : undefined;
+    const insertedId =
+      insertResult.recordset && insertResult.recordset[0]
+        ? insertResult.recordset[0].id
+        : undefined;
     return insertedId;
   }
 }

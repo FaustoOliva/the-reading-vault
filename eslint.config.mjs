@@ -4,16 +4,29 @@ import pluginReact from "eslint-plugin-react";
 import pluginReactHooks from "eslint-plugin-react-hooks";
 import pluginJsxA11y from "eslint-plugin-jsx-a11y";
 import pluginImport from "eslint-plugin-import";
+import pluginTs from "@typescript-eslint/eslint-plugin";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig([
   // ========== API ==========
   {
-    files: ["packages/api/**/*.{js,mjs,cjs,jsx}"],
-    languageOptions: { globals: globals.node },
+    files: ["packages/api/**/*.{js,mjs,cjs,jsx,ts,tsx}"],
+    languageOptions: {
+      globals: globals.node,
+      parser: "@typescript-eslint/parser",
+      parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: "module",
+      },
+    },
+    plugins: {
+      "@typescript-eslint": pluginTs,
+    },
     rules: {
       ...js.configs.recommended.rules,
-      "no-unused-vars": [
+      // disable base rule in favor of TS-aware rule
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": [
         "warn",
         {
           argsIgnorePattern: "^_",
@@ -88,7 +101,7 @@ export default defineConfig([
 
   // ========== API TESTS ==========
   {
-    files: ["packages/api/test/**/*.{js,mjs,cjs,jsx}"],
+    files: ["packages/api/test/**/*.{js,mjs,cjs,jsx,ts,tsx}"],
     languageOptions: {
       globals: {
         ...globals.node,

@@ -6,6 +6,9 @@ export interface BookProps {
   total_pages?: number | null;
   status_id?: number | null;
   score?: number | null;
+  author_name?: string | null;
+  status_name?: string | null;
+  ui_color?: string | null;
   comment?: string | null;
 }
 
@@ -17,6 +20,9 @@ export class Book {
   public total_pages?: number | null;
   public status_id?: number | null;
   public score?: number | null;
+  public author_name?: string | null;
+  public status_name?: string | null;
+  public ui_color?: string | null;
   public comment?: string | null;
 
   constructor(props: BookProps) {
@@ -27,6 +33,9 @@ export class Book {
     this.total_pages = props.total_pages ?? null;
     this.status_id = props.status_id ?? null;
     this.score = props.score ?? null;
+    this.author_name = props.author_name ?? null;
+    this.status_name = props.status_name ?? null;
+    this.ui_color = props.ui_color ?? null;
     this.comment = props.comment ?? null;
   }
 }
