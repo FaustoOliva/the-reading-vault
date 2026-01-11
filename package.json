@@ -1,6 +1,7 @@
 {
   "name": "the-reading-vault",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -21,6 +22,11 @@
     "eslint-plugin-react": "7.37.5",
     "eslint-plugin-react-hooks": "7.0.1",
     "globals": "17.0.0",
+    "js-yaml": "^4.1.1",
     "prettier": "3.7.4"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "tsx": "^4.21.0"
   }
 }
