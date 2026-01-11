@@ -1,5 +1,7 @@
 import { IBookRepository } from "../../domain/repositories/IBookRepository";
 import { BookRepositoryImpl } from "../repositories/BookRepositoryImpl";
+import IReadingSessionRepository from "../../domain/repositories/IReadingSessionRepository";
+import { ReadingSessionRepositoryImpl } from "../repositories/ReadingSessionRepositoryImpl";
 
 class Container {
   private services = new Map<string, any>();
@@ -19,5 +21,6 @@ const container = new Container();
 
 // Register default implementations. Tests can override by calling `register`.
 container.register<IBookRepository>("BookRepository", new BookRepositoryImpl());
+container.register<IReadingSessionRepository>("ReadingSessionRepository", new ReadingSessionRepositoryImpl());
 
 export default container;

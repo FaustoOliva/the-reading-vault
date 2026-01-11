@@ -1,6 +1,7 @@
 import { Application } from "express";
 import healthController from "../controllers/healthController";
 import booksController from "../controllers/booksController";
+import sessionsController from "../controllers/sessionsController";
 import { Router } from "express";
 
 export default function registerRoutes(app: Application) {
@@ -10,6 +11,7 @@ export default function registerRoutes(app: Application) {
 
   apiRouter.get("/health", healthController.getHealth);
   apiRouter.get("/books", booksController.getAll);
+  apiRouter.post("/sessions", sessionsController.create);
 
 
 }
