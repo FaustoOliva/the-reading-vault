@@ -9,7 +9,8 @@
     "format": "prettier . --write",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:api": "npm run start --workspace=api",
-    "dev:api": "npm run dev --workspace=api"
+    "dev:api": "npm run dev --workspace=api",
+    "start:app": "npm run android --workspace=mobile"
   },
   "keywords": [],
   "workspaces": [

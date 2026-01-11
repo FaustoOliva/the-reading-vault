@@ -1,8 +1,15 @@
 import { Application } from "express";
 import healthController from "../controllers/healthController";
 import booksController from "../controllers/booksController";
+import { Router } from "express";
 
 export default function registerRoutes(app: Application) {
-  app.get("/health", healthController.getHealth);
-  app.get("/books", booksController.getAll);
+  const apiRouter = Router();
+  
+  app.use("/api", apiRouter);
+
+  apiRouter.get("/health", healthController.getHealth);
+  apiRouter.get("/books", booksController.getAll);
+
+
 }
