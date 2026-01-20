@@ -32,6 +32,7 @@ CREATE TABLE Books (
     title NVARCHAR(255) NOT NULL,
     isbn NVARCHAR(20) NULL,
     total_pages INT NULL,
+    current_reading_cycle INT NOT NULL DEFAULT 1,
     score DECIMAL(3,1) NULL,
     comment NVARCHAR(MAX) NULL,
     
@@ -44,8 +45,10 @@ CREATE TABLE Books (
 CREATE TABLE ReadingSessions (
     id INT PRIMARY KEY IDENTITY(1,1),
     book_id INT NOT NULL,
-    date DATETIME NOT NULL DEFAULT GETDATE(),
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    occurred_at DATETIME NOT NULL DEFAULT GETDATE(),
     pages_read INT NOT NULL,
+    reading_cycle INT NOT NULL DEFAULT 1,
     CONSTRAINT FK_Sessions_Books FOREIGN KEY (book_id) REFERENCES Books(id)
 );
 
@@ -67,7 +70,7 @@ GO
 CREATE INDEX IX_StatusHistory_BookDate ON BookStatusHistory (book_id, changed_at);
 
 -- Index to optimize KPI calculations
-CREATE INDEX IX_ReadingSessions_BookDate ON ReadingSessions (book_id, date);
+CREATE INDEX IX_ReadingSessions_BookDate ON ReadingSessions (book_id, occurred_at) INCLUDE (pages_read, reading_cycle);
 GO
 
 -- Insert Initial Statuses

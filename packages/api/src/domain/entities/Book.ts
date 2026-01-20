@@ -10,6 +10,7 @@ export interface BookProps {
   status_name?: string | null;
   ui_color?: string | null;
   comment?: string | null;
+  current_cycle?: number | null;
 }
 
 export class Book {
@@ -24,6 +25,7 @@ export class Book {
   public status_name?: string | null;
   public ui_color?: string | null;
   public comment?: string | null;
+  public current_cycle?: number | null;
 
   constructor(props: BookProps) {
     this.id = props.id;
@@ -37,5 +39,6 @@ export class Book {
     this.status_name = props.status_name ?? null;
     this.ui_color = props.ui_color ?? null;
     this.comment = props.comment ?? null;
+    this.current_cycle = props.current_cycle ?? 1;
   }
 }

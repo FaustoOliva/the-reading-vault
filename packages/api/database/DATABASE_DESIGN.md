@@ -22,6 +22,7 @@
 | `title` | NVARCHAR(255) | NOT NULL |
 | `isbn` | NVARCHAR(20) | NULL |
 | `total_pages` | INT | NULL |
+| `current_reading_cycle` | INT | NOT NULL, DEFAULT 1 |
 | `status_id` | INT | Foreign Key (BookStatuses.id) — replaces textual `status` column |
 | `score` | DECIMAL(3,1) | NULL (0.0 to 10.0) |
 | `comment` | NVARCHAR(MAX) | NULL |
@@ -31,7 +32,9 @@
 | :--- | :--- | :--- |
 | `id` | INT | Primary Key, Identity(1,1) |
 | `book_id` | INT | Foreign Key (Books.id) |
-| `date` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `created_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `occurred_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
+| `reading_cycle` | INT | NOT NULL, DEFAULT 1 |
 | `pages_read` | INT | NOT NULL |
 
 ### 4. BookStatusHistory
@@ -52,8 +55,7 @@
 | `ui_color` | NVARCHAR(7) | NULL — HEX color for UI |
 
 ### Indexes 
-- `IX_StatusHistory_BookDate` on `BookStatusHistory(book_id, changed_at)` — intended for status-history queries
-- `IX_ReadingSessions_BookDate` on `ReadingSessions(book_id, date)` — optimizes KPI/time-series queries
+- `IX_ReadingSessions_BookDate` on `ReadingSessions(book_id, occurred_at)` INCLUDE `(pages_read, reading_cycle)` — optimizes KPI/time-series queries
 
 ### Initial Status Rows 
 - `('WISH_LIST', 'Wish List', '#FFA500')`
