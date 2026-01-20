@@ -128,4 +128,47 @@ export class BookRepositoryImpl implements IBookRepository {
     const res = await pool.request().input("book_id", bookId).query(`UPDATE Books SET current_reading_cycle = current_reading_cycle + 1 OUTPUT INSERTED.current_reading_cycle WHERE id = @book_id`);
     return res.recordset[0].current_reading_cycle;
   }
+
+  async getBookStatus(bookId: number, tx?: any): Promise<number | null> {
+    const request = tx && typeof tx.request === "function" 
+      ? tx.request() 
+      : (await DatabaseConfig.getPool()).request();
+
+    const result = await request
+      .input("book_id", bookId)
+      .query(`SELECT status_id FROM Books WHERE id = @book_id`);
+
+    if (!result.recordset || result.recordset.length === 0) {
+      return null;
+    }
+
+    return result.recordset[0].status_id;
+  }
+
+  async getTotalPagesRead(bookId: number, readingCycle: number, tx?: any): Promise<number> {
+    const request = tx && typeof tx.request === "function" 
+      ? tx.request() 
+      : (await DatabaseConfig.getPool()).request();
+
+    const result = await request
+      .input("book_id", bookId)
+      .input("reading_cycle", readingCycle)
+      .query(
+        `SELECT ISNULL(SUM(pages_read), 0) AS total_read 
+         FROM ReadingSessions 
+         WHERE book_id = @book_id AND reading_cycle = @reading_cycle`
+      );
+
+    if (!result.recordset || result.recordset.length === 0) {
+      return 0;
+    }
+
+    return result.recordset[0].total_read;
+  }
+
+  async incrementTotalPagesRead(bookId: number, pages: number, tx?: any): Promise<void> {
+    // This method is not needed since we don't track total_pages_read in Books table
+    // Pages are calculated from ReadingSessions on demand
+    return;
+  }
 }

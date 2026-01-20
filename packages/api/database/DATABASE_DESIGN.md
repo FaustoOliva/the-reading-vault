@@ -42,8 +42,9 @@
 | :--- | :--- | :--- |
 | `id` | INT | Primary Key, Identity(1,1) |
 | `book_id` | INT | Foreign Key (Books.id) |
-| `old_status` | NVARCHAR(50) | CHECK (old_status IN ('READING', 'COMPLETED', 'ABANDONED', 'WISH_LIST')), NULL for new books |
-| `new_status` | NVARCHAR(50) | NOT NULL, CHECK (new_status IN ('READING', 'COMPLETED', 'ABANDONED', 'WISH_LIST')) |
+| `old_status_id` | INT | Foreign Key (BookStatuses.id), NULL for new books |
+| `new_status_id` | INT | Foreign Key (BookStatuses.id), NOT NULL |
+| `reading_cycle` | INT | NOT NULL, DEFAULT 1 |
 | `changed_at` | DATETIME | NOT NULL, DEFAULT GETDATE() |
 
 ### 5. BookStatuses (reference table)

@@ -58,6 +58,7 @@ CREATE TABLE BookStatusHistory (
     book_id INT NOT NULL,
     old_status_id INT NULL,
     new_status_id INT NOT NULL,
+    reading_cycle INT NOT NULL DEFAULT 1,
     changed_at DATETIME NOT NULL DEFAULT GETDATE(),
     
     CONSTRAINT FK_History_Books FOREIGN KEY (book_id) REFERENCES Books(id),
