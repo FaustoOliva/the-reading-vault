@@ -11,6 +11,8 @@ export default function registerRoutes(app: Application) {
 
   apiRouter.get("/health", healthController.getHealth);
   apiRouter.get("/books", booksController.getAll);
+  apiRouter.post("/books", booksController.createBook);
+  apiRouter.get("/books/:id", booksController.getById);
   apiRouter.post("/sessions", sessionsController.create);
 
 
