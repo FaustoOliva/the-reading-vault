@@ -4,7 +4,7 @@ import DatabaseConfig from "../database/DatabaseConfig";
 
 /**
  * Author Repository Implementation
- * 
+ *
  * Handles SQL Server persistence for Author entities.
  * Implements deduplication logic for author management.
  */
@@ -37,7 +37,7 @@ export class AuthorRepositoryImpl implements IAuthorRepository {
       .query(
         `INSERT INTO Authors (name, nationality) 
          OUTPUT INSERTED.id 
-         VALUES (@name, @nationality)`
+         VALUES (@name, @nationality)`,
       );
 
     if (!result.recordset || result.recordset.length === 0) {

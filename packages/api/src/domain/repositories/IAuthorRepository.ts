@@ -2,7 +2,7 @@ import { Author } from "../entities/Author";
 
 /**
  * Author Repository Interface
- * 
+ *
  * Defines operations for author persistence following Clean Architecture.
  * Implementations should handle database-specific logic.
  */

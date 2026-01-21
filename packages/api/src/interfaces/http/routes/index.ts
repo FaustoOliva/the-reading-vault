@@ -6,7 +6,7 @@ import { Router } from "express";
 
 export default function registerRoutes(app: Application) {
   const apiRouter = Router();
-  
+
   app.use("/api", apiRouter);
 
   apiRouter.get("/health", healthController.getHealth);
@@ -14,6 +14,4 @@ export default function registerRoutes(app: Application) {
   apiRouter.post("/books", booksController.createBook);
   apiRouter.get("/books/:id", booksController.getById);
   apiRouter.post("/sessions", sessionsController.create);
-
-
 }

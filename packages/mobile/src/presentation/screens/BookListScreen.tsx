@@ -1,8 +1,16 @@
-import React from 'react';
-import { SafeAreaView, View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
-import useBooks from '../../application/hooks/useBooks';
-import BookCard from '../components/BookCard';
-import { Book } from '../../domain/entities/Book';
+import React from "react";
+import {
+  SafeAreaView,
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
+import useBooks from "../../application/hooks/useBooks";
+import BookCard from "../components/BookCard";
+import { Book } from "../../domain/entities/Book";
 
 const BookListScreen: React.FC = () => {
   const { books, loading, error, refresh } = useBooks();
@@ -21,9 +29,15 @@ const BookListScreen: React.FC = () => {
             data={books}
             keyExtractor={(b) => String(b.id)}
             renderItem={renderItem}
-            contentContainerStyle={books.length === 0 ? styles.emptyContainer : undefined}
-            refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
-            ListEmptyComponent={<Text style={styles.empty}>No books available.</Text>}
+            contentContainerStyle={
+              books.length === 0 ? styles.emptyContainer : undefined
+            }
+            refreshControl={
+              <RefreshControl refreshing={loading} onRefresh={refresh} />
+            }
+            ListEmptyComponent={
+              <Text style={styles.empty}>No books available.</Text>
+            }
           />
         )}
       </View>
@@ -32,11 +46,11 @@ const BookListScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f4f6f8' },
+  safe: { flex: 1, backgroundColor: "#f4f6f8" },
   container: { flex: 1, paddingTop: 12 },
-  error: { color: '#a00', textAlign: 'center', marginTop: 12 },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  empty: { color: '#666' },
+  error: { color: "#a00", textAlign: "center", marginTop: 12 },
+  emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  empty: { color: "#666" },
 });
 
 export default BookListScreen;

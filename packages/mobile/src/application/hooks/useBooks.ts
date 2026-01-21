@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Book } from '../../domain/entities/Book';
-import ApiBookRepository from '../../infrastructure/repositories/ApiBookRepository';
+import { useCallback, useEffect, useState } from "react";
+import { Book } from "../../domain/entities/Book";
+import ApiBookRepository from "../../infrastructure/repositories/ApiBookRepository";
 
 export type UseBooksResult = {
   books: Book[];
@@ -21,7 +21,7 @@ export function useBooks(): UseBooksResult {
       const data = await ApiBookRepository.getAll();
       setBooks(data ?? []);
     } catch (e: any) {
-      setError(e?.message ?? 'Unknown error');
+      setError(e?.message ?? "Unknown error");
     } finally {
       setLoading(false);
     }

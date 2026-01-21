@@ -36,7 +36,7 @@ const getAll = async (req: Request, res: Response, next: NextFunction) => {
     const repo = container.get<IBookRepository>("BookRepository");
     const usecase = new GetBooksUseCase(repo);
     const books = await usecase.execute();
-    
+
     // Map books to response format including current_reading_cycle, status, and author_name
     const response = books.map((book) => ({
       id: book.id,
@@ -49,7 +49,7 @@ const getAll = async (req: Request, res: Response, next: NextFunction) => {
       score: book.score ?? null,
       comment: book.comment ?? null,
     }));
-    
+
     res.json(response);
   } catch (err) {
     next(err);
@@ -77,11 +77,20 @@ const createBook = async (req: Request, res: Response, next: NextFunction) => {
     // Get dependencies from container
     const bookRepo = container.get<IBookRepository>("BookRepository");
     const authorRepo = container.get<IAuthorRepository>("AuthorRepository");
-    const historyRepo = container.get<IBookStatusHistoryRepository>("BookStatusHistoryRepository");
-    const sessionRepo = container.get<IReadingSessionRepository>("ReadingSessionRepository");
+    const historyRepo = container.get<IBookStatusHistoryRepository>(
+      "BookStatusHistoryRepository",
+    );
+    const sessionRepo = container.get<IReadingSessionRepository>(
+      "ReadingSessionRepository",
+    );
 
     // Execute use case
-    const usecase = new CreateBookUseCase(bookRepo, authorRepo, historyRepo, sessionRepo);
+    const usecase = new CreateBookUseCase(
+      bookRepo,
+      authorRepo,
+      historyRepo,
+      sessionRepo,
+    );
     const result = await usecase.execute(input);
 
     res.status(201).json(result);
@@ -90,7 +99,10 @@ const createBook = async (req: Request, res: Response, next: NextFunction) => {
     if (err instanceof z.ZodError) {
       return res.status(400).json({
         error: "Validation failed",
-        details: err.errors.map(e => ({ path: e.path.join('.'), message: e.message })),
+        details: err.errors.map((e) => ({
+          path: e.path.join("."),
+          message: e.message,
+        })),
       });
     }
     next(err);
@@ -113,7 +125,10 @@ const getById = async (req: Request, res: Response, next: NextFunction) => {
     if (err instanceof z.ZodError) {
       return res.status(400).json({
         error: "Invalid book ID",
-        details: err.errors.map(e => ({ path: e.path.join('.'), message: e.message })),
+        details: err.errors.map((e) => ({
+          path: e.path.join("."),
+          message: e.message,
+        })),
       });
     }
     next(err);

@@ -7,7 +7,7 @@ export class GetHealthStatus {
       // simple query to validate connection
       await pool.request().query("SELECT 1 AS status");
       return { db: "ok", status: "connected" };
-    } catch (error) {
+    } catch (_error) {
       return { db: "error", status: "disconnected" };
     }
   }

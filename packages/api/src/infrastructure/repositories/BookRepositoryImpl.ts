@@ -1,7 +1,6 @@
 import { IBookRepository } from "../../domain/repositories/IBookRepository";
 import { Book } from "../../domain/entities/Book";
 import DatabaseConfig from "../database/DatabaseConfig";
-import mssql from "mssql";
 
 export class BookRepositoryImpl implements IBookRepository {
   async findById(id: number): Promise<Book | null> {
@@ -17,7 +16,7 @@ export class BookRepositoryImpl implements IBookRepository {
          FROM Books B
          LEFT JOIN Authors A ON B.author_id = A.id
          LEFT JOIN BookStatuses S ON B.status_id = S.id
-         WHERE B.id = @id`
+         WHERE B.id = @id`,
       );
 
     if (!result.recordset || result.recordset.length === 0) return null;
@@ -37,32 +36,31 @@ export class BookRepositoryImpl implements IBookRepository {
 
   async findAll(): Promise<Book[]> {
     const pool = await DatabaseConfig.getPool();
-    const result = await pool
-      .request()
-      .query(
-        `SELECT B.id, B.title, B.score, B.author_id, B.current_reading_cycle,
+    const result = await pool.request().query(
+      `SELECT B.id, B.title, B.score, B.author_id, B.current_reading_cycle,
                 A.name AS author_name,
                 S.display_name AS status_name,
                 S.ui_color
          FROM Books B
          LEFT JOIN Authors A ON B.author_id = A.id
          LEFT JOIN BookStatuses S ON B.status_id = S.id
-         ORDER BY B.id DESC`
-      );
+         ORDER BY B.id DESC`,
+    );
 
     if (!result.recordset || result.recordset.length === 0) return [];
 
-    return result.recordset.map((row: any) =>
-      new Book({
-        id: row.id,
-        author_id: row.author_id,
-        title: row.title,
-        score: row.score,
-        author_name: row.author_name ?? null,
-        status_name: row.status_name ?? null,
-        ui_color: row.ui_color ?? null,
-        current_cycle: row.current_reading_cycle ?? 1,
-      })
+    return result.recordset.map(
+      (row: any) =>
+        new Book({
+          id: row.id,
+          author_id: row.author_id,
+          title: row.title,
+          score: row.score,
+          author_name: row.author_name ?? null,
+          status_name: row.status_name ?? null,
+          ui_color: row.ui_color ?? null,
+          current_cycle: row.current_reading_cycle ?? 1,
+        }),
     );
   }
 
@@ -82,7 +80,7 @@ export class BookRepositoryImpl implements IBookRepository {
         .input("score", book.score ?? null)
         .input("comment", book.comment ?? null)
         .query(
-          `UPDATE Books SET author_id=@author_id, title=@title, isbn=@isbn, total_pages=@total_pages, status_id=@status_id, score=@score, comment=@comment WHERE id=@id`
+          `UPDATE Books SET author_id=@author_id, title=@title, isbn=@isbn, total_pages=@total_pages, status_id=@status_id, score=@score, comment=@comment WHERE id=@id`,
         );
       return book.id;
     }
@@ -98,7 +96,7 @@ export class BookRepositoryImpl implements IBookRepository {
       .input("score", book.score ?? null)
       .input("comment", book.comment ?? null)
       .query(
-        `INSERT INTO Books (author_id, title, isbn, total_pages, status_id, score, comment) OUTPUT INSERTED.id VALUES (@author_id, @title, @isbn, @total_pages, @status_id, @score, @comment)`
+        `INSERT INTO Books (author_id, title, isbn, total_pages, status_id, score, comment) OUTPUT INSERTED.id VALUES (@author_id, @title, @isbn, @total_pages, @status_id, @score, @comment)`,
       );
 
     const insertedId =
@@ -108,31 +106,54 @@ export class BookRepositoryImpl implements IBookRepository {
     return insertedId;
   }
 
-  async updateStatus(bookId: number, statusId: number, tx?: any): Promise<void> {
+  async updateStatus(
+    bookId: number,
+    statusId: number,
+    tx?: any,
+  ): Promise<void> {
     if (tx && typeof tx.request === "function") {
-      await tx.request().input("book_id", bookId).input("status_id", statusId).query(`UPDATE Books SET status_id=@status_id WHERE id=@book_id`);
+      await tx
+        .request()
+        .input("book_id", bookId)
+        .input("status_id", statusId)
+        .query(`UPDATE Books SET status_id=@status_id WHERE id=@book_id`);
       return;
     }
 
     const pool = await DatabaseConfig.getPool();
-    await pool.request().input("book_id", bookId).input("status_id", statusId).query(`UPDATE Books SET status_id=@status_id WHERE id=@book_id`);
+    await pool
+      .request()
+      .input("book_id", bookId)
+      .input("status_id", statusId)
+      .query(`UPDATE Books SET status_id=@status_id WHERE id=@book_id`);
   }
 
   async incrementCurrentCycle(bookId: number, tx?: any): Promise<number> {
     if (tx && typeof tx.request === "function") {
-      const res = await tx.request().input("book_id", bookId).query(`UPDATE Books SET current_reading_cycle = current_reading_cycle + 1 OUTPUT INSERTED.current_reading_cycle WHERE id = @book_id`);
+      const res = await tx
+        .request()
+        .input("book_id", bookId)
+        .query(
+          `UPDATE Books SET current_reading_cycle = current_reading_cycle + 1 OUTPUT INSERTED.current_reading_cycle WHERE id = @book_id`,
+        );
       return res.recordset[0].current_reading_cycle;
     }
 
     const pool = await DatabaseConfig.getPool();
-    const res = await pool.request().input("book_id", bookId).query(`UPDATE Books SET current_reading_cycle = current_reading_cycle + 1 OUTPUT INSERTED.current_reading_cycle WHERE id = @book_id`);
+    const res = await pool
+      .request()
+      .input("book_id", bookId)
+      .query(
+        `UPDATE Books SET current_reading_cycle = current_reading_cycle + 1 OUTPUT INSERTED.current_reading_cycle WHERE id = @book_id`,
+      );
     return res.recordset[0].current_reading_cycle;
   }
 
   async getBookStatus(bookId: number, tx?: any): Promise<number | null> {
-    const request = tx && typeof tx.request === "function" 
-      ? tx.request() 
-      : (await DatabaseConfig.getPool()).request();
+    const request =
+      tx && typeof tx.request === "function"
+        ? tx.request()
+        : (await DatabaseConfig.getPool()).request();
 
     const result = await request
       .input("book_id", bookId)
@@ -145,10 +166,15 @@ export class BookRepositoryImpl implements IBookRepository {
     return result.recordset[0].status_id;
   }
 
-  async getTotalPagesRead(bookId: number, readingCycle: number, tx?: any): Promise<number> {
-    const request = tx && typeof tx.request === "function" 
-      ? tx.request() 
-      : (await DatabaseConfig.getPool()).request();
+  async getTotalPagesRead(
+    bookId: number,
+    readingCycle: number,
+    tx?: any,
+  ): Promise<number> {
+    const request =
+      tx && typeof tx.request === "function"
+        ? tx.request()
+        : (await DatabaseConfig.getPool()).request();
 
     const result = await request
       .input("book_id", bookId)
@@ -156,7 +182,7 @@ export class BookRepositoryImpl implements IBookRepository {
       .query(
         `SELECT ISNULL(SUM(pages_read), 0) AS total_read 
          FROM ReadingSessions 
-         WHERE book_id = @book_id AND reading_cycle = @reading_cycle`
+         WHERE book_id = @book_id AND reading_cycle = @reading_cycle`,
       );
 
     if (!result.recordset || result.recordset.length === 0) {
@@ -166,7 +192,11 @@ export class BookRepositoryImpl implements IBookRepository {
     return result.recordset[0].total_read;
   }
 
-  async incrementTotalPagesRead(bookId: number, pages: number, tx?: any): Promise<void> {
+  async incrementTotalPagesRead(
+    bookId: number,
+    pages: number,
+    tx?: any,
+  ): Promise<void> {
     // This method is not needed since we don't track total_pages_read in Books table
     // Pages are calculated from ReadingSessions on demand
     return;

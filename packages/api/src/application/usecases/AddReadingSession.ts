@@ -7,13 +7,13 @@ import { BookClosedException } from "../../domain/exceptions/BookClosedException
 export class AddReadingSessionUseCase {
   constructor(
     private bookRepo: IBookRepository,
-    private sessionRepo: IReadingSessionRepository
+    private sessionRepo: IReadingSessionRepository,
   ) {}
 
   async execute(
     bookId: number,
     pagesRead: number,
-    occurredAt?: Date | null
+    occurredAt?: Date | null,
   ): Promise<{ sessionId: number }> {
     if (pagesRead <= 0) throw new Error("pagesRead must be greater than zero");
 
@@ -24,9 +24,11 @@ export class AddReadingSessionUseCase {
       const req = transaction.request();
 
       // Fetch book data
-      const bookRes = await req.input("book_id", bookId).query(
-        `SELECT id, total_pages, status_id, current_reading_cycle FROM Books WHERE id = @book_id`
-      );
+      const bookRes = await req
+        .input("book_id", bookId)
+        .query(
+          `SELECT id, total_pages, status_id, current_reading_cycle FROM Books WHERE id = @book_id`,
+        );
 
       if (!bookRes.recordset || bookRes.recordset.length === 0) {
         await transaction.rollback();
@@ -57,17 +59,24 @@ export class AddReadingSessionUseCase {
           .input("book_id_hist", bookId)
           .input("old_status", WISH_LIST)
           .input("new_status", READING)
-          .query(`INSERT INTO BookStatusHistory (book_id, old_status_id, new_status_id, changed_at) VALUES (@book_id_hist, @old_status, @new_status, GETDATE())`);
+          .query(
+            `INSERT INTO BookStatusHistory (book_id, old_status_id, new_status_id, changed_at) VALUES (@book_id_hist, @old_status, @new_status, GETDATE())`,
+          );
       } else if (statusId === COMPLETED) {
         // COMPLETED -> READING and increment cycle
         await this.bookRepo.updateStatus(bookId, READING, transaction);
-        const newCycle = await this.bookRepo.incrementCurrentCycle(bookId, transaction);
+        const newCycle = await this.bookRepo.incrementCurrentCycle(
+          bookId,
+          transaction,
+        );
         currentCycle = newCycle;
         await req
           .input("book_id_hist", bookId)
           .input("old_status", COMPLETED)
           .input("new_status", READING)
-          .query(`INSERT INTO BookStatusHistory (book_id, old_status_id, new_status_id, changed_at) VALUES (@book_id_hist, @old_status, @new_status, GETDATE())`);
+          .query(
+            `INSERT INTO BookStatusHistory (book_id, old_status_id, new_status_id, changed_at) VALUES (@book_id_hist, @old_status, @new_status, GETDATE())`,
+          );
       }
 
       // Validate pages read against remaining pages in current cycle
@@ -76,9 +85,12 @@ export class AddReadingSessionUseCase {
           .input("book_id_sum", bookId)
           .input("reading_cycle", currentCycle)
           .query(
-            `SELECT ISNULL(SUM(pages_read),0) AS read_in_cycle FROM ReadingSessions WHERE book_id=@book_id_sum AND reading_cycle=@reading_cycle`
+            `SELECT ISNULL(SUM(pages_read),0) AS read_in_cycle FROM ReadingSessions WHERE book_id=@book_id_sum AND reading_cycle=@reading_cycle`,
           );
-        const readInCycle = sumRes.recordset && sumRes.recordset[0] ? parseInt(sumRes.recordset[0].read_in_cycle, 10) : 0;
+        const readInCycle =
+          sumRes.recordset && sumRes.recordset[0]
+            ? parseInt(sumRes.recordset[0].read_in_cycle, 10)
+            : 0;
         const remaining = totalPages - readInCycle;
         if (pagesRead > remaining) {
           await transaction.rollback();
@@ -87,14 +99,25 @@ export class AddReadingSessionUseCase {
       }
 
       // Insert reading session
-      const sessionId = await this.sessionRepo.addReadingSession(bookId, pagesRead, occurredAt ?? null, currentCycle, transaction);
+      const sessionId = await this.sessionRepo.addReadingSession(
+        bookId,
+        pagesRead,
+        occurredAt ?? null,
+        currentCycle,
+        transaction,
+      );
 
       // After insertion, if totalPages defined and reached, set status to COMPLETED and log history
       if (totalPages !== null) {
-        const totalRes = await req.input("book_id_total", bookId).query(
-          `SELECT ISNULL(SUM(pages_read),0) AS total_read FROM ReadingSessions WHERE book_id = @book_id_total`
-        );
-        const totalRead = totalRes.recordset && totalRes.recordset[0] ? parseInt(totalRes.recordset[0].total_read, 10) : 0;
+        const totalRes = await req
+          .input("book_id_total", bookId)
+          .query(
+            `SELECT ISNULL(SUM(pages_read),0) AS total_read FROM ReadingSessions WHERE book_id = @book_id_total`,
+          );
+        const totalRead =
+          totalRes.recordset && totalRes.recordset[0]
+            ? parseInt(totalRes.recordset[0].total_read, 10)
+            : 0;
         if (totalRead >= totalPages) {
           // Update status to COMPLETED
           await this.bookRepo.updateStatus(bookId, COMPLETED, transaction);
@@ -102,7 +125,9 @@ export class AddReadingSessionUseCase {
             .input("book_id_hist2", bookId)
             .input("old_status2", READING)
             .input("new_status2", COMPLETED)
-            .query(`INSERT INTO BookStatusHistory (book_id, old_status_id, new_status_id, changed_at) VALUES (@book_id_hist2, @old_status2, @new_status2, GETDATE())`);
+            .query(
+              `INSERT INTO BookStatusHistory (book_id, old_status_id, new_status_id, changed_at) VALUES (@book_id_hist2, @old_status2, @new_status2, GETDATE())`,
+            );
         }
       }
 
@@ -111,7 +136,7 @@ export class AddReadingSessionUseCase {
     } catch (err) {
       try {
         await transaction.rollback();
-      } catch (e) {
+      } catch (_e) {
         // ignore
       }
       throw err;

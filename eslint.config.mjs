@@ -5,6 +5,7 @@ import pluginReactHooks from "eslint-plugin-react-hooks";
 import pluginJsxA11y from "eslint-plugin-jsx-a11y";
 import pluginImport from "eslint-plugin-import";
 import pluginTs from "@typescript-eslint/eslint-plugin";
+import parser from "@typescript-eslint/parser";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig([
@@ -13,7 +14,7 @@ export default defineConfig([
     files: ["packages/api/**/*.{js,mjs,cjs,jsx,ts,tsx}"],
     languageOptions: {
       globals: globals.node,
-      parser: "@typescript-eslint/parser",
+      parser,
       parserOptions: {
         ecmaVersion: 2020,
         sourceType: "module",

@@ -19,7 +19,7 @@ export class KPICalculator {
    */
   static async calculateCurrentCycleVelocity(
     bookId: number,
-    currentCycle: number
+    currentCycle: number,
   ): Promise<number> {
     const pool = await DatabaseConfig.getPool();
     const result = await pool
@@ -33,7 +33,7 @@ export class KPICalculator {
           DATEDIFF(DAY, MIN(CAST(occurred_at AS DATE)), MAX(CAST(occurred_at AS DATE))) + 1 AS days_elapsed
         FROM ReadingSessions
         WHERE book_id = @book_id AND reading_cycle = @reading_cycle
-      `
+      `,
       );
 
     if (!result.recordset || result.recordset.length === 0) return 0;
@@ -59,17 +59,14 @@ export class KPICalculator {
    */
   static async calculate7DayVelocity(
     bookId: number,
-    currentCycle: number
+    currentCycle: number,
   ): Promise<number> {
     const pool = await DatabaseConfig.getPool();
     const result = await pool
       .request()
       .input("book_id", bookId)
       .input("reading_cycle", currentCycle)
-      .input(
-        "sevenDaysAgo",
-        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      )
+      .input("sevenDaysAgo", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
       .query(
         `
         SELECT SUM(pages_read) AS total_pages
@@ -77,7 +74,7 @@ export class KPICalculator {
         WHERE book_id = @book_id 
           AND reading_cycle = @reading_cycle 
           AND CAST(occurred_at AS DATE) >= CAST(@sevenDaysAgo AS DATE)
-      `
+      `,
       );
 
     if (!result.recordset || result.recordset.length === 0) return 0;
@@ -97,17 +94,14 @@ export class KPICalculator {
    */
   static async calculate30DayVelocity(
     bookId: number,
-    currentCycle: number
+    currentCycle: number,
   ): Promise<number> {
     const pool = await DatabaseConfig.getPool();
     const result = await pool
       .request()
       .input("book_id", bookId)
       .input("reading_cycle", currentCycle)
-      .input(
-        "thirtyDaysAgo",
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-      )
+      .input("thirtyDaysAgo", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
       .query(
         `
         SELECT SUM(pages_read) AS total_pages
@@ -115,7 +109,7 @@ export class KPICalculator {
         WHERE book_id = @book_id 
           AND reading_cycle = @reading_cycle 
           AND CAST(occurred_at AS DATE) >= CAST(@thirtyDaysAgo AS DATE)
-      `
+      `,
       );
 
     if (!result.recordset || result.recordset.length === 0) return 0;
@@ -135,7 +129,7 @@ export class KPICalculator {
    */
   static calculateEstimatedCompletionDate(
     remainingPages: number,
-    velocityCurrentCycle: number
+    velocityCurrentCycle: number,
   ): Date | null {
     if (velocityCurrentCycle === 0) return null;
 
@@ -155,7 +149,7 @@ export class KPICalculator {
    */
   static async calculateReadingStreak(
     bookId: number,
-    currentCycle: number
+    currentCycle: number,
   ): Promise<number> {
     const pool = await DatabaseConfig.getPool();
     const result = await pool
@@ -180,7 +174,7 @@ export class KPICalculator {
         SELECT COUNT(*) AS streak_length
         FROM Streaks
         WHERE day_gap IS NULL OR day_gap = 1
-      `
+      `,
       );
 
     if (!result.recordset || result.recordset.length === 0) return 0;
@@ -197,7 +191,7 @@ export class KPICalculator {
    */
   static async getTotalSessionsInCycle(
     bookId: number,
-    currentCycle: number
+    currentCycle: number,
   ): Promise<number> {
     const pool = await DatabaseConfig.getPool();
     const result = await pool
@@ -209,7 +203,7 @@ export class KPICalculator {
         SELECT COUNT(*) AS session_count
         FROM ReadingSessions
         WHERE book_id = @book_id AND reading_cycle = @reading_cycle
-      `
+      `,
       );
 
     if (!result.recordset || result.recordset.length === 0) return 0;

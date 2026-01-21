@@ -6,7 +6,7 @@ export interface AuthorProps {
 
 /**
  * Author Entity
- * 
+ *
  * Represents an author in the domain layer.
  * Ensures immutability and encapsulation of author data.
  */

@@ -2,18 +2,18 @@ import { IBookStatusHistoryRepository } from "../../domain/repositories/IBookSta
 import DatabaseConfig from "../database/DatabaseConfig";
 import mssql from "mssql";
 
-export class BookStatusHistoryRepositoryImpl
-  implements IBookStatusHistoryRepository
-{
+export class BookStatusHistoryRepositoryImpl implements IBookStatusHistoryRepository {
   async recordTransition(
     bookId: number,
     oldStatusId: number | null,
     newStatusId: number,
     readingCycle: number,
     reason: string,
-    tx?: mssql.Transaction
+    tx?: mssql.Transaction,
   ): Promise<number> {
-    const request = tx ? tx.request() : (await DatabaseConfig.getPool()).request();
+    const request = tx
+      ? tx.request()
+      : (await DatabaseConfig.getPool()).request();
 
     const result = await request
       .input("book_id", bookId)
@@ -25,7 +25,7 @@ export class BookStatusHistoryRepositoryImpl
         INSERT INTO BookStatusHistory (book_id, old_status_id, new_status_id, reading_cycle, changed_at)
         OUTPUT INSERTED.id
         VALUES (@book_id, @old_status_id, @new_status_id, @reading_cycle, GETDATE())
-      `
+      `,
       );
 
     if (!result.recordset || result.recordset.length === 0) {

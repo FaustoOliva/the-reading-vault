@@ -1,9 +1,9 @@
-import axios from 'axios';
+import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: 'http://192.168.1.6:3000/api',
+  baseURL: "http://192.168.1.6:3000/api",
   timeout: 5000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { "Content-Type": "application/json" },
 });
 
 export default apiClient;

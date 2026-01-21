@@ -1,6 +1,5 @@
 import DatabaseConfig from "../database/DatabaseConfig";
 import IReadingSessionRepository from "../../domain/repositories/IReadingSessionRepository";
-import mssql from "mssql";
 
 export class ReadingSessionRepositoryImpl implements IReadingSessionRepository {
   async addReadingSession(
@@ -8,7 +7,7 @@ export class ReadingSessionRepositoryImpl implements IReadingSessionRepository {
     pagesRead: number,
     occurredAt: Date | null,
     readingCycle: number,
-    tx?: any
+    tx?: any,
   ): Promise<number> {
     const useRequest =
       tx && typeof tx.request === "function"
@@ -25,7 +24,7 @@ export class ReadingSessionRepositoryImpl implements IReadingSessionRepository {
       .query(
         `INSERT INTO ReadingSessions (book_id, pages_read, occurred_at, reading_cycle, created_at)
          OUTPUT INSERTED.id
-         VALUES (@book_id, @pages_read, @occurred_at, @reading_cycle, GETDATE())`
+         VALUES (@book_id, @pages_read, @occurred_at, @reading_cycle, GETDATE())`,
       );
 
     const sessionId =

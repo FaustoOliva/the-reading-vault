@@ -23,7 +23,7 @@ export function errorHandler(
   err: any,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction,
 ) {
   let statusCode = 500;
   let message = "Internal Server Error";
@@ -59,7 +59,6 @@ export function errorHandler(
 
   // Log server-side error details for 5xx errors
   if (statusCode >= 500) {
-    // eslint-disable-next-line no-console
     console.error(err);
   }
 

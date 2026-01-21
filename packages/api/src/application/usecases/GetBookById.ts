@@ -27,12 +27,12 @@ export interface BookDetailOutput {
 
 /**
  * GetBookById Use Case
- * 
+ *
  * Fetches complete book details including:
  * - Basic book information (title, author, isbn, etc.)
  * - Current status and cycle information
  * - Comprehensive KPI calculations for the current reading cycle
- * 
+ *
  * KPI Engine calculates:
  * - velocity_current_cycle: Total pages in cycle / Days elapsed (Day 0 = 1)
  * - estimated_completion_date: Based on current velocity and remaining pages
@@ -78,7 +78,7 @@ export class GetBookByIdUseCase {
       remainingPages !== null && remainingPages > 0
         ? KPICalculator.calculateEstimatedCompletionDate(
             remainingPages,
-            velocityCurrentCycle
+            velocityCurrentCycle,
           )
         : null;
 

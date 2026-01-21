@@ -3,7 +3,10 @@ import IReadingSessionRepository from "../../domain/repositories/IReadingSession
 import { IBookStatusHistoryRepository } from "../../domain/repositories/IBookStatusHistoryRepository";
 import DatabaseConfig from "../../infrastructure/database/DatabaseConfig";
 import KPICalculator from "../utils/KPICalculator";
-import { LogSessionInputSchema, LogSessionInput } from "../validators/LogSessionValidator";
+import {
+  LogSessionInputSchema,
+  LogSessionInput,
+} from "../validators/LogSessionValidator";
 import BookClosedException from "../../domain/exceptions/BookClosedException";
 import BookNotFoundException from "../../domain/exceptions/BookNotFoundException";
 import ValidationException from "../../domain/exceptions/ValidationException";
@@ -34,7 +37,7 @@ export class LogSessionUseCase {
   constructor(
     private bookRepo: IBookRepository,
     private sessionRepo: IReadingSessionRepository,
-    private historyRepo: IBookStatusHistoryRepository
+    private historyRepo: IBookStatusHistoryRepository,
   ) {}
 
   async execute(input: LogSessionInput): Promise<LogSessionResponse> {
@@ -58,7 +61,7 @@ export class LogSessionUseCase {
       if (book.status_id === this.STATUS_ABANDONED) {
         await transaction.rollback();
         throw new BookClosedException(
-          "This book is abandoned and locked. Manually reopen to continue."
+          "This book is abandoned and locked. Manually reopen to continue.",
         );
       }
 
@@ -67,14 +70,14 @@ export class LogSessionUseCase {
         const pagesInCycle = await this.bookRepo.getTotalPagesRead(
           book.id!,
           book.current_cycle ?? 1,
-          transaction
+          transaction,
         );
         const remaining = book.total_pages - pagesInCycle;
 
         if (validatedInput.pages_read > remaining) {
           await transaction.rollback();
           throw new ValidationException(
-            `Pages exceed remaining total. Remaining: ${remaining}, Requested: ${validatedInput.pages_read}`
+            `Pages exceed remaining total. Remaining: ${remaining}, Requested: ${validatedInput.pages_read}`,
           );
         }
       }
@@ -85,14 +88,18 @@ export class LogSessionUseCase {
       // Step 4: Smart Transitions - before inserting session
       let newCycleAfterTransition = currentCycle;
       let statusAfterTransition = book.status_id!;
-      let transitionData: { oldStatus: number; newStatus: number; reason: string } | null = null;
+      let transitionData: {
+        oldStatus: number;
+        newStatus: number;
+        reason: string;
+      } | null = null;
 
       if (book.status_id === this.STATUS_WISH_LIST) {
         // WISH_LIST → READING transition
         await this.bookRepo.updateStatus(
           book.id!,
           this.STATUS_READING,
-          transaction
+          transaction,
         );
         transitionData = {
           oldStatus: this.STATUS_WISH_LIST,
@@ -104,12 +111,12 @@ export class LogSessionUseCase {
         // COMPLETED → READING transition with cycle increment
         newCycleAfterTransition = await this.bookRepo.incrementCurrentCycle(
           book.id!,
-          transaction
+          transaction,
         );
         await this.bookRepo.updateStatus(
           book.id!,
           this.STATUS_READING,
-          transaction
+          transaction,
         );
         transitionData = {
           oldStatus: this.STATUS_COMPLETED,
@@ -127,7 +134,7 @@ export class LogSessionUseCase {
           transitionData.newStatus,
           newCycleAfterTransition,
           transitionData.reason,
-          transaction
+          transaction,
         );
       }
 
@@ -137,7 +144,7 @@ export class LogSessionUseCase {
         validatedInput.pages_read,
         occurredAt,
         newCycleAfterTransition,
-        transaction
+        transaction,
       );
 
       // Step 6: Check for auto-completion
@@ -146,7 +153,7 @@ export class LogSessionUseCase {
         const totalPagesRead = await this.bookRepo.getTotalPagesRead(
           book.id!,
           newCycleAfterTransition,
-          transaction
+          transaction,
         );
 
         if (totalPagesRead >= book.total_pages) {
@@ -154,7 +161,7 @@ export class LogSessionUseCase {
           await this.bookRepo.updateStatus(
             book.id!,
             this.STATUS_COMPLETED,
-            transaction
+            transaction,
           );
 
           // Record the auto-completion transition
@@ -164,7 +171,7 @@ export class LogSessionUseCase {
             this.STATUS_COMPLETED,
             newCycleAfterTransition,
             "COMPLETED_AUTO_TRANSITION",
-            transaction
+            transaction,
           );
 
           autoCompletionOccurred = true;
@@ -179,7 +186,7 @@ export class LogSessionUseCase {
       const kpis = await this.calculateKPIs(
         book.id!,
         newCycleAfterTransition,
-        book.total_pages ?? 0
+        book.total_pages ?? 0,
       );
 
       // Step 9: Build response
@@ -192,7 +199,7 @@ export class LogSessionUseCase {
           current_reading_cycle: newCycleAfterTransition,
           pages_read_total: await this.bookRepo.getTotalPagesRead(
             book.id!,
-            newCycleAfterTransition
+            newCycleAfterTransition,
           ),
           total_pages: book.total_pages ?? 0,
         },
@@ -213,7 +220,7 @@ export class LogSessionUseCase {
     } catch (error) {
       try {
         await transaction.rollback();
-      } catch (rollbackErr) {
+      } catch (_rollbackErr) {
         // Log rollback error but don't suppress original error
       }
       throw error;
@@ -223,19 +230,19 @@ export class LogSessionUseCase {
   private async calculateKPIs(
     bookId: number,
     currentCycle: number,
-    totalPages: number
+    totalPages: number,
   ): Promise<KPIData> {
     const velocityCurrent = await KPICalculator.calculateCurrentCycleVelocity(
       bookId,
-      currentCycle
+      currentCycle,
     );
     const velocity7d = await KPICalculator.calculate7DayVelocity(
       bookId,
-      currentCycle
+      currentCycle,
     );
     const velocity30d = await KPICalculator.calculate30DayVelocity(
       bookId,
-      currentCycle
+      currentCycle,
     );
 
     const pool = await DatabaseConfig.getPool();
@@ -246,7 +253,7 @@ export class LogSessionUseCase {
       .query(
         `SELECT ISNULL(SUM(pages_read), 0) AS total_read 
          FROM ReadingSessions 
-         WHERE book_id = @book_id AND reading_cycle = @reading_cycle`
+         WHERE book_id = @book_id AND reading_cycle = @reading_cycle`,
       );
 
     const pagesReadInCycle = result.recordset?.[0]?.total_read ?? 0;
@@ -254,17 +261,17 @@ export class LogSessionUseCase {
 
     const estimatedCompletion = KPICalculator.calculateEstimatedCompletionDate(
       remainingPages,
-      velocityCurrent
+      velocityCurrent,
     );
 
     const readingStreak = await KPICalculator.calculateReadingStreak(
       bookId,
-      currentCycle
+      currentCycle,
     );
 
     const totalSessions = await KPICalculator.getTotalSessionsInCycle(
       bookId,
-      currentCycle
+      currentCycle,
     );
 
     return {

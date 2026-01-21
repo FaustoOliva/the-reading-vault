@@ -4,7 +4,6 @@ import { IAuthorRepository } from "../../domain/repositories/IAuthorRepository";
 import { IBookStatusHistoryRepository } from "../../domain/repositories/IBookStatusHistoryRepository";
 import { IReadingSessionRepository } from "../../domain/repositories/IReadingSessionRepository";
 import { DuplicateISBNException } from "../../domain/exceptions/DuplicateISBNException";
-import { Author } from "../../domain/entities/Author";
 import DatabaseConfig from "../../infrastructure/database/DatabaseConfig";
 
 export interface CreateBookInput {
@@ -33,13 +32,13 @@ export interface CreateBookOutput {
 
 /**
  * CreateBook Use Case
- * 
+ *
  * Implements POST /books business logic:
  * - Author deduplication (find or create)
  * - ISBN uniqueness validation
  * - Initial state assignment (WISH_LIST or READING)
  * - Status history logging
- * 
+ *
  * Follows Clean Architecture: encapsulates all business rules,
  * coordinating between repositories without infrastructure coupling.
  */
@@ -48,7 +47,7 @@ export class CreateBookUseCase {
     private bookRepo: IBookRepository,
     private authorRepo: IAuthorRepository,
     private historyRepo: IBookStatusHistoryRepository,
-    private sessionRepo: IReadingSessionRepository
+    private sessionRepo: IReadingSessionRepository,
   ) {}
 
   async execute(input: CreateBookInput): Promise<CreateBookOutput> {
@@ -60,7 +59,10 @@ export class CreateBookUseCase {
 
       // 1. ISBN Guard: Check for duplicate ISBN
       if (input.isbn) {
-        const existingBook = await this.checkDuplicateISBN(input.isbn, transaction);
+        const existingBook = await this.checkDuplicateISBN(
+          input.isbn,
+          transaction,
+        );
         if (existingBook) {
           throw new DuplicateISBNException(input.isbn);
         }
@@ -85,7 +87,7 @@ export class CreateBookUseCase {
         current_cycle: 1,
       });
 
-      const bookId = await this.bookRepo.save(book) as number;
+      const bookId = (await this.bookRepo.save(book)) as number;
 
       // 5. Log initial status in history
       await this.historyRepo.recordTransition(
@@ -94,7 +96,7 @@ export class CreateBookUseCase {
         statusId,
         1, // Initial cycle
         "BOOK_CREATED",
-        transaction
+        transaction,
       );
 
       // 6. If initial session provided, create it
@@ -104,7 +106,7 @@ export class CreateBookUseCase {
           input.initial_session.pages_read,
           input.initial_session.occurred_at || new Date(),
           1, // Initial cycle
-          transaction
+          transaction,
         );
       }
 
@@ -130,7 +132,10 @@ export class CreateBookUseCase {
    * Check if an ISBN already exists in the database.
    * Returns the existing book or null.
    */
-  private async checkDuplicateISBN(isbn: string, tx: any): Promise<Book | null> {
+  private async checkDuplicateISBN(
+    isbn: string,
+    tx: any,
+  ): Promise<Book | null> {
     const result = await tx
       .request()
       .input("isbn", isbn)

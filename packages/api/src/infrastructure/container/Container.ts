@@ -25,8 +25,17 @@ const container = new Container();
 
 // Register default implementations. Tests can override by calling `register`.
 container.register<IBookRepository>("BookRepository", new BookRepositoryImpl());
-container.register<IReadingSessionRepository>("ReadingSessionRepository", new ReadingSessionRepositoryImpl());
-container.register<IBookStatusHistoryRepository>("BookStatusHistoryRepository", new BookStatusHistoryRepositoryImpl());
-container.register<IAuthorRepository>("AuthorRepository", new AuthorRepositoryImpl());
+container.register<IReadingSessionRepository>(
+  "ReadingSessionRepository",
+  new ReadingSessionRepositoryImpl(),
+);
+container.register<IBookStatusHistoryRepository>(
+  "BookStatusHistoryRepository",
+  new BookStatusHistoryRepositoryImpl(),
+);
+container.register<IAuthorRepository>(
+  "AuthorRepository",
+  new AuthorRepositoryImpl(),
+);
 
 export default container;

@@ -15,10 +15,10 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
     // Get repositories from DI container
     const bookRepo = container.get<IBookRepository>("BookRepository");
     const sessionRepo = container.get<IReadingSessionRepository>(
-      "ReadingSessionRepository"
+      "ReadingSessionRepository",
     );
     const historyRepo = container.get<IBookStatusHistoryRepository>(
-      "BookStatusHistoryRepository"
+      "BookStatusHistoryRepository",
     );
 
     // Instantiate and execute use case

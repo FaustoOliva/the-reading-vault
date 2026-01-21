@@ -4,7 +4,7 @@ export interface IReadingSessionRepository {
     pagesRead: number,
     occurredAt: Date | null,
     readingCycle: number,
-    tx?: any
+    tx?: any,
   ): Promise<number>;
 }
 

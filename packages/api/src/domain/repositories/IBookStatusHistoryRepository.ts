@@ -15,7 +15,7 @@ export interface IBookStatusHistoryRepository {
     newStatusId: number,
     readingCycle: number,
     reason: string,
-    tx?: any
+    tx?: any,
   ): Promise<number>;
 }
 
