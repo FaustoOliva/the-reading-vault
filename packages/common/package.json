@@ -1,0 +1,14 @@
+{
+  "name": "@trv/common",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "license": "ISC",
+  "dependencies": {
+    "zod": "4.3.5"
+  },
+  "devDependencies": {
+    "typescript": "5.9.2"
+  }
+}

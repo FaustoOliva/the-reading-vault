@@ -9,7 +9,12 @@
     "outDir": "dist",
     "rootDir": "src",
     "resolveJsonModule": true,
-    "moduleResolution": "Node"
+    "moduleResolution": "Node",
+    "baseUrl": "./",
+    "paths": {
+      "@trv/common": ["../common/src"],
+      "@trv/common/*": ["../common/src/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

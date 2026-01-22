@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { CreateBookSchema } from "@trv/common";
 import { z } from "zod";
 import container from "../../../infrastructure/container/Container";
 import GetBooksUseCase from "../../../application/usecases/GetAllBooks";
@@ -8,22 +9,6 @@ import { IBookRepository } from "../../../domain/repositories/IBookRepository";
 import { IAuthorRepository } from "../../../domain/repositories/IAuthorRepository";
 import { IBookStatusHistoryRepository } from "../../../domain/repositories/IBookStatusHistoryRepository";
 import { IReadingSessionRepository } from "../../../domain/repositories/IReadingSessionRepository";
-
-// Zod Schemas for Validation
-
-const createBookSchema = z.object({
-  title: z.string().min(1, "Title is required").max(255, "Title too long"),
-  author_name: z.string().max(255).optional().nullable(),
-  isbn: z.string().max(20).optional().nullable(),
-  total_pages: z.number().int().positive().optional().nullable(),
-  comment: z.string().optional().nullable(),
-  initial_session: z
-    .object({
-      pages_read: z.number().int().positive("Pages read must be positive"),
-      occurred_at: z.string().datetime().optional(),
-    })
-    .optional(),
-});
 
 const bookIdParamSchema = z.object({
   id: z.string().regex(/^\d+$/, "ID must be a number").transform(Number),
@@ -59,20 +44,7 @@ const getAll = async (req: Request, res: Response, next: NextFunction) => {
 const createBook = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Validate input
-    const validatedData = createBookSchema.parse(req.body);
-
-    // Convert occurred_at from string to Date if provided
-    const input = {
-      ...validatedData,
-      initial_session: validatedData.initial_session
-        ? {
-            pages_read: validatedData.initial_session.pages_read,
-            occurred_at: validatedData.initial_session.occurred_at
-              ? new Date(validatedData.initial_session.occurred_at)
-              : undefined,
-          }
-        : undefined,
-    };
+    const input = CreateBookSchema.parse(req.body);
 
     // Get dependencies from container
     const bookRepo = container.get<IBookRepository>("BookRepository");
