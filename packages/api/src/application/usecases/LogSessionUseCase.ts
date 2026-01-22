@@ -3,10 +3,7 @@ import IReadingSessionRepository from "../../domain/repositories/IReadingSession
 import { IBookStatusHistoryRepository } from "../../domain/repositories/IBookStatusHistoryRepository";
 import DatabaseConfig from "../../infrastructure/database/DatabaseConfig";
 import KPICalculator from "../utils/KPICalculator";
-import {
-  LogSessionInputSchema,
-  LogSessionInput,
-} from "../validators/LogSessionValidator";
+import { LogSessionSchema, LogSessionInput } from "@trv/common";
 import BookClosedException from "../../domain/exceptions/BookClosedException";
 import BookNotFoundException from "../../domain/exceptions/BookNotFoundException";
 import ValidationException from "../../domain/exceptions/ValidationException";
@@ -41,8 +38,8 @@ export class LogSessionUseCase {
   ) {}
 
   async execute(input: LogSessionInput): Promise<LogSessionResponse> {
-    // Validate input using Zod schema
-    const validatedInput = LogSessionInputSchema.parse(input);
+    // Validate input using Zod schema from @trv/common
+    const validatedInput = LogSessionSchema.parse(input);
 
     const pool = await DatabaseConfig.getPool();
     const transaction = new mssql.Transaction(pool);
@@ -51,10 +48,11 @@ export class LogSessionUseCase {
       await transaction.begin();
 
       // Step 1: Fetch book and validate existence
-      const book = await this.bookRepo.findById(validatedInput.book_id);
+      const bookId = parseInt(validatedInput.book_id, 10);
+      const book = await this.bookRepo.findById(bookId);
       if (!book) {
         await transaction.rollback();
-        throw new BookNotFoundException(validatedInput.book_id);
+        throw new BookNotFoundException(bookId);
       }
 
       // Step 2: Guard clause - Block ABANDONED books
@@ -68,7 +66,7 @@ export class LogSessionUseCase {
       // Step 3: Validate pages_read against remaining pages in current cycle
       if (book.total_pages != null && book.total_pages > 0) {
         const pagesInCycle = await this.bookRepo.getTotalPagesRead(
-          book.id!,
+          bookId,
           book.current_cycle ?? 1,
           transaction,
         );
@@ -97,7 +95,7 @@ export class LogSessionUseCase {
       if (book.status_id === this.STATUS_WISH_LIST) {
         // WISH_LIST → READING transition
         await this.bookRepo.updateStatus(
-          book.id!,
+          bookId,
           this.STATUS_READING,
           transaction,
         );
@@ -110,11 +108,11 @@ export class LogSessionUseCase {
       } else if (book.status_id === this.STATUS_COMPLETED) {
         // COMPLETED → READING transition with cycle increment
         newCycleAfterTransition = await this.bookRepo.incrementCurrentCycle(
-          book.id!,
+          bookId,
           transaction,
         );
         await this.bookRepo.updateStatus(
-          book.id!,
+          bookId,
           this.STATUS_READING,
           transaction,
         );
@@ -129,7 +127,7 @@ export class LogSessionUseCase {
       // Record transition to history if it occurred
       if (transitionData) {
         await this.historyRepo.recordTransition(
-          book.id!,
+          bookId,
           transitionData.oldStatus,
           transitionData.newStatus,
           newCycleAfterTransition,
@@ -140,7 +138,7 @@ export class LogSessionUseCase {
 
       // Step 5: Insert reading session - use the new cycle if it was incremented
       const sessionId = await this.sessionRepo.addReadingSession(
-        book.id!,
+        bookId,
         validatedInput.pages_read,
         occurredAt,
         newCycleAfterTransition,
@@ -151,7 +149,7 @@ export class LogSessionUseCase {
       let autoCompletionOccurred = false;
       if (book.total_pages != null && book.total_pages > 0) {
         const totalPagesRead = await this.bookRepo.getTotalPagesRead(
-          book.id!,
+          bookId,
           newCycleAfterTransition,
           transaction,
         );
@@ -159,14 +157,14 @@ export class LogSessionUseCase {
         if (totalPagesRead >= book.total_pages) {
           // Auto-transition to COMPLETED
           await this.bookRepo.updateStatus(
-            book.id!,
+            bookId,
             this.STATUS_COMPLETED,
             transaction,
           );
 
           // Record the auto-completion transition
           await this.historyRepo.recordTransition(
-            book.id!,
+            bookId,
             statusAfterTransition,
             this.STATUS_COMPLETED,
             newCycleAfterTransition,
@@ -184,7 +182,7 @@ export class LogSessionUseCase {
 
       // Step 8: Calculate KPIs (outside transaction for read-only operations)
       const kpis = await this.calculateKPIs(
-        book.id!,
+        bookId,
         newCycleAfterTransition,
         book.total_pages ?? 0,
       );
@@ -193,12 +191,12 @@ export class LogSessionUseCase {
       const response: LogSessionResponse = {
         session_id: sessionId,
         book: {
-          id: book.id!,
+          id: bookId,
           title: book.title,
           status: this.getStatusCode(statusAfterTransition),
           current_reading_cycle: newCycleAfterTransition,
           pages_read_total: await this.bookRepo.getTotalPagesRead(
-            book.id!,
+            bookId,
             newCycleAfterTransition,
           ),
           total_pages: book.total_pages ?? 0,

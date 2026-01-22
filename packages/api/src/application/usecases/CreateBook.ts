@@ -4,20 +4,10 @@ import { IAuthorRepository } from "../../domain/repositories/IAuthorRepository";
 import { IBookStatusHistoryRepository } from "../../domain/repositories/IBookStatusHistoryRepository";
 import { IReadingSessionRepository } from "../../domain/repositories/IReadingSessionRepository";
 import { DuplicateISBNException } from "../../domain/exceptions/DuplicateISBNException";
+import { ValidationException } from "../../domain/exceptions/ValidationException";
 import DatabaseConfig from "../../infrastructure/database/DatabaseConfig";
-
-export interface CreateBookInput {
-  title: string;
-  author_name?: string | null;
-  isbn?: string | null;
-  total_pages?: number | null;
-  comment?: string | null;
-  // Optional: if provided, book starts in READING status with a session
-  initial_session?: {
-    pages_read: number;
-    occurred_at?: Date;
-  };
-}
+import { CreateBookSchema, CreateBookInput } from "@trv/common";
+import mssql from "mssql";
 
 export interface CreateBookOutput {
   id: number;
@@ -51,63 +41,94 @@ export class CreateBookUseCase {
   ) {}
 
   async execute(input: CreateBookInput): Promise<CreateBookOutput> {
+    // Validate input using Zod schema from @trv/common
+    const validatedInput = CreateBookSchema.parse(input);
+
     const pool = await DatabaseConfig.getPool();
-    const transaction = pool.transaction();
+    const transaction = new mssql.Transaction(pool);
 
     try {
       await transaction.begin();
 
-      // 1. ISBN Guard: Check for duplicate ISBN
-      if (input.isbn) {
+      // Step 1: ISBN Guard - Check for duplicate ISBN
+      if (validatedInput.isbn) {
         const existingBook = await this.checkDuplicateISBN(
-          input.isbn,
+          validatedInput.isbn,
           transaction,
         );
         if (existingBook) {
-          throw new DuplicateISBNException(input.isbn);
+          await transaction.rollback();
+          throw new DuplicateISBNException(validatedInput.isbn);
         }
       }
 
-      // 2. Author Deduplication: Find or create author
-      const authorName = input.author_name?.trim() || "Unknown Author";
+      // Step 2: Author Deduplication - Find or create author
+      const authorName = validatedInput.author_name?.trim() || "Unknown Author";
       const authorId = await this.findOrCreateAuthor(authorName, transaction);
 
-      // 3. Determine initial status
-      const statusId = input.initial_session ? 2 : 1; // 2=READING, 1=WISH_LIST
-      const statusName = input.initial_session ? "Reading" : "Wish List";
+      // Step 3: Determine initial status based on initial_session
+      const statusId = validatedInput.initial_session ? 2 : 1; // 2=READING, 1=WISH_LIST
+      const statusName = validatedInput.initial_session ? "READING" : "WISH_LIST";
 
-      // 4. Create book
+      // Step 4: Create book entity
       const book = new Book({
-        title: input.title.trim(),
+        title: validatedInput.title.trim(),
         author_id: authorId,
-        isbn: input.isbn?.trim() || null,
-        total_pages: input.total_pages ?? null,
+        isbn: validatedInput.isbn?.trim() || null,
+        total_pages: validatedInput.total_pages ?? null,
         status_id: statusId,
-        comment: input.comment?.trim() || null,
+        comment: validatedInput.comment?.trim() || null,
         current_cycle: 1,
       });
 
-      const bookId = (await this.bookRepo.save(book)) as number;
+      const bookId = (await this.bookRepo.save(book, transaction)) as number;
 
-      // 5. Log initial status in history
+      // Step 5: Log initial status transition in history
       await this.historyRepo.recordTransition(
         bookId,
         null, // No old status for new books
         statusId,
-        1, // Initial cycle
+        1, // Initial cycle is always 1
         "BOOK_CREATED",
         transaction,
       );
 
-      // 6. If initial session provided, create it
-      if (input.initial_session) {
+      // Step 6: If initial session provided, create reading session
+      // and check for auto-completion
+      if (validatedInput.initial_session) {
+        const occurredAt = validatedInput.initial_session.occurred_at || new Date();
+        
         await this.sessionRepo.addReadingSession(
           bookId,
-          input.initial_session.pages_read,
-          input.initial_session.occurred_at || new Date(),
+          validatedInput.initial_session.pages_read,
+          occurredAt,
           1, // Initial cycle
           transaction,
         );
+
+        // Check for auto-completion on initial session
+        if (validatedInput.total_pages != null && validatedInput.total_pages > 0) {
+          const pagesReadInCycle = await this.bookRepo.getTotalPagesRead(
+            bookId,
+            1,
+            transaction,
+          );
+
+          if (pagesReadInCycle >= validatedInput.total_pages) {
+            // Auto-transition to COMPLETED
+            await this.bookRepo.updateStatus(bookId, 3, transaction); // 3=COMPLETED
+            
+            // Record auto-completion transition
+            await this.historyRepo.recordTransition(
+              bookId,
+              statusId,
+              3, // COMPLETED
+              1,
+              "COMPLETED_AUTO_TRANSITION",
+              transaction,
+            );
+          }
+        }
       }
 
       await transaction.commit();
@@ -123,7 +144,11 @@ export class CreateBookUseCase {
         comment: book.comment ?? null,
       };
     } catch (error) {
-      await transaction.rollback();
+      try {
+        await transaction.rollback();
+      } catch (_rollbackErr) {
+        // Log rollback error but don't suppress original error
+      }
       throw error;
     }
   }
