@@ -1,14 +1,16 @@
 {
-  "name": "@trv/common",
+  "name": "common",
   "version": "1.0.0",
-  "type": "module",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "license": "ISC",
-  "dependencies": {
-    "zod": "4.3.5"
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "devDependencies": {
-    "typescript": "5.9.2"
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "zod": "^4.3.6"
   }
 }
