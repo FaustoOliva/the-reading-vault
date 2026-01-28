@@ -58,6 +58,20 @@ export class MSSQLClient {
   }
 
   /**
+   * Returns active connection pool (alias for getPool)
+   * Ensures connection is established before returning
+   *
+   * @returns {sql.ConnectionPool}
+   * @throws {Error} If not connected
+   */
+  getConnection() {
+    if (!this.pool) {
+      throw new Error("Database connection not established. Call connect() first.");
+    }
+    return this.pool;
+  }
+
+  /**
    * Checks if connected
    *
    * @returns {boolean}

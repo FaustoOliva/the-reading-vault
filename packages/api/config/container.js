@@ -4,8 +4,11 @@
  */
 
 import { HealthController } from "../controllers/healthController.js";
+import { BooksController } from "../controllers/booksController.js";
 import { MSSQLClient } from "../infraestructure/config/database.js";
 import { DatabaseRepository } from "../infraestructure/database/DatabaseRepository.js";
+import { BookRepository } from "../infraestructure/repositories/bookRepository.js";
+import { GetBooksService } from "../services/getBooksService.js";
 import { config } from "./env.js";
 
 export class DIContainer {
@@ -27,20 +30,31 @@ export class DIContainer {
   _initRepositories() {
     const mssqlClient = this.instances.get("mssqlClient");
     const databaseRepository = new DatabaseRepository(mssqlClient);
+    const bookRepository = new BookRepository(mssqlClient);
+    
     this.instances.set("databaseRepository", databaseRepository);
+    this.instances.set("bookRepository", bookRepository);
   }
 
   /**
    * Initialize all services with their dependencies
    */
   _initServices() {
+    const bookRepository = this.instances.get("bookRepository");
+    
+    const getBooksService = new GetBooksService(bookRepository);
+    
+    this.instances.set("getBooksService", getBooksService);
   }
 
   /**
    * Initialize all controllers with their dependencies
    */
   _initControllers() {
+    const getBooksService = this.instances.get("getBooksService");
+    
     this.instances.set("healthController", new HealthController());
+    this.instances.set("booksController", new BooksController(getBooksService));
   }
 
   /**

@@ -13,7 +13,7 @@
     "lint": "eslint . --fix",
     "format": "prettier . --write",
     "start:api": "npm start --workspace=api",
-    "dev:api": "npm run dev --workspace=backend",
+    "dev:api": "npm run dev --workspace=api",
     "start:mobile": "npm start --workspace=mobile",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
