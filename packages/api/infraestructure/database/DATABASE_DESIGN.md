@@ -3,6 +3,7 @@
 ## Entity Relationship Diagram (ERD) Concepts
 
 - **Authors** (1) ---- (N) **Books**
+- **Countries** (1) ---- (N) **Authors**
 - **Books** (1) ---- (N) **ReadingSessions**
 - **Books** (1) ---- (N) **BookStatusHistory**
 
@@ -10,11 +11,18 @@
 
 ### 1. Authors
 
-| Column        | Type          | Constraints                |
-| :------------ | :------------ | :------------------------- |
-| `id`          | INT           | Primary Key, Identity(1,1) |
-| `name`        | NVARCHAR(255) | NOT NULL, UNIQUE           |
-| `nationality` | NVARCHAR(100) | NULL                       |
+| Column           | Type          | Constraints                      |
+| :--------------- | :------------ | :------------------------------- |
+| `id`             | INT           | Primary Key, Identity(1,1)       |
+| `name`           | NVARCHAR(255) | NOT NULL, UNIQUE                 |
+| `nationality_id` | INT           | Foreign Key (Countries.id), NULL |
+
+### 2. Countries
+
+| Column | Type         | Constraints                |
+| :----- | :----------- | :------------------------- |
+| `id`   | INT          | Primary Key, Identity(1,1) |
+| `name` | NVARCHAR(40) | NOT NULL, UNIQUE           |
 
 ### 2. Books
 
@@ -40,6 +48,7 @@
 | `occurred_at`   | DATETIME | NOT NULL, DEFAULT GETDATE() |
 | `reading_cycle` | INT      | NOT NULL, DEFAULT 1         |
 | `pages_read`    | INT      | NOT NULL                    |
+| `duration`      | INT      | NULL                        |
 
 ### 4. BookStatusHistory
 

@@ -9,14 +9,22 @@ GO
 USE TheReadingVault;
 GO
 
--- 1. Authors Table 
+-- 1. Countries Table
+CREATE TABLE Countries (
+    id INT PRIMARY KEY IDENTITY(1,1),
+    name NVARCHAR(40) NOT NULL UNIQUE
+);
+
+-- 2. Authors Table 
 CREATE TABLE Authors (
     id INT PRIMARY KEY IDENTITY(1,1),
     name NVARCHAR(255) NOT NULL UNIQUE,
-    nationality NVARCHAR(100) NULL 
+    nationality_id INT NULL 
+
+    CONSTRAINT FK_Authors_Countries FOREIGN KEY (nationality_id) REFERENCES Countries(id)
 );
 
--- 2. Reference Table for Statuses
+-- 3. Reference Table for Statuses
 CREATE TABLE BookStatuses (
     id INT PRIMARY KEY IDENTITY(1,1),
     internal_code NVARCHAR(50) NOT NULL UNIQUE, -- 'WISH_LIST', 'READING', etc.
@@ -24,7 +32,7 @@ CREATE TABLE BookStatuses (
     ui_color NVARCHAR(7) NULL                   -- HEX code for the App
 );
 
--- 3. Books Table 
+-- 4. Books Table 
 CREATE TABLE Books (
     id INT PRIMARY KEY IDENTITY(1,1),
     author_id INT NOT NULL,
@@ -41,7 +49,7 @@ CREATE TABLE Books (
     CONSTRAINT CHK_Score CHECK (score >= 0 AND score <= 10)
 );
 
--- 4. ReadingSessions Table (Optimized with Index)
+-- 5. ReadingSessions Table (Optimized with Index)
 CREATE TABLE ReadingSessions (
     id INT PRIMARY KEY IDENTITY(1,1),
     book_id INT NOT NULL,
@@ -49,10 +57,12 @@ CREATE TABLE ReadingSessions (
     occurred_at DATETIME NOT NULL DEFAULT GETDATE(),
     pages_read INT NOT NULL,
     reading_cycle INT NOT NULL DEFAULT 1,
+    duration INT NULL, -- Duration in minutes
+
     CONSTRAINT FK_Sessions_Books FOREIGN KEY (book_id) REFERENCES Books(id)
 );
 
--- 5. Table to track state transitions (History/Audit Trail)
+-- 6. Table to track state transitions (History/Audit Trail)
 CREATE TABLE BookStatusHistory (
     id INT PRIMARY KEY IDENTITY(1,1),
     book_id INT NOT NULL,
