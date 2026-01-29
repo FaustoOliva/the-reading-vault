@@ -32,9 +32,23 @@ const getBooksQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(10)
 }).strict();
 
+/**
+ * Validation schema for CreateBook request body
+ */
+const createBookBodySchema = z.object({
+  title: z.string().min(1).max(255),
+  isbn: z.string().max(20).optional(),
+  totalPages: z.number().int().positive().optional(),
+  author: z.object({
+    name: z.string().min(1).max(255),
+    nationality: z.string().max(40).optional()
+  })
+}).strict();
+
 export class BooksController {
-  constructor(getBooksService) {
+  constructor(getBooksService, createBookService) {
     this.getBooksService = getBooksService;
+    this.createBookService = createBookService;
   }
 
   /**
@@ -64,6 +78,29 @@ export class BooksController {
           total: result.total,
           totalPages: result.totalPages
         }
+      });
+    } catch (error) {
+      // Forward to global error middleware
+      next(error);
+    }
+  }
+
+  /**
+   * POST /books
+   * Creates a new book
+   */
+  async createBook(req, res, next) {
+    try {
+      // Validate request body
+      const validated = createBookBodySchema.parse(req.body);
+
+      // Execute use case
+      const book = await this.createBookService.execute(validated);
+
+      // Return created book
+      res.status(201).json({
+        success: true,
+        data: book.toJSON()
       });
     } catch (error) {
       // Forward to global error middleware

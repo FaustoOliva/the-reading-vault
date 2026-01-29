@@ -30,5 +30,14 @@ export default function bookRoutes(getController) {
     getController(BooksController).getBooks(req, res, next)
   );
 
+  /**
+   * POST /books
+   * Creates a new book
+   * Body: { title, isbn?, totalPages?, author: { name, nationality? } }
+   */
+  router.post("/books", (req, res, next) =>
+    getController(BooksController).createBook(req, res, next)
+  );
+
   return router;
 }

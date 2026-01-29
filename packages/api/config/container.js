@@ -9,9 +9,12 @@ import { ReadingSessionsController } from "../controllers/readingSessionsControl
 import { MSSQLClient } from "../infraestructure/config/database.js";
 import { DatabaseRepository } from "../infraestructure/database/DatabaseRepository.js";
 import { BookRepository } from "../infraestructure/repositories/bookRepository.js";
+import { AuthorRepository } from "../infraestructure/repositories/authorRepository.js";
+import { CountryRepository } from "../infraestructure/repositories/countryRepository.js";
 import { ReadingSessionRepository } from "../infraestructure/repositories/readingSessionRepository.js";
 import { BookStatusHistoryRepository } from "../infraestructure/repositories/bookStatusHistoryRepository.js";
 import { GetBooksService } from "../services/getBooksService.js";
+import { CreateBookService } from "../services/createBookService.js";
 import { LogReadingSessionService } from "../services/logReadingSessionService.js";
 import { config } from "./env.js";
 
@@ -35,11 +38,15 @@ export class DIContainer {
     const mssqlClient = this.instances.get("mssqlClient");
     const databaseRepository = new DatabaseRepository(mssqlClient);
     const bookRepository = new BookRepository(mssqlClient);
+    const authorRepository = new AuthorRepository(mssqlClient);
+    const countryRepository = new CountryRepository(mssqlClient);
     const readingSessionRepository = new ReadingSessionRepository(mssqlClient);
     const bookStatusHistoryRepository = new BookStatusHistoryRepository(mssqlClient);
     
     this.instances.set("databaseRepository", databaseRepository);
     this.instances.set("bookRepository", bookRepository);
+    this.instances.set("authorRepository", authorRepository);
+    this.instances.set("countryRepository", countryRepository);
     this.instances.set("readingSessionRepository", readingSessionRepository);
     this.instances.set("bookStatusHistoryRepository", bookStatusHistoryRepository);
   }
@@ -50,10 +57,19 @@ export class DIContainer {
   _initServices() {
     const mssqlClient = this.instances.get("mssqlClient");
     const bookRepository = this.instances.get("bookRepository");
+    const authorRepository = this.instances.get("authorRepository");
+    const countryRepository = this.instances.get("countryRepository");
     const readingSessionRepository = this.instances.get("readingSessionRepository");
     const bookStatusHistoryRepository = this.instances.get("bookStatusHistoryRepository");
     
     const getBooksService = new GetBooksService(bookRepository);
+    const createBookService = new CreateBookService(
+      mssqlClient,
+      bookRepository,
+      authorRepository,
+      countryRepository,
+      bookStatusHistoryRepository
+    );
     const logReadingSessionService = new LogReadingSessionService(
       mssqlClient,
       bookRepository,
@@ -62,6 +78,7 @@ export class DIContainer {
     );
     
     this.instances.set("getBooksService", getBooksService);
+    this.instances.set("createBookService", createBookService);
     this.instances.set("logReadingSessionService", logReadingSessionService);
   }
 
@@ -70,10 +87,11 @@ export class DIContainer {
    */
   _initControllers() {
     const getBooksService = this.instances.get("getBooksService");
+    const createBookService = this.instances.get("createBookService");
     const logReadingSessionService = this.instances.get("logReadingSessionService");
     
     this.instances.set("healthController", new HealthController());
-    this.instances.set("booksController", new BooksController(getBooksService));
+    this.instances.set("booksController", new BooksController(getBooksService, createBookService));
     this.instances.set("readingSessionsController", new ReadingSessionsController(logReadingSessionService));
   }
 

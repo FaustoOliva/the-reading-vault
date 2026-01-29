@@ -175,4 +175,99 @@ export class BookRepository {
       .input("cycle", sql.Int, currentCycle)
       .query(query);
   }
+
+  /**
+   * Find book by ISBN
+   * @param {string} isbn - Book ISBN
+   * @param {sql.Transaction} transaction - Optional transaction
+   * @returns {Promise<Book|null>} Book entity or null if not found
+   */
+  async findByIsbn(isbn, transaction = null) {
+    const pool = transaction ? transaction : await this.mssqlClient.getConnection();
+    
+    const request = transaction ? new sql.Request(transaction) : pool.request();
+    
+    const query = `
+      SELECT 
+        b.id,
+        b.title,
+        b.isbn,
+        b.author_id,
+        a.name as author_name,
+        b.total_pages,
+        bs.internal_code as status_code,
+        b.current_reading_cycle,
+        b.score,
+        b.comment
+      FROM Books b
+      INNER JOIN Authors a ON b.author_id = a.id
+      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      WHERE b.isbn = @isbn
+    `;
+
+    const result = await request
+      .input("isbn", sql.NVarChar, isbn)
+      .query(query);
+
+    if (result.recordset.length === 0) {
+      return null;
+    }
+
+    return Book.fromDatabase(result.recordset[0]);
+  }
+
+  /**
+   * Create a new book
+   * @param {Object} data - { title, isbn, authorId, totalPages, statusId }
+   * @param {sql.Transaction} transaction - Required transaction
+   * @returns {Promise<Book>} Created book entity
+   */
+  async create(data, transaction) {
+    const { title, isbn, authorId, totalPages, statusId } = data;
+    
+    const request = new sql.Request(transaction);
+    
+    const query = `
+      INSERT INTO Books (title, isbn, author_id, total_pages, status_id, current_reading_cycle)
+      OUTPUT INSERTED.id, INSERTED.title, INSERTED.isbn, INSERTED.author_id, 
+             INSERTED.total_pages, INSERTED.current_reading_cycle, 
+             INSERTED.score, INSERTED.comment
+      VALUES (@title, @isbn, @authorId, @totalPages, @statusId, 1)
+    `;
+
+    const result = await request
+      .input("title", sql.NVarChar, title)
+      .input("isbn", sql.NVarChar, isbn || null)
+      .input("authorId", sql.Int, authorId)
+      .input("totalPages", sql.Int, totalPages || null)
+      .input("statusId", sql.Int, statusId)
+      .query(query);
+
+    const insertedRecord = result.recordset[0];
+
+    // Get author name and status code for complete Book entity
+    const fullBookQuery = `
+      SELECT 
+        b.id,
+        b.title,
+        b.isbn,
+        b.author_id,
+        a.name as author_name,
+        b.total_pages,
+        bs.internal_code as status_code,
+        b.current_reading_cycle,
+        b.score,
+        b.comment
+      FROM Books b
+      INNER JOIN Authors a ON b.author_id = a.id
+      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      WHERE b.id = @bookId
+    `;
+
+    const fullResult = await request
+      .input("bookId", sql.Int, insertedRecord.id)
+      .query(fullBookQuery);
+
+    return Book.fromDatabase(fullResult.recordset[0]);
+  }
 }
