@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "dev": "node --watch index.js",
     "start": "node index.js"
   },
@@ -17,5 +19,8 @@
     "dotenv": "^16.4.7",
     "express": "^5.2.1",
     "mssql": "^12.2.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
   }
 }

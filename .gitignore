@@ -4,3 +4,6 @@ node_modules/
 .env
 
 .github/
+
+coverage/
+.nyc_output/
