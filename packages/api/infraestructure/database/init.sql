@@ -69,7 +69,7 @@ CREATE TABLE BookStatusHistory (
     old_status_id INT NULL,
     new_status_id INT NOT NULL,
     reading_cycle INT NOT NULL DEFAULT 1,
-    changed_at DATETIME NOT NULL DEFAULT GETDATE(),
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
     
     CONSTRAINT FK_History_Books FOREIGN KEY (book_id) REFERENCES Books(id),
     CONSTRAINT FK_History_OldStatus FOREIGN KEY (old_status_id) REFERENCES BookStatuses(id),
@@ -78,7 +78,7 @@ CREATE TABLE BookStatusHistory (
 GO
 
 -- Index for performance in time-series queries
-CREATE INDEX IX_StatusHistory_BookDate ON BookStatusHistory (book_id, changed_at);
+CREATE INDEX IX_StatusHistory_BookDate ON BookStatusHistory (book_id, created_at);
 
 -- Index to optimize KPI calculations
 CREATE INDEX IX_ReadingSessions_BookDate ON ReadingSessions (book_id, occurred_at) INCLUDE (pages_read, reading_cycle);

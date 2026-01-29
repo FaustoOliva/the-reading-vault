@@ -3,9 +3,11 @@
  * Represents a book in the system with its status and reading cycles
  * 
  * This entity enforces domain invariants and owns business behavior
+ * Rich entity: encapsulates state transition logic
  */
 
 import { BookStatus } from "./BookStatus.js";
+import { BookClosedError } from "../errors/index.js";
 
 export class Book {
   constructor({
@@ -82,5 +84,63 @@ export class Book {
    */
   isClosed() {
     return this.status === BookStatus.COMPLETED || this.status === BookStatus.ABANDONED;
+  }
+
+  /**
+   * Check if book can accept new reading sessions
+   * Guard clause for ABANDONED status
+   * @throws {BookClosedError} if book is ABANDONED
+   */
+  ensureCanAcceptSession() {
+    if (this.status === BookStatus.ABANDONED) {
+      throw new BookClosedError(this.id, this.status);
+    }
+  }
+
+  /**
+   * Calculate what the new status should be after logging pages
+   * Encapsulates smart transition logic from DOMAIN.md section 3.3
+   * 
+   * @param {number} currentPagesInCycle - Pages already read in current cycle
+   * @param {number} pagesRead - Pages about to be logged
+   * @returns {Object} { newStatus, newCycle, shouldTransition }
+   */
+  calculateTransition(currentPagesInCycle, pagesRead) {
+    let newStatus = this.status;
+    let newCycle = this.currentReadingCycle;
+    const totalPagesAfterSession = currentPagesInCycle + pagesRead;
+
+    // Transition 1: WISH_LIST → READING
+    if (this.status === BookStatus.WISH_LIST) {
+      newStatus = BookStatus.READING;
+    }
+
+    // Transition 2: COMPLETED → READING (increment cycle)
+    if (this.status === BookStatus.COMPLETED) {
+      newStatus = BookStatus.READING;
+      newCycle = this.currentReadingCycle + 1;
+    }
+
+    // Transition 3: READING → COMPLETED (auto-completion)
+    if (this.status === BookStatus.READING && totalPagesAfterSession >= this.totalPages) {
+      newStatus = BookStatus.COMPLETED;
+    }
+
+    return {
+      oldStatus: this.status,
+      newStatus,
+      newCycle,
+      shouldTransition: this.status !== newStatus
+    };
+  }
+
+  /**
+   * Validate that pages_read doesn't exceed remaining pages
+   * @param {number} currentPagesInCycle - Pages already read in current cycle
+   * @param {number} pagesRead - Pages to be logged
+   * @returns {boolean}
+   */
+  canAcceptPages(currentPagesInCycle, pagesRead) {
+    return (currentPagesInCycle + pagesRead) <= this.totalPages;
   }
 }

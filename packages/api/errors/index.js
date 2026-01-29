@@ -10,3 +10,8 @@ export { AppError } from "./base/AppError.js";
 export { BadRequestError } from "./http/BadRequestError.js";
 export { NotFoundError } from "./http/NotFoundError.js";
 export { ConflictError } from "./http/ConflictError.js";
+export { ForbiddenError } from "./http/ForbiddenError.js";
+
+// Domain Errors
+export { BookClosedError } from "./domain/BookClosedError.js";
+export { InvalidStateTransitionError } from "./domain/InvalidStateTransitionError.js";

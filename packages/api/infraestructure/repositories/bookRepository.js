@@ -114,4 +114,65 @@ export class BookRepository {
 
     return Book.fromDatabase(result.recordset[0]);
   }
+
+  /**
+   * Get book by ID with transaction support
+   * @param {number} bookId - Book ID
+   * @param {sql.Transaction} transaction - Active transaction
+   * @returns {Promise<Book|null>} Book entity or null if not found
+   */
+  async getByIdWithTransaction(bookId, transaction) {
+    const query = `
+      SELECT 
+        b.id,
+        b.title,
+        b.isbn,
+        b.author_id,
+        a.name as author_name,
+        b.total_pages,
+        bs.internal_code as status_code,
+        b.current_reading_cycle,
+        b.score,
+        b.comment
+      FROM Books b
+      INNER JOIN Authors a ON b.author_id = a.id
+      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      WHERE b.id = @bookId
+    `;
+
+    const result = await transaction
+      .request()
+      .input("bookId", sql.Int, bookId)
+      .query(query);
+
+    if (result.recordset.length === 0) {
+      return null;
+    }
+
+    return Book.fromDatabase(result.recordset[0]);
+  }
+
+  /**
+   * Update book status and cycle within a transaction
+   * @param {number} bookId - Book ID
+   * @param {string} newStatus - New status code
+   * @param {number} currentCycle - Current reading cycle
+   * @param {sql.Transaction} transaction - Active transaction
+   * @returns {Promise<void>}
+   */
+  async updateStatus(bookId, newStatus, currentCycle, transaction) {
+    const query = `
+      UPDATE Books
+      SET status_id = (SELECT id FROM BookStatuses WHERE internal_code = @newStatus),
+          current_reading_cycle = @cycle
+      WHERE id = @bookId
+    `;
+
+    await transaction
+      .request()
+      .input("bookId", sql.Int, bookId)
+      .input("newStatus", sql.NVarChar, newStatus)
+      .input("cycle", sql.Int, currentCycle)
+      .query(query);
+  }
 }
