@@ -7,10 +7,35 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { CreateBookService } from "../services/createBookService.js";
 import { ConflictError } from "../errors/index.js";
 import { BookStatus } from "../models/BookStatus.js";
 import { Book } from "../models/Book.js";
+
+// Mock transaction and request (must be defined before vi.mock)
+const mockRequest = {
+  input: vi.fn().mockReturnThis(),
+  query: vi.fn()
+};
+
+const mockTransaction = {
+  begin: vi.fn().mockResolvedValue(undefined),
+  commit: vi.fn().mockResolvedValue(undefined),
+  rollback: vi.fn().mockResolvedValue(undefined),
+  request: vi.fn().mockReturnValue(mockRequest)
+};
+
+// Mock mssql module (must be hoisted)
+vi.mock("mssql", () => ({
+  default: {
+    Transaction: vi.fn(() => mockTransaction),
+    Request: vi.fn(() => mockRequest),
+    Int: {},
+    NVarChar: {}
+  }
+}));
+
+// Import service AFTER mocks are set up
+import { CreateBookService } from "../services/createBookService.js";
 
 describe("CreateBookService", () => {
   let service;
@@ -19,22 +44,12 @@ describe("CreateBookService", () => {
   let mockAuthorRepository;
   let mockCountryRepository;
   let mockBookStatusHistoryRepository;
-  let mockTransaction;
-  let mockRequest;
 
   beforeEach(() => {
-    // Mock transaction
-    mockRequest = {
-      input: vi.fn().mockReturnThis(),
-      query: vi.fn()
-    };
-
-    mockTransaction = {
-      begin: vi.fn().mockResolvedValue(undefined),
-      commit: vi.fn().mockResolvedValue(undefined),
-      rollback: vi.fn().mockResolvedValue(undefined),
-      request: vi.fn().mockReturnValue(mockRequest)
-    };
+    // Reset all mocks
+    vi.clearAllMocks();
+    mockRequest.input.mockReturnThis();
+    mockRequest.query.mockResolvedValue({ recordset: [{ id: 1 }] });
 
     // Mock MSSQL client
     mockMssqlClient = {
@@ -69,16 +84,6 @@ describe("CreateBookService", () => {
       mockCountryRepository,
       mockBookStatusHistoryRepository
     );
-
-    // Mock sql.Transaction constructor
-    vi.mock("mssql", () => ({
-      default: {
-        Transaction: vi.fn(() => mockTransaction),
-        Request: vi.fn(() => mockRequest),
-        Int: {},
-        NVarChar: {}
-      }
-    }));
   });
 
   describe("✅ Happy Paths", () => {

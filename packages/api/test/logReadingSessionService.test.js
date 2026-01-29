@@ -10,11 +10,28 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { LogReadingSessionService } from "../services/logReadingSessionService.js";
 import { BookStatus } from "../models/BookStatus.js";
 import { Book } from "../models/Book.js";
 import { ReadingSession } from "../models/ReadingSession.js";
 import { BookClosedError, NotFoundError, BadRequestError } from "../errors/index.js";
+
+// Mock transaction (must be defined before vi.mock)
+const mockTransaction = {
+  begin: vi.fn().mockResolvedValue(undefined),
+  commit: vi.fn().mockResolvedValue(undefined),
+  rollback: vi.fn().mockResolvedValue(undefined),
+  request: vi.fn().mockReturnThis()
+};
+
+// Mock mssql module (must be hoisted)
+vi.mock("mssql", () => ({
+  default: {
+    Transaction: vi.fn(() => mockTransaction)
+  }
+}));
+
+// Import service AFTER mocks are set up
+import { LogReadingSessionService } from "../services/logReadingSessionService.js";
 
 describe("LogReadingSessionService", () => {
   let service;
@@ -22,22 +39,14 @@ describe("LogReadingSessionService", () => {
   let mockBookRepository;
   let mockReadingSessionRepository;
   let mockBookStatusHistoryRepository;
-  let mockTransaction;
 
   beforeEach(() => {
-    // Create mock transaction
-    mockTransaction = {
-      begin: vi.fn().mockResolvedValue(undefined),
-      commit: vi.fn().mockResolvedValue(undefined),
-      rollback: vi.fn().mockResolvedValue(undefined),
-      request: vi.fn().mockReturnThis()
-    };
+    // Reset all mocks
+    vi.clearAllMocks();
 
     // Create mock MSSQL client
     mockMssqlClient = {
-      getConnection: vi.fn().mockResolvedValue({
-        Transaction: vi.fn().mockReturnValue(mockTransaction)
-      })
+      getConnection: vi.fn().mockResolvedValue({})
     };
 
     // Create mock repositories
@@ -62,13 +71,6 @@ describe("LogReadingSessionService", () => {
       mockReadingSessionRepository,
       mockBookStatusHistoryRepository
     );
-
-    // Mock SQL Transaction constructor
-    vi.mock("mssql", () => ({
-      default: {
-        Transaction: vi.fn().mockImplementation(() => mockTransaction)
-      }
-    }));
   });
 
   describe("Guard Clause: ABANDONED Status", () => {
