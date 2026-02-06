@@ -239,8 +239,6 @@ See:
 - AAA pattern is mandatory
 - Mocks only at layer boundaries
 
-Coverage target: **≥ 70%**
-
 ---
 
 ## 11. Naming Conventions

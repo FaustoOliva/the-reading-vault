@@ -35,17 +35,7 @@
   - **Infrastructure Layer:** Repositories, Database Configuration, HTTP Adapters
   - **Presentation Layer:** Controllers, Routes, Error Handlers
 
-### 1.3 Transactionality Requirements
-
-- **Principle:** All Use Cases that mutate multiple tables MUST be wrapped in SQL transactions to ensure ACID compliance.
-- **Affected Operations:**
-  - `LogSessionUseCase` (mutates: `ReadingSessions`, `Books`, `BookStatusHistory`)
-  - `ImportLegacyBookUseCase` (mutates: `Books`, `BookStatusHistory`)
-  - `CompleteBookUseCase` (mutates: `Books`, `BookStatusHistory`)
-  - `ReopenBookUseCase` (mutates: `Books`, `BookStatusHistory`)
-- **Rollback Strategy:** If any mutation fails, entire transaction rolls back to preserve consistency.
-
-### 1.4 Language Standard
+### 1.3 Language Standard
 
 - **Requirement:** 100% English for all code, comments, commit messages, and technical documentation.
 - **Scope:** Variable names, function names, class names, comments, git messages.
@@ -167,9 +157,9 @@ END IF
 
 Rationale: Automatic completion ensures KPI history accuracy.
 
-### 3.5 Persistence (Transaction Scope)
+### 3.5 Persistence Operations
 
-**Within a single SQL transaction:**
+**Required Data Mutations:**
 
 1. INSERT into `ReadingSessions`:
    - `book_id`, `pages_read`, `reading_cycle` (from Book.current_reading_cycle), `occurred_at`, `created_at`
@@ -182,7 +172,7 @@ Rationale: Automatic completion ensures KPI history accuracy.
 3. INSERT into `BookStatusHistory` (if status changed):
    - `old_status_id`, `new_status_id`, `reading_cycle`, `created_at`
 
-4. **Rollback Strategy:** If any step fails, entire transaction rolls back.
+**Atomicity Requirement:** All three operations must succeed or fail together to maintain data integrity.
 
 ---
 
@@ -453,7 +443,6 @@ END IF
 3. ✅ Create Book with `status_id = COMPLETED`, `current_reading_cycle = 1`, `score`, and `comment`
 4. ✅ Create BookStatusHistory entry: `(old_status_id: NULL → new_status_id: COMPLETED, cycle: 1)`
 5. ❌ DO NOT create ReadingSessions
-6. ✅ All within a single transaction
 
 **Rationale:** Preserves historical data without fabricating reading sessions, maintains KPI integrity.
 
@@ -508,7 +497,7 @@ START: User logs reading session
   │  ├─ IF NOT FOUND: Throw BookNotFoundException
   │  └─ IF status_id == ABANDONED (4): Throw BookClosedException (GUARD CLAUSE)
   │
-  ├─ BEGIN TRANSACTION
+  ├─ Execute Persistence Operations:
   │  ├─ INSERT ReadingSession (pages_read, occurred_at, reading_cycle from Book.current_reading_cycle)
   │  ├─ UPDATE Books.pages_read_total += pages_read
   │  ├─ Check if total_pages IS NOT NULL AND pages_read_total >= total_pages
@@ -522,8 +511,7 @@ START: User logs reading session
   │  │     └─ IF Book.status_id == COMPLETED (3):
   │  │        ├─ UPDATE Books.status_id = READING (2), current_reading_cycle += 1
   │  │        └─ INSERT BookStatusHistory (COMPLETED → READING, "USER_LOG_SESSION", cycle=N+1)
-  │  │
-  │  └─ COMMIT
+
   │
   └─ RETURN LogSessionResponse
        (session_id, velocity_current_cycle, velocity_7d, velocity_30d, estimated_completion, reading_streak)
@@ -574,46 +562,7 @@ LogSessionResponse {
 }
 ```
 
----
 
-## 10. Testing Strategy
-
-### 10.1 Test Coverage Targets
-
-- **Domain Logic:** 80-90% (State transitions, validations)
-- **Use Cases:** 75-85% (Happy path, edge cases, exceptions)
-- **Repositories:** 60-70% (Database operations, transactions)
-- **Overall Target:** 70-80% code coverage
-
-### 10.2 Critical Test Scenarios
-
-#### LogSessionUseCase
-
-- ✅ Log session on WISH_LIST (transition to READING)
-- ✅ Log session on READING (accumulate, check auto-completion)
-- ✅ Log session on COMPLETED (increment cycle, transition to READING)
-- ❌ Log session on ABANDONED (throw BookClosedException)
-- ✅ Auto-completion when pages_read_total >= total_pages
-- ❌ Invalid pages_read (zero, negative, exceed remaining)
-- ❌ Future occurred_at (must be <= NOW)
-- ✅ Correct reading_cycle capture at time of session
-- ✅ KPI calculation (velocity, moving averages, completion date)
-
-#### ImportLegacyBookUseCase
-
-- ✅ Import with valid metadata, score, read_date
-- ✅ Author deduplication (create or reuse)
-- ✅ Default "Unknown Author" if not provided
-- ✅ Book status = COMPLETED, cycle = 1
-- ✅ No ReadingSessions created
-- ✅ BookStatusHistory entry with "LEGACY_IMPORT" reason
-- ❌ Duplicate ISBN
-- ❌ Invalid score (out of range)
-
-#### Book Deletion
-
-- ✅ Delete book with no sessions (hard delete)
-- ❌ Delete book with sessions (throw IntegrityConstraintViolation)
 
 ---
 

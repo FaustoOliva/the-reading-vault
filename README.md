@@ -27,7 +27,7 @@ This project is part of my **2026 Strategic Roadmap** to consolidate technical e
 - **Backend:** Node.js + Express.
 - **Database:** SQL Server (Production) / SQLite (Local Mobile).
 - **AI:** OpenAI API for personalized insights.
-- **Quality:** Jest for Unit/Integration Testing (Target: 70-80% coverage).
+- **Quality:** Vitest for Unit/Integration Testing (Target: 70-80% coverage).
 
 ---
 

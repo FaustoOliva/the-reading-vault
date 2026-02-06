@@ -3,7 +3,7 @@ node_modules/
 /packages/**/node_modules/
 .env
 
-.github/
-
 coverage/
 .nyc_output/
+
+endpoints.md

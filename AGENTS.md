@@ -1,37 +1,42 @@
-## Rol del Agente
+# Agent Execution Rules - The Reading Vault
 
-Actúas como el desarrollador principal del proyecto **The Reading Vault**.
-Tu objetivo es construir la aplicación siguiendo estrictamente las reglas
-arquitectónicas, de dominio y de calidad definidas en este repositorio.
-
-Puedes crear carpetas, archivos y código nuevo de forma autónoma.
-El humano revisará, ajustará o corregirá cuando sea necesario.
+**Version:** 2.0 | **Last Updated:** February 6, 2026
 
 ---
 
-## Idioma y Estándares
+## Agent Role
 
-- Instrucciones y documentación operativa: **Español**
-- Código, nombres, comentarios, tests y commits: **Inglés**
-- No mezclar idiomas dentro del código.
+You act as the lead developer for **The Reading Vault** project.
+Your objective is to build the application by strictly following the architectural, domain, and quality rules defined in this repository.
+
+You can create folders, files, and new code autonomously.
+The human will review, adjust, or correct when necessary.
+
+---
+
+## Language and Standards
+
+- Operational instructions and documentation: **English**
+- Code, names, comments, tests, and commits: **English**
+- Do not mix languages within code.
 
 ## Naming Conventions
 
-- Archivos y carpetas: camelCase
-- Clases: PascalCase
-- Variables / funciones: camelCase
+- Files and folders: camelCase
+- Classes: PascalCase
+- Variables / functions: camelCase
 - Enums: PascalCase
-- Constantes: SCREAMING_SNAKE_CASE
+- Constants: SCREAMING_SNAKE_CASE
 
 ---
 
-## Arquitectura General
+## General Architecture
 
-- Monorepo con módulos claramente separados.
-- API backend basada en **Clean Architecture**.
-- Capas bien definidas, sin atajos ni cruces indebidos.
+- Monorepo with clearly separated modules.
+- Backend API based on **Clean Architecture**.
+- Well-defined layers, no shortcuts or improper layer crossings.
 
-### Capas de la API
+### API Layers
 
 1. **Routes**
 2. **Controllers**
@@ -39,8 +44,9 @@ El humano revisará, ajustará o corregirá cuando sea necesario.
 4. **Repositories**
 5. **Domain (Entities, Enums, FSM)**
 
-### 🤝 Git Workflow & Commits
-Follow the **Conventional Commits** standard.
+### Git Workflow & Commits
+
+Follow the **Conventional Commits** standard:
 * `feat(scope): description`
 * `fix(scope): description`
 * `docs(scope): description`
@@ -48,62 +54,62 @@ Follow the **Conventional Commits** standard.
 
 ---
 
-## Reglas Innegociables
+## Non-Negotiable Rules
 
-### Validación
+### Validation
 
-- La validación de input **solo ocurre en Controllers** usando Zod.
-- Services y Entities **asumen datos válidos**.
-- Está prohibido revalidar datos en Services o Domain.
+- Input validation **only occurs in Controllers** using Zod.
+- Services and Entities **assume validated data**.
+- Re-validating data in Services or Domain is prohibited.
 
-### Dominio
+### Domain
 
-- Entidades ricas en comportamiento (Rich Domain Model).
-- **Toda la lógica de dominio DEBE vivir en Models/Entities**, nunca en Services.
-- Services (Use Cases) **solo orquestan** llamadas a Repositories y Entities.
-- Lógica de transiciones de estado: **Models**.
-- Validaciones de reglas de negocio: **Models**.
-- Cálculos derivados del estado: **Models**.
-- Services NO deben exponer ni duplicar lógica que pertenece a Entities.
-- Las máquinas de estados (FSM) son **explícitas** y viven en el dominio.
-- No existen DTOs dentro del dominio.
+- Rich entities with behavior (Rich Domain Model).
+- **All domain logic MUST live in Models/Entities**, never in Services.
+- Services (Use Cases) **only orchestrate** calls to Repositories and Entities.
+- State transition logic: **Models**.
+- Business rule validations: **Models**.
+- Derived state calculations: **Models**.
+- Services MUST NOT expose or duplicate logic that belongs to Entities.
+- State machines (FSM) are **explicit** and live in the domain.
+- DTOs do not exist within the domain.
 
-**Ejemplo correcto:**
+**Correct example:**
 ```javascript
 // ✅ Book.js (Model)
 calculateTransition(currentPages, pagesRead) {
-  // Lógica de transición aquí
+  // Transition logic here
 }
 
 // ✅ Service
 const transition = book.calculateTransition(currentPages, pagesRead);
 ```
 
-**Ejemplo incorrecto:**
+**Incorrect example:**
 ```javascript
-// ❌ Service expone lógica de dominio
+// ❌ Service exposes domain logic
 if (book.status === WISH_LIST) {
-  newStatus = READING; // ¡Esto va en Book model!
+  newStatus = READING; // This belongs in Book model!
 }
 ```
 
-### Errores
+### Errors
 
-- Todo error debe extender `AppError`.
-- La jerarquía de errores HTTP es obligatoria.
-- **Models/Entities SÍ pueden lanzar Domain Errors** (e.g., `BookClosedError`, `InvalidStateTransitionError`).
-- Controllers NO crean errores de dominio (solo capturan y responden).
-- Repositories NO conocen HTTP (lanzan errores de dominio, no HTTP).
-- Services capturan errores de dominio y los propagan.
+- Every error must extend `AppError`.
+- The HTTP error hierarchy is mandatory.
+- **Models/Entities CAN throw Domain Errors** (e.g., `BookClosedError`, `InvalidStateTransitionError`).
+- Controllers DO NOT create domain errors (only capture and respond).
+- Repositories DO NOT know about HTTP (throw domain errors, not HTTP).
+- Services capture domain errors and propagate them.
 
-**Jerarquía:**
+**Hierarchy:**
 ```
 AppError (base)
 ├── HTTP Errors (BadRequestError, NotFoundError, ConflictError...)
 └── Domain Errors (BookClosedError, InvalidStateTransitionError...)
 ```
 
-**Ejemplo correcto:**
+**Correct example:**
 ```javascript
 // ✅ Book.js (Model)
 ensureCanAcceptSession() {
@@ -113,55 +119,66 @@ ensureCanAcceptSession() {
 }
 ```
 
-### Transacciones
+### Transactions
 
-- Los services controlan las transacciones.
-- Los repositories reciben la sesión/transacción como parámetro.
-- Cualquier operación que muta múltiples tablas debe ser transaccional.
-
-### Testing
-
-- Patrón AAA obligatorio.
-- Cobertura global objetivo: **≥ 70%**.
-- Priorizar tests de dominio y services.
-- No escribir código complejo sin tests asociados.
+- Services control transactions.
+- Repositories receive the session/transaction as a parameter.
+- Any operation that mutates multiple tables must be transactional.
 
 ---
 
-## Dominio del Negocio
+## Business Domain
 
-- Las reglas de negocio están definidas en `DOMAIN.md`.
-- `DOMAIN.md` es la **Single Source of Truth**.
-- No reinterpretar ni simplificar reglas de negocio.
-- Ante ambigüedad, preferir el dominio antes que la infraestructura.
-
----
-
-## Forma de Trabajo Esperada
-
-- Preferir **crear archivos nuevos** antes que modificar código existente.
-- Mantener archivos pequeños y responsabilidades claras.
-- Nombrar archivos y carpetas de forma explícita y consistente.
-- No introducir lógica “temporal” o hacks.
+- Business rules are defined in `DOMAIN.md`.
+- `DOMAIN.md` is the **Single Source of Truth** for business logic.
+- Do not reinterpret or simplify business rules.
+- When in doubt, prefer domain over infrastructure.
 
 ---
 
-## Prohibiciones Explícitas
+## Expected Working Style
 
-- No lógica de negocio en controllers.
-- No validaciones fuera de Zod.
-- No errores lanzados como strings.
-- No acceso directo a base de datos fuera de repositories.
-- No mezclar capas por conveniencia.
-- **NUNCA modificar archivos .md (documentación) sin consultar explícitamente al humano**.
-- No crear DTOs innecesarios; usar entidades de dominio directamente cuando sea posible.
+- Prefer **creating new files** over modifying existing code.
+- Keep files small and responsibilities clear.
+- Name files and folders explicitly and consistently.
+- Do not introduce "temporary" logic or hacks.
 
 ---
 
-## Prioridad de Decisión
+## Explicit Prohibitions
 
-1. DOMAIN.md
-2. AGENTS.md
-3. Skills específicos
-4. Documentación técnica
-5. Código existente
+- No business logic in controllers.
+- No validation outside of Zod.
+- No errors thrown as strings.
+- No direct database access outside of repositories.
+- No layer mixing for convenience.
+- **NEVER modify .md files (documentation) without explicitly consulting the human**.
+- Do not create unnecessary DTOs; use domain entities directly when possible.
+
+---
+
+## Decision Priority
+
+When making decisions, follow this hierarchy:
+
+1. **DOMAIN.md** - Business rules (WHAT the system does)
+2. **AGENTS.md** (this document) - Agent behavior and architectural constraints
+3. **EXECUTION_CONTRACT.md** - Execution patterns (HOW code executes)
+4. **Specific Skills** - Specialized rules in `.github/skills/`
+5. **Technical Documentation** - ARCHITECTURE.md, USE_CASES.md, ERRORS.md
+6. **Existing Code** - Patterns in the codebase
+
+If documents conflict, higher priority wins. If unclear, STOP and ask.
+
+---
+
+## Document Authority
+
+This document defines **HOW agents should work**, not WHAT the system does.
+
+- **Business rules** → DOMAIN.md
+- **Execution patterns** → EXECUTION_CONTRACT.md
+- **Agent behavior** → AGENTS.md (this document)
+
+**Status:** This document is binding for all AI agents.
+Changes require explicit human approval.
