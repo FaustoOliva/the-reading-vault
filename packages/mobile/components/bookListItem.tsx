@@ -1,0 +1,164 @@
+/**
+ * BookListItem Component
+ * Displays a single book in the list with navigation
+ * 
+ * Visual Hierarchy:
+ * - Left: Title (bold, large) + Author (gray, small)
+ * - Right column: Score (top, colored by value) + Status badge (bottom)
+ * - Card background differentiated from list background
+ * 
+ * Rules:
+ * - Use Pressable for touchable feedback
+ * - Use borderCurve: 'continuous' for rounded corners
+ * - Use boxShadow for elevation (not shadowOpacity/elevation)
+ * - Use flex gap for spacing
+ * - Score colors scale with value (red→orange→yellow→green)
+ */
+
+import { View, Text, Pressable } from 'react-native';
+import { Link } from 'expo-router';
+import { Book } from '@/types/book';
+import { BookStatusBadge } from './bookStatusBadge';
+import { Background, Text as TextColors, Border, Shadow } from '@/constants/colors';
+
+interface BookListItemProps {
+  book: Book;
+}
+
+/**
+ * Get score color based on value
+ * Scale: 0-3 (red), 4-5 (orange), 6-7 (yellow), 8-9 (light green), 10 (dark green)
+ */
+function getScoreColor(score: number): { background: string; text: string; border: string } {
+  if (score >= 8) {
+    return { background: '#D1FAE5', text: '#065F46', border: '#10B981' }; // Green
+  }
+  if (score >= 6) {
+    return { background: '#FEF3C7', text: '#92400E', border: '#F59E0B' }; // Yellow
+  }
+  if (score >= 4) {
+    return { background: '#FED7AA', text: '#7C2D12', border: '#F97316' }; // Orange
+  }
+  return { background: '#FEE2E2', text: '#991B1B', border: '#EF4444' }; // Red
+}
+
+export function BookListItem({ book }: BookListItemProps) {
+  const scoreColors = book.score !== null ? getScoreColor(book.score) : null;
+
+  return (
+    <Link href={`/book/${book.id}` as any} asChild>
+      <Pressable
+        style={({ pressed }) => ({
+          padding: 16,
+          backgroundColor: pressed ? '#E0E7FF' : '#FFFFFF',
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: Border.default,
+          gap: 12,
+          boxShadow: Shadow.small,
+          borderCurve: 'continuous',
+        })}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: 16,
+          }}
+        >
+          {/* Left: Title + Author */}
+          <View style={{ flex: 1, gap: 6 }}>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: '700',
+                color: TextColors.primary,
+                lineHeight: 24,
+                letterSpacing: -0.2,
+              }}
+              numberOfLines={2}
+              selectable
+            >
+              {book.title}
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: TextColors.tertiary,
+                lineHeight: 18,
+              }}
+              numberOfLines={1}
+              selectable
+            >
+              {book.author.name}
+            </Text>
+          </View>
+
+          {/* Right: Score + Status in column */}
+          <View style={{ alignItems: 'flex-end', gap: 8, minWidth: 80 }}>
+            {book.score !== null && scoreColors && (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                  backgroundColor: scoreColors.background,
+                  borderWidth: 1.5,
+                  borderColor: scoreColors.border,
+                  borderCurve: 'continuous',
+                }}
+              >
+                <Text style={{ fontSize: 14 }}>⭐</Text>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '700',
+                    color: scoreColors.text,
+                    fontVariant: ['tabular-nums'],
+                  }}
+                  selectable
+                >
+                  {book.score.toFixed(1)}
+                </Text>
+              </View>
+            )}
+            <BookStatusBadge status={book.status} />
+          </View>
+        </View>
+
+        {/* Bottom metadata row */}
+        <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
+          {book.totalPages && (
+            <Text
+              style={{
+                fontSize: 13,
+                color: TextColors.tertiary,
+                fontWeight: '500',
+              }}
+              selectable
+            >
+              📄 {book.totalPages} pages
+            </Text>
+          )}
+
+          {book.currentReadingCycle > 1 && (
+            <Text
+              style={{
+                fontSize: 13,
+                color: TextColors.tertiary,
+                fontWeight: '500',
+              }}
+              selectable
+            >
+              🔄 Cycle {book.currentReadingCycle}
+            </Text>
+          )}
+        </View>
+      </Pressable>
+    </Link>
+  );
+}
