@@ -39,41 +39,39 @@ export class LogReadingSessionService {
   async execute(input) {
     const { bookId, pagesRead, occurredAt } = input;
 
+    // Step 1: Load book (outside transaction)
+    const book = await this.bookRepository.getById(bookId);
+
+    if (!book) {
+      throw new NotFoundError("Book", bookId);
+    }
+
+    // Step 2: Guard Clause - Delegate to Book entity
+    book.ensureCanAcceptSession();
+
+    // Step 3: Get current pages in cycle (outside transaction)
+    const currentPagesInCycle = await this.readingSessionRepository.getTotalPagesInCycle(
+      bookId,
+      book.currentReadingCycle
+    );
+
+    // Step 4: Validate pages constraint - Delegate to Book entity
+    if (!book.canAcceptPages(currentPagesInCycle, pagesRead)) {
+      throw new BadRequestError(
+        `Pages read (${pagesRead}) would exceed total pages. Current: ${currentPagesInCycle}, Total: ${book.totalPages}`,
+        "PagesValidation"
+      );
+    }
+
+    // Step 5: Calculate transition - Delegate to Book entity
+    const transition = book.calculateTransition(currentPagesInCycle, pagesRead);
+
+    // Step 6: Begin transaction for writes only
     const pool = await this.mssqlClient.getConnection();
     const transaction = new sql.Transaction(pool);
 
     try {
       await transaction.begin();
-
-      // Step 1: Load book within transaction
-      const book = await this.bookRepository.getByIdWithTransaction(bookId, transaction);
-
-      if (!book) {
-        throw new NotFoundError("Book", bookId);
-      }
-
-      // Step 2: Guard Clause - Delegate to Book entity
-      book.ensureCanAcceptSession();
-
-      // Step 3: Get current pages in cycle
-      const currentPagesInCycle = await this.readingSessionRepository.getTotalPagesInCycle(
-        bookId,
-        book.currentReadingCycle,
-        transaction
-      );
-
-      // Step 4: Validate pages constraint - Delegate to Book entity
-      if (!book.canAcceptPages(currentPagesInCycle, pagesRead)) {
-        throw new BadRequestError(
-          `Pages read (${pagesRead}) would exceed total pages. Current: ${currentPagesInCycle}, Total: ${book.totalPages}`,
-          "PagesValidation"
-        );
-      }
-
-      // Step 5: Calculate transition - Delegate to Book entity
-      const transition = book.calculateTransition(currentPagesInCycle, pagesRead);
-
-      // Step 6: Persist within transaction
 
       // 6.1 Insert ReadingSession
       const session = await this.readingSessionRepository.create(

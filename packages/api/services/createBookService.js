@@ -41,43 +41,56 @@ export class CreateBookService {
   async execute(input) {
     const { title, isbn, totalPages, author } = input;
 
+    // Step 1: Check if ISBN already exists (outside transaction)
+    if (isbn) {
+      const existingBook = await this.bookRepository.findByIsbn(isbn);
+      if (existingBook) {
+        throw new ConflictError(`Book with ISBN ${isbn} already exists`, "ISBN");
+      }
+    }
+
+    // Step 2: Get or create country (if nationality provided)
+    let countryId = null;
+    if (author.nationality) {
+      let country = await this.countryRepository.findByName(author.nationality);
+      if (!country) {
+        // Will create within transaction
+        countryId = null;
+      } else {
+        countryId = country.id;
+      }
+    }
+
+    // Step 3: Get author (if exists)
+    let authorRecord = await this.authorRepository.findByName(author.name);
+    const needsAuthorCreation = !authorRecord;
+    const needsCountryCreation = author.nationality && !countryId;
+
+    // Step 4: Begin transaction for writes
     const pool = await this.mssqlClient.getConnection();
     const transaction = new sql.Transaction(pool);
 
     try {
       await transaction.begin();
 
-      // Step 1: Check if ISBN already exists (if provided)
-      if (isbn) {
-        const existingBook = await this.bookRepository.findByIsbn(isbn, transaction);
-        if (existingBook) {
-          throw new ConflictError(`Book with ISBN ${isbn} already exists`, "ISBN");
-        }
-      }
-
-      // Step 2: Get or create country (if nationality provided)
-      let countryId = null;
-      if (author.nationality) {
-        let country = await this.countryRepository.findByName(author.nationality, transaction);
-        if (!country) {
-          country = await this.countryRepository.create(
-            { name: author.nationality },
-            transaction
-          );
-        }
+      // Create country if needed
+      if (needsCountryCreation) {
+        const country = await this.countryRepository.create(
+          { name: author.nationality },
+          transaction
+        );
         countryId = country.id;
       }
 
-      // Step 3: Get or create author
-      let authorRecord = await this.authorRepository.findByName(author.name, transaction);
-      if (!authorRecord) {
+      // Create author if needed
+      if (needsAuthorCreation) {
         authorRecord = await this.authorRepository.create(
           { name: author.name, nationalityId: countryId },
           transaction
         );
       }
 
-      // Step 4: Get WISH_LIST status ID
+      // Step 5: Get WISH_LIST status ID
       const request = new sql.Request(transaction);
       const statusResult = await request
         .input("statusCode", sql.NVarChar, BookStatus.WISH_LIST)
@@ -86,7 +99,7 @@ export class CreateBookService {
         `);
       const wishListStatusId = statusResult.recordset[0].id;
 
-      // Step 5: Create book
+      // Step 6: Create book
       const book = await this.bookRepository.create(
         {
           title,
@@ -98,7 +111,7 @@ export class CreateBookService {
         transaction
       );
 
-      // Step 6: Create BookStatusHistory entry (NULL → WISH_LIST)
+      // Step 7: Create BookStatusHistory entry (NULL → WISH_LIST)
       await this.bookStatusHistoryRepository.create(
         {
           bookId: book.id,

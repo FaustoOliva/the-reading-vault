@@ -22,15 +22,13 @@ export class AuthorRepository {
   /**
    * Find author by name (case-insensitive)
    * @param {string} name - Author name
-   * @param {sql.Transaction} transaction - Optional transaction
    * @returns {Promise<{id: number, name: string, nationalityId: number | null} | null>}
    */
-  async findByName(name, transaction = null) {
-    const pool = transaction ? transaction : await this.mssqlClient.getConnection();
+  async findByName(name) {
+    const pool = await this.mssqlClient.getConnection();
     
-    const request = transaction ? new sql.Request(transaction) : pool.request();
-    
-    const result = await request
+    const result = await pool
+      .request()
       .input("name", sql.NVarChar, name)
       .query(`
         SELECT id, name, nationality_id AS nationalityId

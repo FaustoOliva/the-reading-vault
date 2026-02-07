@@ -51,7 +51,7 @@ describe("LogReadingSessionService", () => {
 
     // Create mock repositories
     mockBookRepository = {
-      getByIdWithTransaction: vi.fn(),
+      getById: vi.fn(),
       updateStatus: vi.fn()
     };
 
@@ -85,7 +85,7 @@ describe("LogReadingSessionService", () => {
         currentReadingCycle: 1
       });
 
-      mockBookRepository.getByIdWithTransaction.mockResolvedValue(abandonedBook);
+      mockBookRepository.getById.mockResolvedValue(abandonedBook);
 
       // Act & Assert
       await expect(service.execute(input)).rejects.toThrow(BookClosedError);
@@ -97,7 +97,7 @@ describe("LogReadingSessionService", () => {
     it("should throw NotFoundError when book does not exist", async () => {
       // Arrange
       const input = { bookId: 999, pagesRead: 50 };
-      mockBookRepository.getByIdWithTransaction.mockResolvedValue(null);
+      mockBookRepository.getById.mockResolvedValue(null);
 
       // Act & Assert
       await expect(service.execute(input)).rejects.toThrow(NotFoundError);
@@ -117,7 +117,7 @@ describe("LogReadingSessionService", () => {
         currentReadingCycle: 1
       });
 
-      mockBookRepository.getByIdWithTransaction.mockResolvedValue(book);
+      mockBookRepository.getById.mockResolvedValue(book);
       mockReadingSessionRepository.getTotalPagesInCycle.mockResolvedValue(150);
 
       // Act & Assert
@@ -144,7 +144,7 @@ describe("LogReadingSessionService", () => {
         readingCycle: 1
       });
 
-      mockBookRepository.getByIdWithTransaction.mockResolvedValue(book);
+      mockBookRepository.getById.mockResolvedValue(book);
       mockReadingSessionRepository.getTotalPagesInCycle.mockResolvedValue(150);
       mockReadingSessionRepository.create.mockResolvedValue(expectedSession);
 
@@ -176,7 +176,7 @@ describe("LogReadingSessionService", () => {
         readingCycle: 1
       });
 
-      mockBookRepository.getByIdWithTransaction.mockResolvedValue(wishlistBook);
+      mockBookRepository.getById.mockResolvedValue(wishlistBook);
       mockReadingSessionRepository.getTotalPagesInCycle.mockResolvedValue(0);
       mockReadingSessionRepository.create.mockResolvedValue(expectedSession);
 
@@ -222,7 +222,7 @@ describe("LogReadingSessionService", () => {
         readingCycle: 2 // Cycle incremented
       });
 
-      mockBookRepository.getByIdWithTransaction.mockResolvedValue(completedBook);
+      mockBookRepository.getById.mockResolvedValue(completedBook);
       mockReadingSessionRepository.getTotalPagesInCycle.mockResolvedValue(0);
       mockReadingSessionRepository.create.mockResolvedValue(expectedSession);
 
@@ -268,7 +268,7 @@ describe("LogReadingSessionService", () => {
         readingCycle: 1
       });
 
-      mockBookRepository.getByIdWithTransaction.mockResolvedValue(readingBook);
+      mockBookRepository.getById.mockResolvedValue(readingBook);
       mockReadingSessionRepository.getTotalPagesInCycle.mockResolvedValue(200); // 200 + 100 = 300
       mockReadingSessionRepository.create.mockResolvedValue(expectedSession);
 
@@ -312,7 +312,7 @@ describe("LogReadingSessionService", () => {
         readingCycle: 1
       });
 
-      mockBookRepository.getByIdWithTransaction.mockResolvedValue(readingBook);
+      mockBookRepository.getById.mockResolvedValue(readingBook);
       mockReadingSessionRepository.getTotalPagesInCycle.mockResolvedValue(100); // 100 + 50 = 150 < 300
       mockReadingSessionRepository.create.mockResolvedValue(expectedSession);
 
@@ -338,7 +338,7 @@ describe("LogReadingSessionService", () => {
         currentReadingCycle: 1
       });
 
-      mockBookRepository.getByIdWithTransaction.mockResolvedValue(book);
+      mockBookRepository.getById.mockResolvedValue(book);
       mockReadingSessionRepository.getTotalPagesInCycle.mockResolvedValue(0);
       mockReadingSessionRepository.create.mockRejectedValue(new Error("DB Error"));
 
@@ -362,7 +362,7 @@ describe("LogReadingSessionService", () => {
         currentReadingCycle: 1
       });
 
-      mockBookRepository.getByIdWithTransaction.mockResolvedValue(book);
+      mockBookRepository.getById.mockResolvedValue(book);
       mockReadingSessionRepository.getTotalPagesInCycle.mockResolvedValue(0);
       mockReadingSessionRepository.create.mockResolvedValue({});
 
@@ -389,7 +389,7 @@ describe("LogReadingSessionService", () => {
         currentReadingCycle: 1
       });
 
-      mockBookRepository.getByIdWithTransaction.mockResolvedValue(book);
+      mockBookRepository.getById.mockResolvedValue(book);
       mockReadingSessionRepository.getTotalPagesInCycle.mockResolvedValue(0);
       mockReadingSessionRepository.create.mockResolvedValue({});
 
@@ -406,3 +406,5 @@ describe("LogReadingSessionService", () => {
     });
   });
 });
+
+

@@ -116,43 +116,6 @@ export class BookRepository {
   }
 
   /**
-   * Get book by ID with transaction support
-   * @param {number} bookId - Book ID
-   * @param {sql.Transaction} transaction - Active transaction
-   * @returns {Promise<Book|null>} Book entity or null if not found
-   */
-  async getByIdWithTransaction(bookId, transaction) {
-    const query = `
-      SELECT 
-        b.id,
-        b.title,
-        b.isbn,
-        b.author_id,
-        a.name as author_name,
-        b.total_pages,
-        bs.internal_code as status_code,
-        b.current_reading_cycle,
-        b.score,
-        b.comment
-      FROM Books b
-      INNER JOIN Authors a ON b.author_id = a.id
-      INNER JOIN BookStatuses bs ON b.status_id = bs.id
-      WHERE b.id = @bookId
-    `;
-
-    const result = await transaction
-      .request()
-      .input("bookId", sql.Int, bookId)
-      .query(query);
-
-    if (result.recordset.length === 0) {
-      return null;
-    }
-
-    return Book.fromDatabase(result.recordset[0]);
-  }
-
-  /**
    * Update book status and cycle within a transaction
    * @param {number} bookId - Book ID
    * @param {string} newStatus - New status code
@@ -179,13 +142,10 @@ export class BookRepository {
   /**
    * Find book by ISBN
    * @param {string} isbn - Book ISBN
-   * @param {sql.Transaction} transaction - Optional transaction
    * @returns {Promise<Book|null>} Book entity or null if not found
    */
-  async findByIsbn(isbn, transaction = null) {
-    const pool = transaction ? transaction : await this.mssqlClient.getConnection();
-    
-    const request = transaction ? new sql.Request(transaction) : pool.request();
+  async findByIsbn(isbn) {
+    const pool = await this.mssqlClient.getConnection();
     
     const query = `
       SELECT 
@@ -205,7 +165,8 @@ export class BookRepository {
       WHERE b.isbn = @isbn
     `;
 
-    const result = await request
+    const result = await pool
+      .request()
       .input("isbn", sql.NVarChar, isbn)
       .query(query);
 

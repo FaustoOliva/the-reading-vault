@@ -78,21 +78,19 @@ export class ReadingSessionRepository {
    * Get total pages read in current cycle for a book
    * @param {number} bookId - Book ID
    * @param {number} currentCycle - Current reading cycle
-   * @param {sql.Transaction} transaction - Active transaction
    * @returns {Promise<number>}
    */
-  async getTotalPagesInCycle(bookId, currentCycle, transaction) {
+  async getTotalPagesInCycle(bookId, currentCycle) {
+    const pool = await this.mssqlClient.getConnection();
+    
     const query = `
       SELECT ISNULL(SUM(pages_read), 0) as total
       FROM ReadingSessions
       WHERE book_id = @bookId AND reading_cycle = @cycle
     `;
 
-    const request = transaction
-      ? transaction.request()
-      : (await this.mssqlClient.getConnection()).request();
-
-    const result = await request
+    const result = await pool
+      .request()
       .input("bookId", sql.Int, bookId)
       .input("cycle", sql.Int, currentCycle)
       .query(query);
