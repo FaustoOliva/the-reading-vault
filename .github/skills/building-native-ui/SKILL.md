@@ -1,7 +1,6 @@
 ---
 name: building-native-ui
 description: UI component patterns, styling rules, and visual element guidelines for React Native apps.
-version: 2.0.0
 license: MIT
 ---
 
@@ -14,6 +13,8 @@ Apply when:
 - Styling views, text, or lists
 - Working with platform-specific UI elements
 - Implementing visual feedback (haptics, animations)
+
+**IMPORTANT:** For ALL color/contrast/accessibility decisions, see **`mobile-accessibility`** skill (mandatory).
 
 ## Component Rules
 
@@ -71,6 +72,11 @@ Apply when:
 **Text:**
 - MUST add `selectable` prop to Text elements with important data
 - MUST use `{ fontVariant: 'tabular-nums' }` for counters (alignment)
+
+**Colors & Accessibility:**
+- MUST import all colors from `@/constants/colors` (see `mobile-accessibility` skill)
+- MUST NEVER hardcode hex/rgb/named colors
+- MUST meet WCAG AA contrast standards (4.5:1 for text)
 
 **Styling Method:**
 - MUST use inline styles or StyleSheet.create

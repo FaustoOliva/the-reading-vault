@@ -7,6 +7,7 @@ export interface CreateReadingSessionInput {
   bookId: number;
   pagesRead: number;
   occurredAt?: string;
+  duration?: number;
 }
 
 export interface ReadingSession {

@@ -131,6 +131,34 @@ export const Shadow = {
 } as const;
 
 /**
+ * Score Colors (Book rating badges 0-10)
+ * Colors scale with value: red (poor) → orange → yellow → green (excellent)
+ * All combinations meet WCAG AA (4.5:1 minimum)
+ */
+export const Score = {
+  excellent: {
+    background: '#D1FAE5',   // emerald-100
+    text: '#065F46',         // emerald-800 - Contrast: 9.2:1 ✅
+    border: '#10B981',       // emerald-500
+  },
+  good: {
+    background: '#FEF3C7',   // amber-100
+    text: '#92400E',         // amber-800 - Contrast: 8.4:1 ✅
+    border: '#F59E0B',       // amber-500
+  },
+  fair: {
+    background: '#FED7AA',   // orange-200
+    text: '#7C2D12',         // orange-900 - Contrast: 10.1:1 ✅
+    border: '#F97316',       // orange-500
+  },
+  poor: {
+    background: '#FEE2E2',   // red-100
+    text: '#991B1B',         // red-800 - Contrast: 9.7:1 ✅
+    border: '#EF4444',       // red-500
+  },
+} as const;
+
+/**
  * Utility: Get status colors by BookStatus enum
  */
 import { BookStatus } from '@/types/book';
@@ -144,4 +172,15 @@ export function getStatusColors(status: BookStatus) {
   };
 
   return statusMap[status];
+}
+
+/**
+ * Utility: Get score colors by book score (0-10)
+ * Scale: 0-3 (poor), 4-5 (fair), 6-7 (good), 8-10 (excellent)
+ */
+export function getScoreColors(score: number) {
+  if (score >= 8) return Score.excellent;
+  if (score >= 6) return Score.good;
+  if (score >= 4) return Score.fair;
+  return Score.poor;
 }

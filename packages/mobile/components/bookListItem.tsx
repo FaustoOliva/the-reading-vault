@@ -19,38 +19,28 @@ import { View, Text, Pressable } from 'react-native';
 import { Link } from 'expo-router';
 import { Book } from '@/types/book';
 import { BookStatusBadge } from './bookStatusBadge';
-import { Background, Text as TextColors, Border, Shadow } from '@/constants/colors';
+import { 
+  Background, 
+  Text as TextColors, 
+  Border, 
+  Shadow,
+  Interactive,
+  getScoreColors,
+} from '@/constants/colors';
 
 interface BookListItemProps {
   book: Book;
 }
 
-/**
- * Get score color based on value
- * Scale: 0-3 (red), 4-5 (orange), 6-7 (yellow), 8-9 (light green), 10 (dark green)
- */
-function getScoreColor(score: number): { background: string; text: string; border: string } {
-  if (score >= 8) {
-    return { background: '#D1FAE5', text: '#065F46', border: '#10B981' }; // Green
-  }
-  if (score >= 6) {
-    return { background: '#FEF3C7', text: '#92400E', border: '#F59E0B' }; // Yellow
-  }
-  if (score >= 4) {
-    return { background: '#FED7AA', text: '#7C2D12', border: '#F97316' }; // Orange
-  }
-  return { background: '#FEE2E2', text: '#991B1B', border: '#EF4444' }; // Red
-}
-
 export function BookListItem({ book }: BookListItemProps) {
-  const scoreColors = book.score !== null ? getScoreColor(book.score) : null;
+  const scoreColors = book.score !== null ? getScoreColors(book.score) : null;
 
   return (
     <Link href={`/book/${book.id}` as any} asChild>
       <Pressable
         style={({ pressed }) => ({
           padding: 16,
-          backgroundColor: pressed ? '#E0E7FF' : '#FFFFFF',
+          backgroundColor: pressed ? Interactive.primary.hover : Background.surface,
           borderRadius: 12,
           borderWidth: 1,
           borderColor: Border.default,
