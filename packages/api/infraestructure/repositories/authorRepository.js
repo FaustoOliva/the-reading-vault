@@ -20,6 +20,36 @@ export class AuthorRepository {
   }
 
   /**
+   * Get all authors with optional name filtering, sorted alphabetically
+   * @param {Object} filters - Optional filters { nameLike }
+   * @returns {Promise<Array<{id: number, name: string, nationality: string | null}>>}
+   */
+  async getAll(filters = {}) {
+    const pool = await this.mssqlClient.getConnection();
+    const request = pool.request();
+    
+    let whereClause = "";
+    
+    if (filters.nameLike) {
+      whereClause = "WHERE A.name LIKE @nameLike";
+      request.input("nameLike", sql.NVarChar, `%${filters.nameLike}%`);
+    }
+    
+    const result = await request.query(`
+      SELECT 
+        A.id,
+        A.name,
+        C.name AS nationality
+      FROM Authors A
+      LEFT JOIN Countries C ON A.nationality_id = C.id
+      ${whereClause}
+      ORDER BY A.name ASC
+    `);
+
+    return result.recordset;
+  }
+
+  /**
    * Find author by name (case-insensitive)
    * @param {string} name - Author name
    * @returns {Promise<{id: number, name: string, nationalityId: number | null} | null>}

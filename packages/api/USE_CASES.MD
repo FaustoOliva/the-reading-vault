@@ -397,7 +397,104 @@ ReadingCycleSummary = {
 
 ---
 
-### 6.4 GetReadingSessions
+### 6.4 GetAuthors
+
+**Description**  
+Returns all registered authors in the system, sorted alphabetically, with optional text filtering.
+
+**Input**
+```typescript
+{
+  // Filters (optional)
+  filters?: {
+    name_like?: string               // Partial name match (case-insensitive)
+  }
+}
+```
+
+**Output**
+```typescript
+{
+  authors: Author[]
+}
+
+// Author entity structure
+Author = {
+  id: number,
+  name: string,
+  nationality: string | null         // Country name or NULL
+}
+```
+
+**Models Involved**
+- Author
+
+**Errors**
+- None (empty array if no results)
+
+**Transactional**
+- No
+
+**Performance Target**
+- < 50ms for up to 1000 authors
+
+**Caching Strategy**
+- No cache (catalog data changes infrequently)
+
+**Sorting**
+- Always alphabetically by name (ASC)
+
+---
+
+### 6.5 GetCountries
+
+**Description**  
+Returns all available countries/nationalities in the system, sorted alphabetically, with optional text filtering.
+
+**Input**
+```typescript
+{
+  // Filters (optional)
+  filters?: {
+    name_like?: string               // Partial name match (case-insensitive)
+  }
+}
+```
+
+**Output**
+```typescript
+{
+  countries: Country[]
+}
+
+// Country entity structure
+Country = {
+  id: number,
+  name: string
+}
+```
+
+**Models Involved**
+- Country
+
+**Errors**
+- None (empty array if no results)
+
+**Transactional**
+- No
+
+**Performance Target**
+- < 50ms for up to 500 countries
+
+**Caching Strategy**
+- No cache (catalog data changes infrequently)
+
+**Sorting**
+- Always alphabetically by name (ASC)
+
+---
+
+### 6.6 GetReadingSessions
 
 **Description**  
 Returns reading sessions for a given book or date range, with filtering, sorting, and pagination support.

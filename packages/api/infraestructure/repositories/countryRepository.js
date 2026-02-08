@@ -20,6 +20,34 @@ export class CountryRepository {
   }
 
   /**
+   * Get all countries with optional name filtering, sorted alphabetically
+   * @param {Object} filters - Optional filters { nameLike }
+   * @returns {Promise<Array<{id: number, name: string}>>}
+   */
+  async getAll(filters = {}) {
+    const pool = await this.mssqlClient.getConnection();
+    const request = pool.request();
+    
+    let whereClause = "";
+    
+    if (filters.nameLike) {
+      whereClause = "WHERE name LIKE @nameLike";
+      request.input("nameLike", sql.NVarChar, `%${filters.nameLike}%`);
+    }
+    
+    const result = await request.query(`
+      SELECT 
+        id,
+        name
+      FROM Countries
+      ${whereClause}
+      ORDER BY name ASC
+    `);
+
+    return result.recordset;
+  }
+
+  /**
    * Find country by name (case-insensitive)
    * @param {string} name - Country name
    * @returns {Promise<{id: number, name: string} | null>}

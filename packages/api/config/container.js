@@ -6,6 +6,8 @@
 import { HealthController } from "../controllers/healthController.js";
 import { BooksController } from "../controllers/booksController.js";
 import { ReadingSessionsController } from "../controllers/readingSessionsController.js";
+import { AuthorsController } from "../controllers/authorsController.js";
+import { CountriesController } from "../controllers/countriesController.js";
 import { MSSQLClient } from "../infraestructure/config/database.js";
 import { DatabaseRepository } from "../infraestructure/database/DatabaseRepository.js";
 import { BookRepository } from "../infraestructure/repositories/bookRepository.js";
@@ -16,6 +18,8 @@ import { BookStatusHistoryRepository } from "../infraestructure/repositories/boo
 import { GetBooksService } from "../services/getBooksService.js";
 import { CreateBookService } from "../services/createBookService.js";
 import { LogReadingSessionService } from "../services/logReadingSessionService.js";
+import { GetAuthorsService } from "../services/getAuthorsService.js";
+import { GetCountriesService } from "../services/getCountriesService.js";
 import { config } from "./env.js";
 
 export class DIContainer {
@@ -76,10 +80,14 @@ export class DIContainer {
       readingSessionRepository,
       bookStatusHistoryRepository
     );
+    const getAuthorsService = new GetAuthorsService(authorRepository);
+    const getCountriesService = new GetCountriesService(countryRepository);
     
     this.instances.set("getBooksService", getBooksService);
     this.instances.set("createBookService", createBookService);
     this.instances.set("logReadingSessionService", logReadingSessionService);
+    this.instances.set("getAuthorsService", getAuthorsService);
+    this.instances.set("getCountriesService", getCountriesService);
   }
 
   /**
@@ -89,10 +97,14 @@ export class DIContainer {
     const getBooksService = this.instances.get("getBooksService");
     const createBookService = this.instances.get("createBookService");
     const logReadingSessionService = this.instances.get("logReadingSessionService");
+    const getAuthorsService = this.instances.get("getAuthorsService");
+    const getCountriesService = this.instances.get("getCountriesService");
     
     this.instances.set("healthController", new HealthController());
     this.instances.set("booksController", new BooksController(getBooksService, createBookService));
     this.instances.set("readingSessionsController", new ReadingSessionsController(logReadingSessionService));
+    this.instances.set("authorsController", new AuthorsController(getAuthorsService));
+    this.instances.set("countriesController", new CountriesController(getCountriesService));
   }
 
   /**
