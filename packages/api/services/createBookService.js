@@ -6,12 +6,15 @@
  * - Implement CreateBook use case
  * - Orchestrate repositories within a transaction
  * - Ensure author and country exist (create if needed)
+ * - Support legacy books with custom initial status
  * 
  * Rules:
  * - Framework-agnostic
  * - No validation (handled by controller)
  * - Transactional (mutates: Books, Authors, Countries, BookStatusHistory)
  * - Returns Book entity
+ * - Default status: WISH_LIST (if not provided)
+ * - Supports all valid BookStatus values for legacy imports
  */
 
 import sql from "mssql";
@@ -35,11 +38,11 @@ export class CreateBookService {
 
   /**
    * Execute CreateBook use case
-   * @param {Object} input - { title, isbn, totalPages, author: { name, nationality } }
+   * @param {Object} input - { title, isbn, totalPages, status, author: { name, nationality } }
    * @returns {Promise<Book>}
    */
   async execute(input) {
-    const { title, isbn, totalPages, author } = input;
+    const { title, isbn, totalPages, status, author } = input;
 
     // Step 1: Check if ISBN already exists (outside transaction)
     if (isbn) {
@@ -90,14 +93,17 @@ export class CreateBookService {
         );
       }
 
-      // Step 5: Get WISH_LIST status ID
+      // Step 5: Determine target status (default to WISH_LIST if not provided)
+      const targetStatus = status || BookStatus.WISH_LIST;
+      
+      // Get status ID for target status
       const request = new sql.Request(transaction);
       const statusResult = await request
-        .input("statusCode", sql.NVarChar, BookStatus.WISH_LIST)
+        .input("statusCode", sql.NVarChar, targetStatus)
         .query(`
           SELECT id FROM BookStatuses WHERE internal_code = @statusCode
         `);
-      const wishListStatusId = statusResult.recordset[0].id;
+      const statusId = statusResult.recordset[0].id;
 
       // Step 6: Create book
       const book = await this.bookRepository.create(
@@ -106,17 +112,17 @@ export class CreateBookService {
           isbn,
           authorId: authorRecord.id,
           totalPages,
-          statusId: wishListStatusId
+          statusId
         },
         transaction
       );
 
-      // Step 7: Create BookStatusHistory entry (NULL → WISH_LIST)
+      // Step 7: Create BookStatusHistory entry (NULL → targetStatus)
       await this.bookStatusHistoryRepository.create(
         {
           bookId: book.id,
           oldStatus: null,
-          newStatus: BookStatus.WISH_LIST,
+          newStatus: targetStatus,
           readingCycle: 1
         },
         transaction

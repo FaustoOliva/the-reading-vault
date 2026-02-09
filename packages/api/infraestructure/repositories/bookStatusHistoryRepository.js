@@ -27,7 +27,7 @@ export class BookStatusHistoryRepository {
    */
   async create(data, transaction) {
     const query = `
-      INSERT INTO BookStatusHistory (book_id, old_status_id, new_status_id, reading_cycle, changed_at)
+      INSERT INTO BookStatusHistory (book_id, old_status_id, new_status_id, reading_cycle, created_at)
       VALUES (
         @bookId,
         (SELECT id FROM BookStatuses WHERE internal_code = @oldStatus),
@@ -61,12 +61,12 @@ export class BookStatusHistoryRepository {
         os.internal_code as old_status,
         ns.internal_code as new_status,
         h.reading_cycle,
-        h.changed_at
+        h.created_at
       FROM BookStatusHistory h
       LEFT JOIN BookStatuses os ON h.old_status_id = os.id
       INNER JOIN BookStatuses ns ON h.new_status_id = ns.id
       WHERE h.book_id = @bookId
-      ORDER BY h.changed_at DESC
+      ORDER BY h.created_at DESC
     `;
 
     const result = await pool

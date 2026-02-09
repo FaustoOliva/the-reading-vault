@@ -39,6 +39,12 @@ const createBookBodySchema = z.object({
   title: z.string().min(1).max(255),
   isbn: z.string().max(20).optional(),
   totalPages: z.number().int().positive().optional(),
+  status: z.enum([
+    BookStatus.WISH_LIST,
+    BookStatus.READING,
+    BookStatus.COMPLETED,
+    BookStatus.ABANDONED
+  ]).optional(),
   author: z.object({
     name: z.string().min(1).max(255),
     nationality: z.string().max(40).optional()

@@ -152,12 +152,18 @@ END IF
 
 **Key Constraint:** Manual transitions to COMPLETED are **forbidden** except during:
 
-1. Initial book creation (status defaults to WISH_LIST or READING)
-2. Legacy book import (status = COMPLETED, no ReadingSessions)
+1. Initial book creation with explicit status (defaults to WISH_LIST if not provided)
+2. Legacy book import with any valid status (WISH_LIST, READING, COMPLETED, ABANDONED)
 
-Rationale: Automatic completion ensures KPI history accuracy.
+**Status Selection During Creation:**
+- If no status is provided → defaults to WISH_LIST
+- If status is provided → must be a valid BookStatus enum value
+- Legacy books can be created directly in COMPLETED or ABANDONED states
+- Creating a book in COMPLETED or ABANDONED status may require score validation (enforced at domain level)
 
-### 3.5 Persistence Operations
+Rationale: Automatic completion ensures KPI history accuracy for ongoing books, while allowing historical data import.
+
+e### 3.5 Persistence Operations
 
 **Required Data Mutations:**
 
@@ -184,7 +190,7 @@ Rationale: Automatic completion ensures KPI history accuracy.
 
 | Status      | status_id | Description                                  | Can Log Session           | Can Transition To            | Notes                                   |
 | ----------- | --------- | -------------------------------------------- | ------------------------- | ---------------------------- | --------------------------------------- |
-| `WISH_LIST` | 1         | Book is on reading wishlist, not yet started | YES (→ READING)           | READING (auto)               | Initial state for new books             |
+| `WISH_LIST` | 1         | Book is on reading wishlist, not yet started | YES (→ READING)           | READING (auto)               | Default initial state for new books     |
 | `READING`   | 2         | Book is actively being read in current cycle | YES                       | COMPLETED (auto)             | Default working state                   |
 | `COMPLETED` | 3         | Book finished in current cycle               | YES (→ READING + cycle++) | READING (manual log)         | Allows re-reading                       |
 | `ABANDONED` | 4         | User decided to stop reading this book       | NO (BLOCKED)              | READING (manual reopen only) | Requires explicit user action to reopen |
@@ -410,35 +416,47 @@ END IF
 
 ```
 IF book_input.author is missing OR NULL THEN
-  author_id = AUTHORS.find_or_create("Unknown Author", nationality_id: NULL)
-END IF
-```
+  authorBook Creation with Initial Status
 
-**Rationale:** Prevents duplicate author records and maintains data consistency.
+**Use Case:** Support both new books and legacy book import scenarios.
 
-### 7.2 Legacy Book Import (`ImportLegacyBookUseCase`)
+**General Creation Rule:**
+- New books without status specification default to `WISH_LIST`
+- Legacy books can be created with any valid initial status
 
-**Use Case Definition:**
+**Status-Specific Behavior:**
 
-- User imports a book they have already read (possibly years ago)
-- No ReadingSessions are created; history is represented only by status and score
+1. **WISH_LIST (default):**
+   - No additional requirements
+   - BookStatusHistory: `(NULL → WISH_LIST, cycle: 1)`
 
-**Input:**
+2. **READING:**
+   - Suitable for books already started before system adoption
+   - BookStatusHistory: `(NULL → READING, cycle: 1)`
 
-```
-{
-  title: String,
-  isbn: String,
-  author: String,
-  total_pages: Int,
-  score: Float (0.0-10.0),
-  read_date: Date
-}
-```
+3. **COMPLETED:**
+   - Suitable for books already finished before system adoption
+   - May require `score` and `comment` (validation at domain level)
+   - BookStatusHistory: `(NULL → COMPLETED, cycle: 1)`
+   - No ReadingSessions created (historical data)
 
-**Processing:**
+4. **ABANDONED:**
+   - Suitable for books abandoned before system adoption
+   - May require `score` and `comment` (validation at domain level)
+   - BookStatusHistory: `(NULL → ABANDONED, cycle: 1)`
+   - No ReadingSessions created
 
-1. ✅ Validate all inputs (ISBN not duplicate if provided, score in range, etc.)
+**Common Processing:**
+1. ✅ Validate all inputs (ISBN not duplicate if provided, etc.)
+2. ✅ Find or create Author (deduplication via author name)
+3. ✅ Find or create Country (if nationality provided)
+4. ✅ Create Book with specified `status_id` (or WISH_LIST if omitted)
+5. ✅ Create BookStatusHistory entry: `(NULL → {specified_status}, cycle: 1)`
+
+### 7.3 Legacy Book Import (Specialized Case)
+
+**Legacy Import Note:** The general creation mechanism (7.2) handles legacy imports. 
+No separate ImportLegacyBook use case is needed - use CreateBook with explicit status
 2. ✅ Find or create Author (deduplication)
 3. ✅ Create Book with `status_id = COMPLETED`, `current_reading_cycle = 1`, `score`, and `comment`
 4. ✅ Create BookStatusHistory entry: `(old_status_id: NULL → new_status_id: COMPLETED, cycle: 1)`

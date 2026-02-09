@@ -48,13 +48,14 @@ Both are first-class citizens and must be explicitly listed.
 ### 5.1 CreateBook
 
 **Description**  
-Registers a new book in the system.
+Registers a new book in the system. Supports legacy books by allowing initial status specification.
 
 **Input**
 - title
 - author
 - totalPages
 - optional metadata (isbn, notes)
+- **status** (optional) - Initial status for the book. Defaults to WISH_LIST if not provided. Required for legacy books with different initial states.
 
 **Output**
 - Book
@@ -65,6 +66,12 @@ Registers a new book in the system.
 **Errors**
 - DuplicateISBNError
 - InvalidInitialStateError
+
+**Business Rules**
+- New books without status default to WISH_LIST
+- Legacy books can be created with any valid status (WISH_LIST, READING, COMPLETED, ABANDONED)
+- When status is provided, it must be a valid BookStatus enum value
+- Initial status COMPLETED or ABANDONED may require score (enforced at domain level)
 
 **Transactional**
 - Yes

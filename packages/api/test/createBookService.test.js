@@ -127,13 +127,13 @@ describe("CreateBookService", () => {
       const result = await service.execute(input);
 
       // Assert
-      expect(mockBookRepository.findByIsbn).toHaveBeenCalledWith("9780134494166", mockTransaction);
-      expect(mockCountryRepository.findByName).toHaveBeenCalledWith("United States", mockTransaction);
+      expect(mockBookRepository.findByIsbn).toHaveBeenCalledWith("9780134494166");
+      expect(mockCountryRepository.findByName).toHaveBeenCalledWith("United States");
       expect(mockCountryRepository.create).toHaveBeenCalledWith(
         { name: "United States" },
         mockTransaction
       );
-      expect(mockAuthorRepository.findByName).toHaveBeenCalledWith("Robert C. Martin", mockTransaction);
+      expect(mockAuthorRepository.findByName).toHaveBeenCalledWith("Robert C. Martin");
       expect(mockAuthorRepository.create).toHaveBeenCalledWith(
         { name: "Robert C. Martin", nationalityId: 1 },
         mockTransaction
@@ -200,7 +200,7 @@ describe("CreateBookService", () => {
       // Assert
       expect(mockCountryRepository.create).not.toHaveBeenCalled();
       expect(mockAuthorRepository.create).not.toHaveBeenCalled();
-      expect(mockAuthorRepository.findByName).toHaveBeenCalledWith("Robert C. Martin", mockTransaction);
+      expect(mockAuthorRepository.findByName).toHaveBeenCalledWith("Robert C. Martin");
       expect(result).toEqual(mockBook);
     });
 
@@ -432,7 +432,8 @@ describe("CreateBookService", () => {
       await expect(service.execute(input)).rejects.toThrow(
         "Book with ISBN 9780134494166 already exists"
       );
-      expect(mockTransaction.rollback).toHaveBeenCalled();
+      // Transaction is not started when ISBN conflict is detected (happens before transaction)
+      expect(mockTransaction.rollback).not.toHaveBeenCalled();
     });
 
     it("should rollback transaction on error", async () => {
@@ -449,6 +450,182 @@ describe("CreateBookService", () => {
       await expect(service.execute(input)).rejects.toThrow("Database error");
       expect(mockTransaction.rollback).toHaveBeenCalled();
       expect(mockTransaction.commit).not.toHaveBeenCalled();
+    });
+
+    it("should create book with custom status COMPLETED for legacy books", async () => {
+      // Arrange
+      const input = {
+        title: "Legacy Book",
+        isbn: "9781234567890",
+        totalPages: 500,
+        status: BookStatus.COMPLETED,
+        author: {
+          name: "Legacy Author"
+        }
+      };
+
+      const mockAuthor = { id: 10, name: "Legacy Author", nationalityId: null };
+      const mockBook = new Book({
+        id: 10,
+        title: "Legacy Book",
+        isbn: "9781234567890",
+        authorId: 10,
+        authorName: "Legacy Author",
+        totalPages: 500,
+        status: BookStatus.COMPLETED,
+        currentReadingCycle: 1,
+        score: null,
+        comment: null
+      });
+
+      mockBookRepository.findByIsbn.mockResolvedValue(null);
+      mockAuthorRepository.findByName.mockResolvedValue(null);
+      mockAuthorRepository.create.mockResolvedValue(mockAuthor);
+      mockRequest.query.mockResolvedValue({ recordset: [{ id: 3 }] }); // COMPLETED status ID
+      mockBookRepository.create.mockResolvedValue(mockBook);
+      mockBookStatusHistoryRepository.create.mockResolvedValue(undefined);
+
+      // Act
+      const result = await service.execute(input);
+
+      // Assert
+      expect(mockRequest.query).toHaveBeenCalledWith(
+        expect.stringContaining("SELECT id FROM BookStatuses WHERE internal_code = @statusCode")
+      );
+      expect(mockBookRepository.create).toHaveBeenCalledWith(
+        {
+          title: "Legacy Book",
+          isbn: "9781234567890",
+          authorId: 10,
+          totalPages: 500,
+          statusId: 3
+        },
+        mockTransaction
+      );
+      expect(mockBookStatusHistoryRepository.create).toHaveBeenCalledWith(
+        {
+          bookId: 10,
+          oldStatus: null,
+          newStatus: BookStatus.COMPLETED,
+          readingCycle: 1
+        },
+        mockTransaction
+      );
+      expect(result).toEqual(mockBook);
+    });
+
+    it("should create book with custom status READING for legacy books", async () => {
+      // Arrange
+      const input = {
+        title: "In Progress Legacy Book",
+        totalPages: 300,
+        status: BookStatus.READING,
+        author: {
+          name: "Another Author"
+        }
+      };
+
+      const mockAuthor = { id: 11, name: "Another Author", nationalityId: null };
+      const mockBook = new Book({
+        id: 11,
+        title: "In Progress Legacy Book",
+        isbn: null,
+        authorId: 11,
+        authorName: "Another Author",
+        totalPages: 300,
+        status: BookStatus.READING,
+        currentReadingCycle: 1,
+        score: null,
+        comment: null
+      });
+
+      mockBookRepository.findByIsbn.mockResolvedValue(null);
+      mockAuthorRepository.findByName.mockResolvedValue(null);
+      mockAuthorRepository.create.mockResolvedValue(mockAuthor);
+      mockRequest.query.mockResolvedValue({ recordset: [{ id: 2 }] }); // READING status ID
+      mockBookRepository.create.mockResolvedValue(mockBook);
+      mockBookStatusHistoryRepository.create.mockResolvedValue(undefined);
+
+      // Act
+      const result = await service.execute(input);
+
+      // Assert
+      expect(mockBookRepository.create).toHaveBeenCalledWith(
+        {
+          title: "In Progress Legacy Book",
+          isbn: undefined,
+          authorId: 11,
+          totalPages: 300,
+          statusId: 2
+        },
+        mockTransaction
+      );
+      expect(mockBookStatusHistoryRepository.create).toHaveBeenCalledWith(
+        {
+          bookId: 11,
+          oldStatus: null,
+          newStatus: BookStatus.READING,
+          readingCycle: 1
+        },
+        mockTransaction
+      );
+      expect(result).toEqual(mockBook);
+    });
+
+    it("should default to WISH_LIST when status is not provided", async () => {
+      // Arrange
+      const input = {
+        title: "Default Status Book",
+        author: {
+          name: "Default Author"
+        }
+      };
+
+      const mockAuthor = { id: 12, name: "Default Author", nationalityId: null };
+      const mockBook = new Book({
+        id: 12,
+        title: "Default Status Book",
+        isbn: null,
+        authorId: 12,
+        authorName: "Default Author",
+        totalPages: null,
+        status: BookStatus.WISH_LIST,
+        currentReadingCycle: 1,
+        score: null,
+        comment: null
+      });
+
+      mockBookRepository.findByIsbn.mockResolvedValue(null);
+      mockAuthorRepository.findByName.mockResolvedValue(null);
+      mockAuthorRepository.create.mockResolvedValue(mockAuthor);
+      mockRequest.query.mockResolvedValue({ recordset: [{ id: 1 }] }); // WISH_LIST status ID
+      mockBookRepository.create.mockResolvedValue(mockBook);
+      mockBookStatusHistoryRepository.create.mockResolvedValue(undefined);
+
+      // Act
+      const result = await service.execute(input);
+
+      // Assert
+      expect(mockBookRepository.create).toHaveBeenCalledWith(
+        {
+          title: "Default Status Book",
+          isbn: undefined,
+          authorId: 12,
+          totalPages: undefined,
+          statusId: 1
+        },
+        mockTransaction
+      );
+      expect(mockBookStatusHistoryRepository.create).toHaveBeenCalledWith(
+        {
+          bookId: 12,
+          oldStatus: null,
+          newStatus: BookStatus.WISH_LIST,
+          readingCycle: 1
+        },
+        mockTransaction
+      );
+      expect(result).toEqual(mockBook);
     });
   });
 });
