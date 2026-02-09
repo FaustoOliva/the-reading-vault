@@ -45,10 +45,13 @@ export interface BookDetails extends Book {
 
 export interface CreateBookInput {
   title: string;
-  authorName: string;
   isbn?: string;
   totalPages?: number;
   status?: BookStatus;
+  author: {
+    name: string;
+    nationality?: string;
+  };
 }
 
 export interface BooksFilter {
