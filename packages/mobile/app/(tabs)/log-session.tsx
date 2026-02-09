@@ -17,18 +17,18 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
-import { ThemedView } from '@/components/themed-view';
-import { ThemedText } from '@/components/themed-text';
 import { useBooks, useBookDetails } from '@/hooks/useBooks';
 import { useCreateReadingSession } from '@/hooks/useReadingSessions';
 import { BookStatus } from '@/types/book';
-import { Colors } from '@/constants/theme';
-import { Interactive } from '@/constants/colors';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { 
+  Interactive, 
+  Background, 
+  Text as TextColors,
+  Border,
+  Feedback 
+} from '@/constants/colors';
 
 export default function LogSessionScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
 
   // Form state
   const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
@@ -178,38 +178,31 @@ export default function LogSessionScreen() {
   const remaining = getRemainingPages();
 
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        contentInsetAdjustmentBehavior="automatic">
-        <ThemedText style={styles.title}>Log Reading Session</ThemedText>
+    <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      style={{ flex: 1, backgroundColor: Background.primary }}
+      contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Log Reading Session</Text>
 
         {/* Book Selector */}
         <View style={styles.field}>
-          <ThemedText style={styles.label}>Book *</ThemedText>
+          <Text style={styles.label}>Book *</Text>
           {booksLoading ? (
-            <ActivityIndicator />
+            <ActivityIndicator color={Interactive.primary.default} />
           ) : books.length === 0 ? (
             <Text
-              style={[styles.noBooks, { color: colors.text }]}
+              style={styles.noBooks}
               selectable
               accessibilityRole="text"
               accessibilityLabel="No books available">
               No books in progress. Start a book first!
             </Text>
           ) : (
-            <View
-              style={[
-                styles.pickerContainer,
-                {
-                  borderColor: colors.border,
-                  backgroundColor: colors.background,
-                },
-              ]}>
+            <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={selectedBookId}
                 onValueChange={(value) => setSelectedBookId(value)}
-                style={[styles.picker, { color: colors.text }]}
+                style={styles.picker}
                 accessibilityLabel="Select book"
                 accessibilityHint="Choose a book you're currently reading">
                 <Picker.Item label="Select a book you're reading" value={null} />
@@ -227,11 +220,11 @@ export default function LogSessionScreen() {
 
         {/* Pages Info */}
         {selectedBookId && detailsLoading && (
-          <ActivityIndicator style={styles.loader} />
+          <ActivityIndicator style={styles.loader} color={Interactive.primary.default} />
         )}
         {selectedBookId && !detailsLoading && bookDetails && (
           <Text
-            style={[styles.pagesInfo, { color: colors.tabIconDefault }]}
+            style={styles.pagesInfo}
             selectable
             accessibilityRole="text">
             {remaining !== null
@@ -242,28 +235,24 @@ export default function LogSessionScreen() {
 
         {/* Pages Read Input */}
         <View style={styles.field}>
-          <ThemedText style={styles.label}>Pages Read *</ThemedText>
+          <Text style={styles.label}>Pages Read *</Text>
           <TextInput
             style={[
               styles.input,
-              {
-                borderColor: pagesError ? colors.error : colors.border,
-                color: colors.text,
-                backgroundColor: colors.background,
-              },
+              pagesError && styles.inputError,
             ]}
             value={pagesRead}
             onChangeText={setPagesRead}
             keyboardType="numeric"
             placeholder="e.g., 45"
-            placeholderTextColor={colors.tabIconDefault}
+            placeholderTextColor={TextColors.tertiary}
             accessibilityLabel="Pages read"
             accessibilityHint="Enter the number of pages you read in this session"
             accessibilityRole="spinbutton"
           />
           {pagesError && (
             <Text
-              style={[styles.error, { color: colors.error }]}
+              style={styles.error}
               selectable
               accessibilityRole="alert"
               accessibilityLiveRegion="polite">
@@ -274,20 +263,17 @@ export default function LogSessionScreen() {
 
         {/* Session Date */}
         <View style={styles.field}>
-          <ThemedText style={styles.label}>Session Date *</ThemedText>
+          <Text style={styles.label}>Session Date *</Text>
           <Pressable
             onPress={() => setShowDatePicker(true)}
             style={[
               styles.dateButton,
-              {
-                borderColor: dateError ? colors.error : colors.border,
-                backgroundColor: colors.background,
-              },
+              dateError && styles.dateButtonError,
             ]}
             accessibilityRole="button"
             accessibilityLabel={`Session date: ${sessionDate.toLocaleDateString()}`}
             accessibilityHint="Tap to change session date">
-            <Text style={{ color: colors.text }}>
+            <Text style={styles.dateButtonText}>
               {sessionDate.toLocaleDateString()}
             </Text>
           </Pressable>
@@ -305,7 +291,7 @@ export default function LogSessionScreen() {
           )}
           {dateError && (
             <Text
-              style={[styles.error, { color: colors.error }]}
+              style={styles.error}
               selectable
               accessibilityRole="alert"
               accessibilityLiveRegion="polite">
@@ -316,33 +302,29 @@ export default function LogSessionScreen() {
 
         {/* Duration Input */}
         <View style={styles.field}>
-          <ThemedText style={styles.label}>Duration (optional)</ThemedText>
+          <Text style={styles.label}>Duration (optional)</Text>
           <TextInput
             style={[
               styles.input,
-              {
-                borderColor: durationError ? colors.error : colors.border,
-                color: colors.text,
-                backgroundColor: colors.background,
-              },
+              durationError && styles.inputError,
             ]}
             value={duration}
             onChangeText={setDuration}
             keyboardType="numeric"
             placeholder="Minutes, e.g., 45"
-            placeholderTextColor={colors.tabIconDefault}
+            placeholderTextColor={TextColors.tertiary}
             accessibilityLabel="Duration in minutes"
             accessibilityHint="Optional: Enter session duration in minutes"
             accessibilityRole="spinbutton"
           />
           <Text
-            style={[styles.helperText, { color: colors.tabIconDefault }]}
+            style={styles.helperText}
             selectable>
             Leave empty if not tracked
           </Text>
           {durationError && (
             <Text
-              style={[styles.error, { color: colors.error }]}
+              style={styles.error}
               selectable
               accessibilityRole="alert"
               accessibilityLiveRegion="polite">
@@ -354,7 +336,7 @@ export default function LogSessionScreen() {
         {/* Success Message */}
         {successMessage && (
           <Text
-            style={[styles.success, { color: colors.tint }]}
+            style={styles.success}
             selectable
             accessibilityRole="alert"
             accessibilityLiveRegion="polite">
@@ -365,7 +347,7 @@ export default function LogSessionScreen() {
         {/* Error Message */}
         {errorMessage && (
           <Text
-            style={[styles.error, { color: colors.error }]}
+            style={styles.errorMessage}
             selectable
             accessibilityRole="alert"
             accessibilityLiveRegion="polite">
@@ -401,14 +383,10 @@ export default function LogSessionScreen() {
           )}
         </Pressable>
       </ScrollView>
-    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   scrollContent: {
     padding: 16,
     gap: 20,
@@ -417,6 +395,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 8,
+    color: TextColors.primary,
   },
   field: {
     gap: 8,
@@ -424,58 +403,87 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
+    color: TextColors.primary,
   },
   pickerContainer: {
     borderWidth: 1,
+    borderColor: Border.default,
     borderRadius: 8,
     borderCurve: 'continuous',
+    backgroundColor: Background.surface,
     overflow: 'hidden',
   },
   picker: {
     height: 50,
+    color: TextColors.primary,
   },
   input: {
     height: 50,
     borderWidth: 1,
+    borderColor: Border.default,
     borderRadius: 8,
     borderCurve: 'continuous',
     paddingHorizontal: 16,
     fontSize: 16,
+    backgroundColor: Background.surface,
+    color: TextColors.primary,
+  },
+  inputError: {
+    borderColor: Feedback.error.border,
   },
   dateButton: {
     height: 50,
     borderWidth: 1,
+    borderColor: Border.default,
     borderRadius: 8,
     borderCurve: 'continuous',
     paddingHorizontal: 16,
     justifyContent: 'center',
+    backgroundColor: Background.surface,
+  },
+  dateButtonError: {
+    borderColor: Feedback.error.border,
+  },
+  dateButtonText: {
+    color: TextColors.primary,
   },
   pagesInfo: {
     fontSize: 14,
     marginTop: -12,
     marginLeft: 4,
+    color: TextColors.secondary,
   },
   helperText: {
     fontSize: 14,
     marginTop: -4,
     marginLeft: 4,
+    color: TextColors.secondary,
   },
   noBooks: {
     fontSize: 16,
     fontStyle: 'italic',
     padding: 16,
     textAlign: 'center',
+    color: TextColors.secondary,
   },
   error: {
     fontSize: 14,
     marginTop: -4,
     marginLeft: 4,
+    color: Feedback.error.text,
+  },
+  errorMessage: {
+    fontSize: 14,
+    marginTop: -4,
+    marginLeft: 4,
+    color: Feedback.error.text,
   },
   success: {
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
     padding: 12,
+    color: Feedback.success.text,
   },
   submitButton: {
     height: 56,

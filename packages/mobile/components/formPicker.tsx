@@ -74,6 +74,8 @@ export function FormPicker<T extends string | number>({
       {error && (
         <Text 
           selectable
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
           style={{ 
             fontSize: 14, 
             color: Feedback.error.text 

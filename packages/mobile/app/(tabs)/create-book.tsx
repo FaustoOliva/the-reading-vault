@@ -104,6 +104,14 @@ export default function CreateBookScreen() {
   };
 
   /**
+   * Check if form is valid for submission
+   * Returns true if all required fields are filled
+   */
+  const isFormValid = (): boolean => {
+    return title.trim().length > 0 && authorName.trim().length > 0;
+  };
+
+  /**
    * Handle form submission
    * Validates, sends to API, and handles success/error
    */
@@ -176,8 +184,8 @@ export default function CreateBookScreen() {
         placeholder="Enter book title"
         error={errors.title}
         autoCapitalize="words"
-        accessibilityLabel="Book title"
-        accessibilityHint="Required field. Enter the title of the book"
+        accessibilityLabel="Book title, required"
+        accessibilityHint="Enter the title of the book"
       />
 
       <SearchableSelect
@@ -190,6 +198,8 @@ export default function CreateBookScreen() {
         error={errors.authorName}
         createLabel="Create author"
         zIndex={3}
+        accessibilityLabel="Author name, required"
+        accessibilityHint="Search for an existing author or type to create a new one"
       />
 
       {isCreatingNewAuthor && authorName.trim() && (
@@ -201,6 +211,8 @@ export default function CreateBookScreen() {
           placeholder="Search or create country..."
           createLabel="Create country"
           zIndex={2}
+          accessibilityLabel="Author nationality, optional"
+          accessibilityHint="Only shown when creating a new author. Search for a country or type to create one"
         />
       )}
 
@@ -224,6 +236,8 @@ export default function CreateBookScreen() {
         onChangeText={setIsbn}
         placeholder="Enter ISBN (optional)"
         error={errors.isbn}
+        accessibilityLabel="ISBN, optional"
+        accessibilityHint="Enter the book's ISBN number if available"
       />
 
       <FormInput
@@ -233,25 +247,32 @@ export default function CreateBookScreen() {
         placeholder="Enter total pages (optional)"
         keyboardType="numeric"
         error={errors.totalPages}
+        accessibilityLabel="Total pages, optional"
+        accessibilityHint="Enter the total number of pages in the book"
       />
 
       <Pressable
         onPress={handleSubmit}
-        disabled={isPending}
+        disabled={!isFormValid() || isPending}
         accessibilityRole="button"
         accessibilityLabel="Create book"
         accessibilityHint="Creates a new book with the entered information"
-        accessibilityState={{ disabled: isPending, busy: isPending }}
+        accessibilityState={{ 
+          disabled: !isFormValid() || isPending, 
+          busy: isPending 
+        }}
         style={({ pressed }) => ({
-          backgroundColor: isPending || pressed 
-            ? Interactive.primary.pressed 
-            : Interactive.primary.default,
+          backgroundColor: !isFormValid() || isPending
+            ? Interactive.primary.disabled
+            : pressed 
+              ? Interactive.primary.pressed 
+              : Interactive.primary.default,
           padding: 16,
           borderRadius: 12,
           borderCurve: 'continuous',
           alignItems: 'center',
           marginTop: 8,
-          opacity: isPending ? 0.7 : 1,
+          opacity: !isFormValid() || isPending ? 0.7 : 1,
         })}
       >
         <Text 

@@ -28,6 +28,8 @@ interface SearchableSelectProps {
   error?: string;
   createLabel?: string;
   zIndex?: number;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 export function SearchableSelect({
@@ -40,6 +42,8 @@ export function SearchableSelect({
   error,
   createLabel = 'Create',
   zIndex = 1,
+  accessibilityLabel,
+  accessibilityHint,
 }: SearchableSelectProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -99,8 +103,8 @@ export function SearchableSelect({
           onFocus={handleFocus}
           placeholder={placeholder}
           placeholderTextColor={TextColors.tertiary}
-          accessibilityLabel={label}
-          accessibilityHint={`Search or type to create new ${label.toLowerCase()}`}
+          accessibilityLabel={accessibilityLabel || label}
+          accessibilityHint={accessibilityHint || `Search or type to create new ${label.toLowerCase()}`}
           accessibilityRole="search"
           returnKeyType="done"
           autoCorrect={false}
@@ -225,6 +229,8 @@ export function SearchableSelect({
       {error && (
         <Text 
           selectable
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
           style={{ 
             fontSize: 14, 
             color: Feedback.error.text 

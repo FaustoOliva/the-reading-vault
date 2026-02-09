@@ -46,6 +46,8 @@ export function FormInput({ label, error, ...props }: FormInputProps) {
       {error && (
         <Text 
           selectable
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
           style={{ 
             fontSize: 14, 
             color: Feedback.error.text 
