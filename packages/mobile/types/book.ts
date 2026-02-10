@@ -27,20 +27,44 @@ export interface Book {
   updatedAt?: string;
 }
 
-export interface BookDetails extends Book {
-  authorDetails: {
+export interface BookDetails {
+  book: {
     id: number;
-    name: string;
-    nationality: string | null;
+    title: string;
+    isbn: string | null;
+    author: {
+      id: number;
+      name: string;
+      nationality: string | null;
+    };
+    total_pages: number | null;
+    status: BookStatus;
+    current_reading_cycle: number;
+    pages_read_total: number;
+    pages_read_in_current_cycle: number;
+    score: number | null;
+    comment: string | null;
+    created_at: Date;
   };
-  readingSessions: ReadingSession[];
-  statusHistory: {
-    id: number;
-    oldStatus: BookStatus | null;
-    newStatus: BookStatus;
-    readingCycle: number;
-    createdAt: string;
-  }[];
+  current_cycle_stats: {
+    sessions_count: number;
+    first_session_date: Date | null;
+    last_session_date: Date | null;
+    days_elapsed: number;
+    velocity: number | null;
+    estimated_completion: Date | null;
+  };
+  reading_cycles: ReadingCycle[];
+}
+
+export interface ReadingCycle {
+  reading_cycle: number;
+  status: BookStatus;
+  sessions_count: number;
+  pages_read: number;
+  first_session_date: Date | null;
+  last_session_date: Date | null;
+  is_current: boolean;
 }
 
 export interface CreateBookInput {

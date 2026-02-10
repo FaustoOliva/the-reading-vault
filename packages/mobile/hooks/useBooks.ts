@@ -99,7 +99,13 @@ export function useBookDetails(
 ) {
   return useQuery({
     queryKey: booksKeys.detail(bookId),
-    queryFn: () => api.get<BookDetails>(`/api/books/${bookId}`),
+    queryFn: async () => {
+      const response = await api.get<{
+        success: boolean;
+        data: BookDetails;
+      }>(`/api/books/${bookId}`);
+      return response.data;
+    },
     enabled: !!bookId,
     ...options,
   });
