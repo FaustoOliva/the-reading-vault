@@ -89,7 +89,8 @@ describe("LogReadingSessionService", () => {
 
       // Act & Assert
       await expect(service.execute(input)).rejects.toThrow(BookClosedError);
-      expect(mockTransaction.rollback).toHaveBeenCalled();
+      // Note: Transaction never begins for validation errors, so rollback is not called
+      expect(mockTransaction.begin).not.toHaveBeenCalled();
     });
   });
 
@@ -101,7 +102,8 @@ describe("LogReadingSessionService", () => {
 
       // Act & Assert
       await expect(service.execute(input)).rejects.toThrow(NotFoundError);
-      expect(mockTransaction.rollback).toHaveBeenCalled();
+      // Note: Transaction never begins when book not found, so rollback is not called
+      expect(mockTransaction.begin).not.toHaveBeenCalled();
     });
   });
 
@@ -123,7 +125,8 @@ describe("LogReadingSessionService", () => {
       // Act & Assert
       // 150 (current) + 200 (new) = 350 > 300 (total)
       await expect(service.execute(input)).rejects.toThrow(BadRequestError);
-      expect(mockTransaction.rollback).toHaveBeenCalled();
+      // Note: Transaction never begins for validation errors, so rollback is not called
+      expect(mockTransaction.begin).not.toHaveBeenCalled();
     });
 
     it("should allow pages_read that equals remaining pages exactly", async () => {
