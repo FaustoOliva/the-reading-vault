@@ -92,6 +92,7 @@ export class BookRepository {
         b.isbn,
         b.author_id,
         a.name as author_name,
+        c.name as author_nationality,
         b.total_pages,
         bs.internal_code as status_code,
         b.current_reading_cycle,
@@ -99,6 +100,7 @@ export class BookRepository {
         b.comment
       FROM Books b
       INNER JOIN Authors a ON b.author_id = a.id
+      LEFT JOIN Countries c ON a.nationality_id = c.id
       INNER JOIN BookStatuses bs ON b.status_id = bs.id
       WHERE b.id = @bookId
     `;
@@ -154,6 +156,7 @@ export class BookRepository {
         b.isbn,
         b.author_id,
         a.name as author_name,
+        c.name as author_nationality,
         b.total_pages,
         bs.internal_code as status_code,
         b.current_reading_cycle,
@@ -161,6 +164,7 @@ export class BookRepository {
         b.comment
       FROM Books b
       INNER JOIN Authors a ON b.author_id = a.id
+      LEFT JOIN Countries c ON a.nationality_id = c.id
       INNER JOIN BookStatuses bs ON b.status_id = bs.id
       WHERE b.isbn = @isbn
     `;
@@ -214,6 +218,7 @@ export class BookRepository {
         b.isbn,
         b.author_id,
         a.name as author_name,
+        c.name as author_nationality,
         b.total_pages,
         bs.internal_code as status_code,
         b.current_reading_cycle,
@@ -221,6 +226,7 @@ export class BookRepository {
         b.comment
       FROM Books b
       INNER JOIN Authors a ON b.author_id = a.id
+      LEFT JOIN Countries c ON a.nationality_id = c.id
       INNER JOIN BookStatuses bs ON b.status_id = bs.id
       WHERE b.id = @bookId
     `;

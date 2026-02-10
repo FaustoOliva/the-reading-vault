@@ -39,5 +39,14 @@ export default function bookRoutes(getController) {
     getController(BooksController).createBook(req, res, next)
   );
 
+  /**
+   * GET /books/:id
+   * Returns detailed information about a single book
+   * Params: id (number)
+   */
+  router.get("/books/:id", (req, res, next) =>
+    getController(BooksController).getBookById(req, res, next)
+  );
+
   return router;
 }

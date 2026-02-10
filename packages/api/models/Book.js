@@ -16,6 +16,7 @@ export class Book {
     isbn,
     authorId,
     authorName,
+    authorNationality,
     totalPages,
     status,
     currentReadingCycle,
@@ -27,6 +28,7 @@ export class Book {
     this.isbn = isbn;
     this.authorId = authorId;
     this.authorName = authorName;
+    this.authorNationality = authorNationality;
     this.totalPages = totalPages;
     this.status = status;
     this.currentReadingCycle = currentReadingCycle;
@@ -44,6 +46,7 @@ export class Book {
       isbn: record.isbn,
       authorId: record.author_id,
       authorName: record.author_name,
+      authorNationality: record.author_nationality,
       totalPages: record.total_pages,
       status: record.status_code,
       currentReadingCycle: record.current_reading_cycle,
@@ -62,7 +65,8 @@ export class Book {
       isbn: this.isbn,
       author: {
         id: this.authorId,
-        name: this.authorName
+        name: this.authorName,
+        nationality: this.authorNationality
       },
       totalPages: this.totalPages,
       status: this.status,

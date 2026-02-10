@@ -97,4 +97,69 @@ export class ReadingSessionRepository {
 
     return result.recordset[0].total;
   }
+
+  /**
+   * Get current cycle statistics for a book
+   * @param {number} bookId - Book ID
+   * @param {number} currentCycle - Current reading cycle
+   * @returns {Promise<Object>} Current cycle stats
+   */
+  async getCurrentCycleStats(bookId, currentCycle) {
+    const pool = await this.mssqlClient.getConnection();
+    
+    const query = `
+      SELECT 
+        COUNT(*) as sessions_count,
+        MIN(occurred_at) as first_session_date,
+        MAX(occurred_at) as last_session_date,
+        ISNULL(SUM(pages_read), 0) as pages_read
+      FROM ReadingSessions
+      WHERE book_id = @bookId AND reading_cycle = @currentCycle
+    `;
+
+    const result = await pool
+      .request()
+      .input("bookId", sql.Int, bookId)
+      .input("currentCycle", sql.Int, currentCycle)
+      .query(query);
+
+    const record = result.recordset[0];
+
+    return {
+      sessions_count: record.sessions_count,
+      first_session_date: record.first_session_date,
+      last_session_date: record.last_session_date,
+      pages_read: record.pages_read
+    };
+  }
+
+  /**
+   * Get reading cycle history for a book
+   * @param {number} bookId - Book ID
+   * @returns {Promise<Array>} Reading cycle summaries
+   */
+  async getCycleHistory(bookId) {
+    const pool = await this.mssqlClient.getConnection();
+    
+    const query = `
+      SELECT 
+        reading_cycle as cycle_number,
+        COUNT(*) as sessions_count,
+        SUM(pages_read) as total_pages_read,
+        MIN(occurred_at) as first_session,
+        MAX(occurred_at) as last_session,
+        DATEDIFF(DAY, MIN(occurred_at), MAX(occurred_at)) as duration_days
+      FROM ReadingSessions
+      WHERE book_id = @bookId
+      GROUP BY reading_cycle
+      ORDER BY reading_cycle ASC
+    `;
+
+    const result = await pool
+      .request()
+      .input("bookId", sql.Int, bookId)
+      .query(query);
+
+    return result.recordset;
+  }
 }

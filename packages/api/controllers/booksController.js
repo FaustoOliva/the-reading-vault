@@ -52,9 +52,10 @@ const createBookBodySchema = z.object({
 }).strict();
 
 export class BooksController {
-  constructor(getBooksService, createBookService) {
+  constructor(getBooksService, createBookService, getBookByIdService) {
     this.getBooksService = getBooksService;
     this.createBookService = createBookService;
+    this.getBookByIdService = getBookByIdService;
   }
 
   /**
@@ -107,6 +108,29 @@ export class BooksController {
       res.status(201).json({
         success: true,
         data: book.toJSON()
+      });
+    } catch (error) {
+      // Forward to global error middleware
+      next(error);
+    }
+  }
+
+  /**
+   * GET /books/:id
+   * Returns detailed information about a single book
+   */
+  async getBookById(req, res, next) {
+    try {
+      // Validate and parse book ID
+      const bookId = z.coerce.number().int().positive().parse(req.params.id);
+
+      // Execute use case
+      const result = await this.getBookByIdService.execute(bookId);
+
+      // Return book details
+      res.status(200).json({
+        success: true,
+        data: result
       });
     } catch (error) {
       // Forward to global error middleware
