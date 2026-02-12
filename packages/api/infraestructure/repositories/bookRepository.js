@@ -142,6 +142,33 @@ export class BookRepository {
   }
 
   /**
+   * Complete or abandon book - update status, score, and comment
+   * @param {number} bookId - Book ID
+   * @param {string} newStatus - New status code (COMPLETED or ABANDONED)
+   * @param {number} score - Book score (0.0-10.0)
+   * @param {string|null} comment - Optional comment
+   * @param {sql.Transaction} transaction - Active transaction
+   * @returns {Promise<void>}
+   */
+  async updateToClosedStatus(bookId, newStatus, score, comment, transaction) {
+    const query = `
+      UPDATE Books
+      SET status_id = (SELECT id FROM BookStatuses WHERE internal_code = @newStatus),
+          score = @score,
+          comment = @comment
+      WHERE id = @bookId
+    `;
+
+    await transaction
+      .request()
+      .input("bookId", sql.Int, bookId)
+      .input("newStatus", sql.NVarChar, newStatus)
+      .input("score", sql.Decimal(3, 1), score)
+      .input("comment", sql.NVarChar, comment || null)
+      .query(query);
+  }
+
+  /**
    * Find book by ISBN
    * @param {string} isbn - Book ISBN
    * @returns {Promise<Book|null>} Book entity or null if not found

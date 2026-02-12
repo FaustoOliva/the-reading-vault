@@ -78,32 +78,7 @@ Registers a new book in the system. Supports legacy books by allowing initial st
 
 ---
 
-### 5.2 StartReadingCycle
-
-**Description**  
-Starts a new reading cycle for an existing book.
-
-**Input**
-- bookId
-- startDate
-
-**Output**
-- ReadingCycle
-
-**Models Involved**
-- Book
-- ReadingCycle
-
-**Errors**
-- BookNotFoundError
-- InvalidStateTransitionError
-
-**Transactional**
-- Yes
-
----
-
-### 5.3 LogReadingSession
+### 5.2 LogReadingSession
 
 **Description**  
 Logs a reading session within an active reading cycle.
@@ -131,14 +106,75 @@ Logs a reading session within an active reading cycle.
 **Transactional**
 - Yes
 
----
-
-### 5.4 CompleteBook
+**Note**  
+Reading cycles are automatically managed as a side effect of LogReadingSession:
+- Firs3 CompleteBook
 
 **Description**  
-Marks a book as completed and closes the active reading cycle.
+Marks a book as completed with a required score. Books can only be completed manually if all pages have been read (when total_pages is defined), or at any time for legacy books without total_pages.
 
 **Input**
+```typescript
+{
+  bookId: number,
+  score: number,        // Required, 0.0-10.0
+  comment?: string      // Optional
+}
+```
+
+**Output**
+- Book (updated entity with COMPLETED status)
+
+**Models Involved**
+- Book
+- BookStatusHistory
+
+**Errors**
+- NotFoundError (book does not exist)
+- MissingScoreError (score not provided)
+- InsufficientPagesError (total_pages defined but not all pages read)
+- InvalidStateTransitionError (book already COMPLETED or ABANDONED)
+
+**Business Rules**
+- Valid transitions: WISH_LIST → COMPLETED, READING → COMPLETED
+- Invalid transitions: COMPLETED → COMPLETED (cannot re-complete)
+- Invalid transitions: ABANDONED → COMPLETED (cannot complete abandoned book)
+- Score is mandatory (0.0-10.0)
+- If total_pages IS NOT NULL: must have pages_read_total >= total_pages
+- If t4 AbandonBook
+
+**Description**  
+Marks a book as abandoned with a required score. Once abandoned, the book is locked and cannot accept new reading sessions unless explicitly reopened.
+
+**Input**
+```typescript
+{
+  bookId: number,
+  score: number,        // Required, 0.0-10.0
+  comment?: string      // Optional
+}
+```
+
+**Output**
+- Book (updated entity with ABANDONED status)
+
+**Models Involved**
+- Book
+- BookStatusHistory
+
+**Errors**
+- NotFoundError (book does not exist)
+- MissingScoreError (score not provided)
+- InvalidStateTransitionError (book already ABANDONED or is COMPLETED)
+
+**Business Rules**
+- Valid transitions: WISH_LIST → ABANDONED, READING → ABANDONED
+- Invalid transitions: ABANDONED → ABANDONED (cannot re-abandon)
+- Invalid transitions: COMPLETED → ABANDONED (cannot abandon completed book)
+- Score is mandatory (0.0-10.0)
+- Future reading sessions will be blocked (BookClosedError)
+**Output**
+- Book (updated entity with ABANDONED status)
 - bookId
 - completionDate
 - score

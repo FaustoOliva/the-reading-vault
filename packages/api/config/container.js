@@ -19,6 +19,8 @@ import { GetBooksService } from "../services/getBooksService.js";
 import { GetBookByIdService } from "../services/getBookByIdService.js";
 import { CreateBookService } from "../services/createBookService.js";
 import { LogReadingSessionService } from "../services/logReadingSessionService.js";
+import { CompleteBookService } from "../services/completeBookService.js";
+import { AbandonBookService } from "../services/abandonBookService.js";
 import { GetAuthorsService } from "../services/getAuthorsService.js";
 import { GetCountriesService } from "../services/getCountriesService.js";
 import { config } from "./env.js";
@@ -85,6 +87,17 @@ export class DIContainer {
       readingSessionRepository,
       bookStatusHistoryRepository
     );
+    const completeBookService = new CompleteBookService(
+      mssqlClient,
+      bookRepository,
+      readingSessionRepository,
+      bookStatusHistoryRepository
+    );
+    const abandonBookService = new AbandonBookService(
+      mssqlClient,
+      bookRepository,
+      bookStatusHistoryRepository
+    );
     const getAuthorsService = new GetAuthorsService(authorRepository);
     const getCountriesService = new GetCountriesService(countryRepository);
     
@@ -92,10 +105,20 @@ export class DIContainer {
     this.instances.set("getBookByIdService", getBookByIdService);
     this.instances.set("createBookService", createBookService);
     this.instances.set("logReadingSessionService", logReadingSessionService);
-    this.instances.set("getAuthorsService", getAuthorsService);
-    this.instances.set("getCountriesService", getCountriesService);
-  }
-
+    this.icompleteBookService = this.instances.get("completeBookService");
+    const abandonBookService = this.instances.get("abandonBookService");
+    const logReadingSessionService = this.instances.get("logReadingSessionService");
+    const getAuthorsService = this.instances.get("getAuthorsService");
+    const getCountriesService = this.instances.get("getCountriesService");
+    
+    this.instances.set("healthController", new HealthController());
+    this.instances.set("booksController", new BooksController(
+      getBooksService,
+      createBookService,
+      getBookByIdService,
+      completeBookService,
+      abandonBookService
+    
   /**
    * Initialize all controllers with their dependencies
    */

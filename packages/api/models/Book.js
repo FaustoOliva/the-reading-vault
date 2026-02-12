@@ -7,7 +7,12 @@
  */
 
 import { BookStatus } from "./BookStatus.js";
-import { BookClosedError } from "../errors/index.js";
+import {
+  BookClosedError,
+  InvalidStateTransitionError,
+  MissingScoreError,
+  InsufficientPagesError,
+} from "../errors/index.js";
 
 export class Book {
   constructor({
@@ -146,5 +151,80 @@ export class Book {
    */
   canAcceptPages(currentPagesInCycle, pagesRead) {
     return (currentPagesInCycle + pagesRead) <= this.totalPages;
+  }
+
+  /**
+   * Ensure book can be manually completed
+   * Valid transitions: WISH_LIST → COMPLETED, READING → COMPLETED
+   * @param {number|null} score - Score to be assigned
+   * @param {number} pagesReadTotal - Total pages read across all cycles
+   * @throws {InvalidStateTransitionError} if current status is COMPLETED or ABANDONED
+   * @throws {MissingScoreError} if score is missing
+   * @throws {InsufficientPagesError} if total_pages defined and not all pages read
+   */
+  ensureCanBeCompleted(score, pagesReadTotal) {
+    // Rule 1: Cannot re-complete a COMPLETED book
+    if (this.status === BookStatus.COMPLETED) {
+      throw new InvalidStateTransitionError(
+        this.id,
+        this.status,
+        BookStatus.COMPLETED,
+        "Book is already completed. To update score/comment, use update endpoint."
+      );
+    }
+
+    // Rule 2: Cannot complete an ABANDONED book directly
+    if (this.status === BookStatus.ABANDONED) {
+      throw new InvalidStateTransitionError(
+        this.id,
+        this.status,
+        BookStatus.COMPLETED,
+        "Cannot complete an abandoned book directly."
+      );
+    }
+
+    // Rule 3: Score is mandatory
+    if (score === null || score === undefined) {
+      throw new MissingScoreError(this.id, BookStatus.COMPLETED);
+    }
+
+    // Rule 4: If total_pages is defined, all pages must be read
+    if (this.totalPages !== null && pagesReadTotal < this.totalPages) {
+      throw new InsufficientPagesError(this.id, pagesReadTotal, this.totalPages);
+    }
+  }
+
+  /**
+   * Ensure book can be abandoned
+   * Valid transitions: WISH_LIST → ABANDONED, READING → ABANDONED
+   * @param {number|null} score - Score to be assigned
+   * @throws {InvalidStateTransitionError} if current status is COMPLETED or ABANDONED
+   * @throws {MissingScoreError} if score is missing
+   */
+  ensureCanBeAbandoned(score) {
+    // Rule 1: Cannot abandon an already ABANDONED book
+    if (this.status === BookStatus.ABANDONED) {
+      throw new InvalidStateTransitionError(
+        this.id,
+        this.status,
+        BookStatus.ABANDONED,
+        "Book is already abandoned."
+      );
+    }
+
+    // Rule 2: Cannot abandon a COMPLETED book
+    if (this.status === BookStatus.COMPLETED) {
+      throw new InvalidStateTransitionError(
+        this.id,
+        this.status,
+        BookStatus.ABANDONED,
+        "Cannot abandon a completed book."
+      );
+    }
+
+    // Rule 3: Score is mandatory
+    if (score === null || score === undefined) {
+      throw new MissingScoreError(this.id, BookStatus.ABANDONED);
+    }
   }
 }

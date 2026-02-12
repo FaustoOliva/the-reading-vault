@@ -51,11 +51,29 @@ const createBookBodySchema = z.object({
   })
 }).strict();
 
+/**
+ * Validation schema for CompleteBook request body
+ */
+const completeBookBodySchema = z.object({
+  score: z.number().min(0).max(10),
+  comment: z.string().optional()
+}).strict();
+
+/**
+ * Validation schema for AbandonBook request body
+ */
+const abandonBookBodySchema = z.object({
+  score: z.number().min(0).max(10),
+  comment: z.string().optional()
+}).strict();
+
 export class BooksController {
-  constructor(getBooksService, createBookService, getBookByIdService) {
+  constructor(getBooksService, createBookService, getBookByIdService, completeBookService, abandonBookService) {
     this.getBooksService = getBooksService;
     this.createBookService = createBookService;
     this.getBookByIdService = getBookByIdService;
+    this.completeBookService = completeBookService;
+    this.abandonBookService = abandonBookService;
   }
 
   /**
@@ -135,6 +153,64 @@ export class BooksController {
     } catch (error) {
       // Forward to global error middleware
       next(error);
+
+  /**
+   * PATCH /books/:id/complete
+   * Marks a book as completed with required score
+   */
+  async completeBook(req, res, next) {
+    try {
+      // Validate book ID
+      const bookId = z.coerce.number().int().positive().parse(req.params.id);
+
+      // Validate request body
+      const validated = completeBookBodySchema.parse(req.body);
+
+      // Execute use case
+      const book = await this.completeBookService.execute({
+        bookId,
+        ...validated
+      });
+
+      // Return updated book
+      res.status(200).json({
+        success: true,
+        data: book.toJSON()
+      });
+    } catch (error) {
+      // Forward to global error middleware
+      next(error);
+    }
+  }
+
+  /**
+   * PATCH /books/:id/abandon
+   * Marks a book as abandoned with required score
+   */
+  async abandonBook(req, res, next) {
+    try {
+      // Validate book ID
+      const bookId = z.coerce.number().int().positive().parse(req.params.id);
+
+      // Validate request body
+      const validated = abandonBookBodySchema.parse(req.body);
+
+      // Execute use case
+      const book = await this.abandonBookService.execute({
+        bookId,
+        ...validated
+      });
+
+      // Return updated book
+      res.status(200).json({
+        success: true,
+        data: book.toJSON()
+      });
+    } catch (error) {
+      // Forward to global error middleware
+      next(error);
+    }
+  }
     }
   }
 }

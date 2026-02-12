@@ -48,5 +48,25 @@ export default function bookRoutes(getController) {
     getController(BooksController).getBookById(req, res, next)
   );
 
+  /**
+   * PATCH /books/:id/complete
+   * Marks a book as completed with required score
+   * Params: id (number)
+   * Body: { score, comment? }
+   */
+  router.patch("/books/:id/complete", (req, res, next) =>
+    getController(BooksController).completeBook(req, res, next)
+  );
+
+  /**
+   * PATCH /books/:id/abandon
+   * Marks a book as abandoned with required score
+   * Params: id (number)
+   * Body: { score, comment? }
+   */
+  router.patch("/books/:id/abandon", (req, res, next) =>
+    getController(BooksController).abandonBook(req, res, next)
+  );
+
   return router;
 }
