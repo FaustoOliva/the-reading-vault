@@ -59,7 +59,7 @@
 | `old_status_id` | INT      | Foreign Key (BookStatuses.id), NULL for new books |
 | `new_status_id` | INT      | Foreign Key (BookStatuses.id), NOT NULL           |
 | `reading_cycle` | INT      | NOT NULL, DEFAULT 1                               |
-| `changed_at`    | DATETIME | NOT NULL, DEFAULT GETDATE()                       |
+| `created_at`    | DATETIME | NOT NULL, DEFAULT GETDATE()                       |
 
 ### 5. BookStatuses (reference table)
 
@@ -78,5 +78,6 @@
 
 - `('WISH_LIST', 'Wish List', '#FFA500')`
 - `('READING', 'Reading', '#007BFF')`
+- `('PENDING_SCORE', 'Review Pending', '#F59E0B')`
 - `('COMPLETED', 'Completed', '#28A745')`
 - `('ABANDONED', 'Abandoned', '#DC3545')`

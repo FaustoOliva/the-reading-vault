@@ -49,23 +49,44 @@ export default function bookRoutes(getController) {
   );
 
   /**
-   * PATCH /books/:id/complete
-   * Marks a book as completed with required score
+   * PUT /books/:id
+   * Updates book metadata (title, totalPages, score, comment)
    * Params: id (number)
-   * Body: { score, comment? }
+   * Body: { title?, totalPages?, score?, comment? }
    */
-  router.patch("/books/:id/complete", (req, res, next) =>
-    getController(BooksController).completeBook(req, res, next)
+  router.put("/books/:id", (req, res, next) =>
+    getController(BooksController).updateBook(req, res, next)
   );
 
   /**
-   * PATCH /books/:id/abandon
-   * Marks a book as abandoned with required score
+   * PATCH /books/:id/review
+   * Transitions PENDING_SCORE book to COMPLETED or ABANDONED with score
    * Params: id (number)
-   * Body: { score, comment? }
+   * Body: { targetStatus: 'COMPLETED'|'ABANDONED', score, comment? }
    */
-  router.patch("/books/:id/abandon", (req, res, next) =>
-    getController(BooksController).abandonBook(req, res, next)
+  router.patch("/books/:id/review", (req, res, next) =>
+    getController(BooksController).reviewBook(req, res, next)
+  );
+
+  /**
+   * PATCH /books/:id/request-review
+   * Manually transitions READING book to PENDING_SCORE
+   * Use case: User wants to abandon or close book without completing all pages
+   * Params: id (number)
+   * Body: none
+   */
+  router.patch("/books/:id/request-review", (req, res, next) =>
+    getController(BooksController).requestReview(req, res, next)
+  );
+
+  /**
+   * PATCH /books/:id/reopen
+   * Reopens an ABANDONED book, transitioning to READING
+   * Params: id (number)
+   * Body: none
+   */
+  router.patch("/books/:id/reopen", (req, res, next) =>
+    getController(BooksController).reopenBook(req, res, next)
   );
 
   return router;

@@ -142,18 +142,91 @@ export class BookRepository {
   }
 
   /**
-   * Complete or abandon book - update status, score, and comment
+   * Update book metadata (title, totalPages, score, comment) - does NOT change status
    * @param {number} bookId - Book ID
-   * @param {string} newStatus - New status code (COMPLETED or ABANDONED)
+   * @param {Object} data - Partial update data { title?, totalPages?, score?, comment? }
+   * @param {sql.Transaction} transaction - Active transaction
+   * @returns {Promise<Book>} Updated book entity
+   */
+  async updateMetadata(bookId, data, transaction) {
+    const updates = [];
+    const request = new sql.Request(transaction);
+
+    if (data.title !== undefined) {
+      updates.push("title = @title");
+      request.input("title", sql.NVarChar, data.title);
+    }
+
+    if (data.totalPages !== undefined) {
+      updates.push("total_pages = @totalPages");
+      request.input("totalPages", sql.Int, data.totalPages);
+    }
+
+    if (data.score !== undefined) {
+      updates.push("score = @score");
+      request.input("score", sql.Decimal(3, 1), data.score);
+    }
+
+    if (data.comment !== undefined) {
+      updates.push("comment = @comment");
+      request.input("comment", sql.NVarChar, data.comment || null);
+    }
+
+    // Always fetch and return the updated book within the same transaction
+    if (updates.length > 0) {
+      const query = `
+        UPDATE Books
+        SET ${updates.join(", ")}
+        WHERE id = @bookId
+      `;
+
+      await request
+        .input("bookId", sql.Int, bookId)
+        .query(query);
+    }
+
+    // Fetch updated book within the same transaction
+    const selectQuery = `
+      SELECT 
+        b.id,
+        b.title,
+        b.isbn,
+        b.author_id,
+        a.name as author_name,
+        c.name as author_nationality,
+        b.total_pages,
+        bs.internal_code as status_code,
+        b.current_reading_cycle,
+        b.score,
+        b.comment
+      FROM Books b
+      INNER JOIN Authors a ON b.author_id = a.id
+      LEFT JOIN Countries c ON a.nationality_id = c.id
+      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      WHERE b.id = @bookIdSelect
+    `;
+
+    const selectRequest = new sql.Request(transaction);
+    const result = await selectRequest
+      .input("bookIdSelect", sql.Int, bookId)
+      .query(selectQuery);
+
+    return Book.fromDatabase(result.recordset[0]);
+  }
+
+  /**
+   * Review book - transition from PENDING_SCORE to COMPLETED/ABANDONED with score
+   * @param {number} bookId - Book ID
+   * @param {string} targetStatus - Target status code (COMPLETED or ABANDONED)
    * @param {number} score - Book score (0.0-10.0)
    * @param {string|null} comment - Optional comment
    * @param {sql.Transaction} transaction - Active transaction
    * @returns {Promise<void>}
    */
-  async updateToClosedStatus(bookId, newStatus, score, comment, transaction) {
+  async updateReview(bookId, targetStatus, score, comment, transaction) {
     const query = `
       UPDATE Books
-      SET status_id = (SELECT id FROM BookStatuses WHERE internal_code = @newStatus),
+      SET status_id = (SELECT id FROM BookStatuses WHERE internal_code = @targetStatus),
           score = @score,
           comment = @comment
       WHERE id = @bookId
@@ -162,7 +235,7 @@ export class BookRepository {
     await transaction
       .request()
       .input("bookId", sql.Int, bookId)
-      .input("newStatus", sql.NVarChar, newStatus)
+      .input("targetStatus", sql.NVarChar, targetStatus)
       .input("score", sql.Decimal(3, 1), score)
       .input("comment", sql.NVarChar, comment || null)
       .query(query);
