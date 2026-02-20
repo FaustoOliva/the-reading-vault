@@ -9,6 +9,7 @@
 import { BookStatus } from "./BookStatus.js";
 import {
   BookClosedError,
+  BookPendingReviewError,
   InvalidStateTransitionError,
   MissingScoreError,
   InsufficientPagesError,
@@ -97,12 +98,16 @@ export class Book {
 
   /**
    * Check if book can accept new reading sessions
-   * Guard clause for ABANDONED status
+   * Guard clause for ABANDONED and PENDING_SCORE status
    * @throws {BookClosedError} if book is ABANDONED
+   * @throws {BookPendingReviewError} if book is PENDING_SCORE
    */
   ensureCanAcceptSession() {
     if (this.status === BookStatus.ABANDONED) {
       throw new BookClosedError(this.id, this.status);
+    }
+    if (this.status === BookStatus.PENDING_SCORE) {
+      throw new BookPendingReviewError(this.id);
     }
   }
 
@@ -130,9 +135,9 @@ export class Book {
       newCycle = this.currentReadingCycle + 1;
     }
 
-    // Transition 3: READING → COMPLETED (auto-completion)
-    if (this.status === BookStatus.READING && totalPagesAfterSession >= this.totalPages) {
-      newStatus = BookStatus.COMPLETED;
+    // Transition 3: READING → PENDING_SCORE (auto-completion, requires user review)
+    if (this.status === BookStatus.READING && this.totalPages !== null && totalPagesAfterSession >= this.totalPages) {
+      newStatus = BookStatus.PENDING_SCORE;
     }
 
     return {
@@ -154,77 +159,70 @@ export class Book {
   }
 
   /**
-   * Ensure book can be manually completed
-   * Valid transitions: WISH_LIST → COMPLETED, READING → COMPLETED
+   * Ensure book can be reviewed (marked as COMPLETED or ABANDONED with score)
+   * Valid transition: PENDING_SCORE → COMPLETED/ABANDONED
+   * @param {string} targetStatus - Target status (COMPLETED or ABANDONED)
    * @param {number|null} score - Score to be assigned
-   * @param {number} pagesReadTotal - Total pages read across all cycles
-   * @throws {InvalidStateTransitionError} if current status is COMPLETED or ABANDONED
+   * @throws {InvalidStateTransitionError} if current status is not PENDING_SCORE
    * @throws {MissingScoreError} if score is missing
-   * @throws {InsufficientPagesError} if total_pages defined and not all pages read
    */
-  ensureCanBeCompleted(score, pagesReadTotal) {
-    // Rule 1: Cannot re-complete a COMPLETED book
-    if (this.status === BookStatus.COMPLETED) {
+  ensureCanBeReviewed(targetStatus, score) {
+    // Rule 1: Can only review from PENDING_SCORE status
+    if (this.status !== BookStatus.PENDING_SCORE) {
       throw new InvalidStateTransitionError(
         this.id,
         this.status,
-        BookStatus.COMPLETED,
-        "Book is already completed. To update score/comment, use update endpoint."
+        targetStatus,
+        "Book must be in PENDING_SCORE status to be reviewed."
       );
     }
 
-    // Rule 2: Cannot complete an ABANDONED book directly
-    if (this.status === BookStatus.ABANDONED) {
+    // Rule 2: Target status must be COMPLETED or ABANDONED
+    if (targetStatus !== BookStatus.COMPLETED && targetStatus !== BookStatus.ABANDONED) {
       throw new InvalidStateTransitionError(
         this.id,
         this.status,
-        BookStatus.COMPLETED,
-        "Cannot complete an abandoned book directly."
+        targetStatus,
+        "Review can only transition to COMPLETED or ABANDONED."
       );
     }
 
     // Rule 3: Score is mandatory
     if (score === null || score === undefined) {
-      throw new MissingScoreError(this.id, BookStatus.COMPLETED);
-    }
-
-    // Rule 4: If total_pages is defined, all pages must be read
-    if (this.totalPages !== null && pagesReadTotal < this.totalPages) {
-      throw new InsufficientPagesError(this.id, pagesReadTotal, this.totalPages);
+      throw new MissingScoreError(this.id, targetStatus);
     }
   }
 
   /**
-   * Ensure book can be abandoned
-   * Valid transitions: WISH_LIST → ABANDONED, READING → ABANDONED
-   * @param {number|null} score - Score to be assigned
-   * @throws {InvalidStateTransitionError} if current status is COMPLETED or ABANDONED
-   * @throws {MissingScoreError} if score is missing
+   * Ensure book can request review (manual transition to PENDING_SCORE)
+   * Valid transition: READING → PENDING_SCORE (manual request)
+   * Use case: User wants to abandon book without completing all pages
+   * @throws {InvalidStateTransitionError} if current status is not READING
    */
-  ensureCanBeAbandoned(score) {
-    // Rule 1: Cannot abandon an already ABANDONED book
-    if (this.status === BookStatus.ABANDONED) {
+  ensureCanRequestReview() {
+    if (this.status !== BookStatus.READING) {
       throw new InvalidStateTransitionError(
         this.id,
         this.status,
-        BookStatus.ABANDONED,
-        "Book is already abandoned."
+        BookStatus.PENDING_SCORE,
+        "Only READING books can request review."
       );
     }
+  }
 
-    // Rule 2: Cannot abandon a COMPLETED book
-    if (this.status === BookStatus.COMPLETED) {
+  /**
+   * Ensure book can be reopened
+   * Valid transition: ABANDONED → READING
+   * @throws {InvalidStateTransitionError} if current status is not ABANDONED
+   */
+  ensureCanBeReopened() {
+    if (this.status !== BookStatus.ABANDONED) {
       throw new InvalidStateTransitionError(
         this.id,
         this.status,
-        BookStatus.ABANDONED,
-        "Cannot abandon a completed book."
+        BookStatus.READING,
+        "Only ABANDONED books can be reopened."
       );
-    }
-
-    // Rule 3: Score is mandatory
-    if (score === null || score === undefined) {
-      throw new MissingScoreError(this.id, BookStatus.ABANDONED);
     }
   }
 }

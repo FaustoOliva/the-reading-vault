@@ -14,6 +14,7 @@ export { ForbiddenError } from "./http/ForbiddenError.js";
 
 // Domain Errors
 export { BookClosedError } from "./domain/BookClosedError.js";
+export { BookPendingReviewError } from "./domain/BookPendingReviewError.js";
 export { InvalidStateTransitionError } from "./domain/InvalidStateTransitionError.js";
 export { MissingScoreError } from "./domain/MissingScoreError.js";
 export { InsufficientPagesError } from "./domain/InsufficientPagesError.js";
