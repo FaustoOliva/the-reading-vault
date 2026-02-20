@@ -22,6 +22,7 @@
 ### 1.1 Database Structure Reference
 
 > **⚠️ IMPORTANT:** For all database-related decisions (field types, table structure, foreign keys, constraints), refer to:
+>
 > - **[`packages/api/infraestructure/database/DATABASE_DESIGN.md`](packages/api/infraestructure/database/DATABASE_DESIGN.md)** (authoritative schema documentation)
 > - **[`packages/api/infraestructure/database/init.sql`](packages/api/infraestructure/database/init.sql)** (actual implementation)
 >
@@ -46,48 +47,48 @@
 
 ### 2.1 Book Entity
 
-| Field                   | Type        | Constraints                                         | Notes                                                        |
-| ----------------------- | ----------- | --------------------------------------------------- | ------------------------------------------------------------ |
-| `id`                    | INT         | Primary Key, IDENTITY(1,1)                          | System-generated                                             |
-| `title`                 | String      | Required, Max 255 chars                             |                                                              |
-| `isbn`                  | String      | Max 20 chars, NULL allowed                          | NULL for legacy books without ISBN                           |
-| `author_id`             | FK (Author) | Required, INT                                       | Must exist in Authors table                                  |
-| `total_pages`           | Int         | NULL allowed                                        | NULL for legacy books; validated > 0 when provided           |
-| `status_id`             | FK (BookStatuses) | INT, NOT NULL                                 | Internally FK; API exposes as enum (WISH_LIST, READING, etc.) |
-| `current_reading_cycle` | Int         | >= 1, NOT NULL, DEFAULT 1                           | Incremented when status transitions from COMPLETED → READING |
-| `score`                 | DECIMAL(3,1)| NULL allowed, 0.0 to 10.0                           | Mandatory when transitioning to COMPLETED or ABANDONED       |
-| `comment`               | Text        | NULL allowed                                        | User commentary for reviews and recommendations              |
+| Field                   | Type              | Constraints                | Notes                                                         |
+| ----------------------- | ----------------- | -------------------------- | ------------------------------------------------------------- |
+| `id`                    | INT               | Primary Key, IDENTITY(1,1) | System-generated                                              |
+| `title`                 | String            | Required, Max 255 chars    |                                                               |
+| `isbn`                  | String            | Max 20 chars, NULL allowed | NULL for legacy books without ISBN                            |
+| `author_id`             | FK (Author)       | Required, INT              | Must exist in Authors table                                   |
+| `total_pages`           | Int               | NULL allowed               | NULL for legacy books; validated > 0 when provided            |
+| `status_id`             | FK (BookStatuses) | INT, NOT NULL              | Internally FK; API exposes as enum (WISH_LIST, READING, etc.) |
+| `current_reading_cycle` | Int               | >= 1, NOT NULL, DEFAULT 1  | Incremented when status transitions from COMPLETED → READING  |
+| `score`                 | DECIMAL(3,1)      | NULL allowed, 0.0 to 10.0  | Mandatory when transitioning to COMPLETED or ABANDONED        |
+| `comment`               | Text              | NULL allowed               | User commentary for reviews and recommendations               |
 
 ### 2.2 Reading Session Entity
 
-| Field           | Type      | Constraints             | Notes                                                          |
-| --------------- | --------- | ----------------------- | -------------------------------------------------------------- |
-| `id`            | INT       | Primary Key, IDENTITY(1,1) | System-generated                                            |
-| `book_id`       | FK (Book) | Required, INT           | Must reference valid Book                                      |
-| `reading_cycle` | Int       | >= 1, NOT NULL, DEFAULT 1 | Captured from Book.current_reading_cycle at time of insert   |
-| `pages_read`    | Int       | > 0, <= remaining_pages | Validation: pages_read + current_pages_in_cycle <= total_pages |
-| `duration`      | Int       | NULL allowed            | Session duration in minutes (optional)                         |
-| `occurred_at`   | Timestamp | User-defined date       | Optional, defaults to NOW. Must be <= server NOW               |
-| `created_at`    | Timestamp | Server time             | Auto-generated at logging time                                 |
+| Field           | Type      | Constraints                | Notes                                                          |
+| --------------- | --------- | -------------------------- | -------------------------------------------------------------- |
+| `id`            | INT       | Primary Key, IDENTITY(1,1) | System-generated                                               |
+| `book_id`       | FK (Book) | Required, INT              | Must reference valid Book                                      |
+| `reading_cycle` | Int       | >= 1, NOT NULL, DEFAULT 1  | Captured from Book.current_reading_cycle at time of insert     |
+| `pages_read`    | Int       | > 0, <= remaining_pages    | Validation: pages_read + current_pages_in_cycle <= total_pages |
+| `duration`      | Int       | NULL allowed               | Session duration in minutes (optional)                         |
+| `occurred_at`   | Timestamp | User-defined date          | Optional, defaults to NOW. Must be <= server NOW               |
+| `created_at`    | Timestamp | Server time                | Auto-generated at logging time                                 |
 
 ### 2.3 Book Status History Entity
 
-| Field           | Type      | Constraints                    | Notes                     |
-| --------------- | --------- | ------------------------------ | ------------------------- |
-| `id`            | INT       | Primary Key, IDENTITY(1,1)     | System-generated          |
-| `book_id`       | FK (Book) | Required, INT                  | Must reference valid Book |
-| `old_status_id` | INT       | Foreign Key (BookStatuses.id)  | NULL for new books        |
-| `new_status_id` | INT       | Foreign Key (BookStatuses.id), NOT NULL |                  |
-| `reading_cycle` | Int       | NOT NULL, DEFAULT 1            | Cycle when transition occurred |
-| `created_at`    | Timestamp | Server time, NOT NULL, DEFAULT GETDATE() | System-generated |
+| Field           | Type      | Constraints                              | Notes                          |
+| --------------- | --------- | ---------------------------------------- | ------------------------------ |
+| `id`            | INT       | Primary Key, IDENTITY(1,1)               | System-generated               |
+| `book_id`       | FK (Book) | Required, INT                            | Must reference valid Book      |
+| `old_status_id` | INT       | Foreign Key (BookStatuses.id)            | NULL for new books             |
+| `new_status_id` | INT       | Foreign Key (BookStatuses.id), NOT NULL  |                                |
+| `reading_cycle` | Int       | NOT NULL, DEFAULT 1                      | Cycle when transition occurred |
+| `created_at`    | Timestamp | Server time, NOT NULL, DEFAULT GETDATE() | System-generated               |
 
 ### 2.4 Author Entity
 
-| Field            | Type        | Constraints               | Notes                                 |
-| ---------------- | ----------- | ------------------------- | ------------------------------------- |
-| `id`             | INT         | Primary Key, IDENTITY(1,1) | System-generated                     |
-| `name`           | String      | Unique, NOT NULL, Max 255 | Must validate duplicate before insert |
-| `nationality_id` | FK (Countries) | INT, NULL allowed      | References Countries table; NULL if unknown |
+| Field            | Type           | Constraints                | Notes                                       |
+| ---------------- | -------------- | -------------------------- | ------------------------------------------- |
+| `id`             | INT            | Primary Key, IDENTITY(1,1) | System-generated                            |
+| `name`           | String         | Unique, NOT NULL, Max 255  | Must validate duplicate before insert       |
+| `nationality_id` | FK (Countries) | INT, NULL allowed          | References Countries table; NULL if unknown |
 
 ---
 
@@ -127,12 +128,12 @@ _Rationale:_ Abandoned books represent a user decision to stop reading. They are
 
 ### 3.3 Smart Transitions (Cycle Logic)
 
-| Current Status | Trigger Event | Action                                                                                                                         | History Entry                                          | Cycle Change                   |
-| -------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ | ------------------------------ |
-| `WISH_LIST`    | Log Session   | 1. Transition `status_id` to `READING` 2. Create history entry                                                                | `(WISH_LIST → READING, "USER_LOG_SESSION", cycle=1)`   | No change                      |
-| `READING`      | Log Session   | 1. Update `pages_read_total` 2. Check for auto-completion (see 3.4)                                                            | Only if auto-completion occurs                         | Only if auto-completion occurs |
+| Current Status | Trigger Event | Action                                                                                                                                     | History Entry                                          | Cycle Change                   |
+| -------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ | ------------------------------ |
+| `WISH_LIST`    | Log Session   | 1. Transition `status_id` to `READING` 2. Create history entry                                                                             | `(WISH_LIST → READING, "USER_LOG_SESSION", cycle=1)`   | No change                      |
+| `READING`      | Log Session   | 1. Update `pages_read_total` 2. Check for auto-completion (see 3.4)                                                                        | Only if auto-completion occurs                         | Only if auto-completion occurs |
 | `COMPLETED`    | Log Session   | 1. Increment `current_reading_cycle` 2. Transition `status_id` to `READING` 3. Create history entry 4. Reset `pages_read_in_current_cycle` | `(COMPLETED → READING, "USER_LOG_SESSION", cycle=N+1)` | +1                             |
-| `ABANDONED`    | Log Session   | BLOCKED (Guard Clause 1)                                                                                                       | —                                                      | —                              |
+| `ABANDONED`    | Log Session   | BLOCKED (Guard Clause 1)                                                                                                                   | —                                                      | —                              |
 
 **Note:** `status_id` is stored as INT (FK to BookStatuses). API layer translates to enum (WISH_LIST, READING, etc.) using `internal_code`.
 
@@ -156,6 +157,7 @@ END IF
 2. Legacy book import with any valid status (WISH_LIST, READING, COMPLETED, ABANDONED)
 
 **Status Selection During Creation:**
+
 - If no status is provided → defaults to WISH_LIST
 - If status is provided → must be a valid BookStatus enum value
 - Legacy books can be created directly in COMPLETED or ABANDONED states
@@ -163,7 +165,7 @@ END IF
 
 Rationale: Automatic completion ensures KPI history accuracy for ongoing books, while allowing historical data import.
 
-e### 3.5 Persistence Operations
+### 3.5 Persistence Operations
 
 **Required Data Mutations:**
 
@@ -416,11 +418,16 @@ END IF
 
 ```
 IF book_input.author is missing OR NULL THEN
-  authorBook Creation with Initial Status
+  author_id = DEFAULT_AUTHOR_ID ("Unknown Author")
+END IF
+```
+
+### 7.2 Book Creation with Initial Status
 
 **Use Case:** Support both new books and legacy book import scenarios.
 
 **General Creation Rule:**
+
 - New books without status specification default to `WISH_LIST`
 - Legacy books can be created with any valid initial status
 
@@ -447,24 +454,28 @@ IF book_input.author is missing OR NULL THEN
    - No ReadingSessions created
 
 **Common Processing:**
+
 1. ✅ Validate all inputs (ISBN not duplicate if provided, etc.)
 2. ✅ Find or create Author (deduplication via author name)
 3. ✅ Find or create Country (if nationality provided)
 4. ✅ Create Book with specified `status_id` (or WISH_LIST if omitted)
 5. ✅ Create BookStatusHistory entry: `(NULL → {specified_status}, cycle: 1)`
 
-### 7.3 Legacy Book Import (Specialized Case)
+### 7.3 Legacy Book Import
 
-**Legacy Import Note:** The general creation mechanism (7.2) handles legacy imports. 
-No separate ImportLegacyBook use case is needed - use CreateBook with explicit status
-2. ✅ Find or create Author (deduplication)
-3. ✅ Create Book with `status_id = COMPLETED`, `current_reading_cycle = 1`, `score`, and `comment`
-4. ✅ Create BookStatusHistory entry: `(old_status_id: NULL → new_status_id: COMPLETED, cycle: 1)`
-5. ❌ DO NOT create ReadingSessions
+**Legacy Import Note:** The general creation mechanism (7.2) handles legacy imports. No separate ImportLegacyBook use case is needed - use CreateBook with explicit status (COMPLETED or ABANDONED) when importing historical data.
+
+**Key Points for Legacy Books:**
+
+- Use CreateBook with explicit status (COMPLETED or ABANDONED)
+- Provide `score` and optionally `comment` if status requires it
+- Set `current_reading_cycle = 1`
+- Do NOT create fabricated ReadingSessions
+- BookStatusHistory will record: `(old_status_id: NULL → new_status_id: {status}, cycle: 1)`
 
 **Rationale:** Preserves historical data without fabricating reading sessions, maintains KPI integrity.
 
-### 7.3 Book Scoring & Comments
+### 7.4 Book Scoring & Comments
 
 **Implementation:** `score` and `comment` are stored directly in the `Books` table (no separate BookReview entity).
 
@@ -482,11 +493,16 @@ No separate ImportLegacyBook use case is needed - use CreateBook with explicit s
 **Lifecycle:**
 
 ```
-ON Book.status_id → COMPLETED or ABANDONED:
+ON Book.status_id → COMPLETED or ABANDONED (via review):
   REQUIRE score in [0.0, 10.0]
+  IF score IS NULL THEN
+    THROW MissingScoreException
+  END IF
   UPDATE Books SET score = input.score, comment = input.comment
-END IF
+END
 ```
+
+**Note:** Score can be updated anytime via PUT /books/:id. Comment is always optional.
 
 ---
 
@@ -494,45 +510,52 @@ END IF
 
 ### 8.1 Book Status Transitions (Complete State Machine)
 
-| From        | To          | Trigger                         | Automatic?               | Requirements           | History Entry                                                           |
-| ----------- | ----------- | ------------------------------- | ------------------------ | ---------------------- | ----------------------------------------------------------------------- |
-| `WISH_LIST` | `READING`   | Log Session                     | ✅ Yes                   | None                   | `(WISH_LIST → READING, "USER_LOG_SESSION", cycle=1)`                    |
-| `READING`   | `COMPLETED` | pages_read_total >= total_pages | ✅ Yes (Auto-completion) | None (condition-based) | `(READING → COMPLETED, "COMPLETED_AUTO_TRANSITION", cycle=N)`           |
-| `COMPLETED` | `READING`   | Log Session                     | ✅ Yes                   | None                   | `(COMPLETED → READING, "USER_LOG_SESSION", cycle=N+1)` Increments cycle |
-| `COMPLETED` | `ABANDONED` | User Decision                   | ❌ Manual                | Score required         | `(COMPLETED → ABANDONED, "USER_ABANDONED", cycle=N)`                    |
-| `READING`   | `ABANDONED` | User Decision                   | ❌ Manual                | Score required         | `(READING → ABANDONED, "USER_ABANDONED", cycle=N)`                      |
-| `ABANDONED` | `READING`   | User Reopen                     | ❌ Manual                | None                   | `(ABANDONED → READING, "USER_REOPENED", cycle=N+1)` Increments cycle    |
-| `WISH_LIST` | `ABANDONED` | User Decision                   | ❌ Manual                | Score required         | `(WISH_LIST → ABANDONED, "USER_ABANDONED", cycle=1)`                    |
+| From            | To              | Trigger                         | Automatic?            | Requirements           | History Entry                                                               |
+| --------------- | --------------- | ------------------------------- | --------------------- | ---------------------- | --------------------------------------------------------------------------- |
+| `WISH_LIST`     | `READING`       | Log Session                     | ✅ Yes                 | None                   | `(WISH_LIST → READING, "USER_LOG_SESSION", cycle=1)`                       |
+| `READING`       | `PENDING_SCORE` | pages_read_total >= total_pages | ✅ Yes (Auto-complete) | None (condition-based) | `(READING → PENDING_SCORE, "AUTO_COMPLETION", cycle=N)`                     |
+| `READING`       | `PENDING_SCORE` | User Request Review             | ❌ Manual              | None                   | `(READING → PENDING_SCORE, "USER_REQUEST_REVIEW", cycle=N)`                |
+| `PENDING_SCORE` | `COMPLETED`     | User Review                     | ❌ Manual              | Score required         | `(PENDING_SCORE → COMPLETED, "USER_REVIEW", cycle=N)`                       |
+| `PENDING_SCORE` | `ABANDONED`     | User Review                     | ❌ Manual              | Score required         | `(PENDING_SCORE → ABANDONED, "USER_REVIEW", cycle=N)`                       |
+| `COMPLETED`     | `READING`       | Log Session                     | ✅ Yes                 | None                   | `(COMPLETED → READING, "USER_LOG_SESSION", cycle=N+1)` Increments cycle    |
+| `ABANDONED`     | `READING`       | User Reopen                     | ❌ Manual              | None                   | `(ABANDONED → READING, "USER_REOPENED", cycle=N+1)` Increments cycle       |
+
+**Invalid Transitions (Blocked):**
+- `PENDING_SCORE` → `READING` via Log Session (throws `BookPendingReviewError`)
+- `ABANDONED` → anywhere (except `READING` via reopen)
 
 ### 8.2 Session Logging Decision Tree
 
 ```
-START: User logs reading session
-  ├─ Validate input (pages_read > 0, occurred_at <= NOW, pages_read + cycle_pages <= total)
-  │  └─ FAIL: Throw ValidationException
-  │
-  ├─ Fetch Book
-  │  ├─ IF NOT FOUND: Throw BookNotFoundException
-  │  └─ IF status_id == ABANDONED (4): Throw BookClosedException (GUARD CLAUSE)
-  │
-  ├─ Execute Persistence Operations:
-  │  ├─ INSERT ReadingSession (pages_read, occurred_at, reading_cycle from Book.current_reading_cycle)
-  │  ├─ UPDATE Books.pages_read_total += pages_read
-  │  ├─ Check if total_pages IS NOT NULL AND pages_read_total >= total_pages
-  │  │  ├─ YES (Auto-Completion):
-  │  │  │  ├─ UPDATE Books.status_id = COMPLETED (3)
-  │  │  │  └─ INSERT BookStatusHistory (READING → COMPLETED, "COMPLETED_AUTO_TRANSITION")
-  │  │  └─ NO:
-  │  │     └─ IF Book.status_id == WISH_LIST (1):
-  │  │        ├─ UPDATE Books.status_id = READING (2)
-  │  │        └─ INSERT BookStatusHistory (WISH_LIST → READING, "USER_LOG_SESSION")
-  │  │     └─ IF Book.status_id == COMPLETED (3):
-  │  │        ├─ UPDATE Books.status_id = READING (2), current_reading_cycle += 1
-  │  │        └─ INSERT BookStatusHistory (COMPLETED → READING, "USER_LOG_SESSION", cycle=N+1)
 
-  │
-  └─ RETURN LogSessionResponse
-       (session_id, velocity_current_cycle, velocity_7d, velocity_30d, estimated_completion, reading_streak)
+START: User logs reading session
+├─ Validate input (pages_read > 0, occurred_at <= NOW, pages_read + cycle_pages <= total)
+│ └─ FAIL: Throw ValidationException
+│
+├─ Fetch Book
+│ ├─ IF NOT FOUND: Throw BookNotFoundException
+│ ├─ IF status_id == ABANDONED (4): Throw BookClosedException (GUARD CLAUSE)
+│ └─ IF status_id == PENDING_SCORE (5): Throw BookPendingReviewError (GUARD CLAUSE)
+│
+├─ Execute Persistence Operations:
+│ ├─ INSERT ReadingSession (pages_read, occurred_at, reading_cycle from Book.current_reading_cycle)
+│ ├─ UPDATE Books.pages_read_total += pages_read
+│ ├─ Check if total_pages IS NOT NULL AND pages_read_total >= total_pages
+│ │ ├─ YES (Auto-Completion):
+│ │ │ ├─ UPDATE Books.status_id = PENDING_SCORE (5)
+│ │ │ └─ INSERT BookStatusHistory (READING → PENDING_SCORE, "AUTO_COMPLETION")
+│ │ └─ NO:
+│ │ └─ IF Book.status_id == WISH_LIST (1):
+│ │ ├─ UPDATE Books.status_id = READING (2)
+│ │ └─ INSERT BookStatusHistory (WISH_LIST → READING, "USER_LOG_SESSION")
+│ │ └─ IF Book.status_id == COMPLETED (3):
+│ │ ├─ UPDATE Books.status_id = READING (2), current_reading_cycle += 1
+│ │ └─ INSERT BookStatusHistory (COMPLETED → READING, "USER_LOG_SESSION", cycle=N+1)
+
+│
+└─ RETURN LogSessionResponse
+(session_id, velocity_current_cycle, velocity_7d, velocity_30d, estimated_completion, reading_streak)
+
 ```
 
 ---
@@ -541,12 +564,13 @@ START: User logs reading session
 
 ### 9.1 Domain Exceptions
 
-| Exception                      | HTTP Code       | Message                                                           | Trigger                                   |
-| ------------------------------ | --------------- | ----------------------------------------------------------------- | ----------------------------------------- |
-| `BookClosedException`          | 403 Forbidden   | "This book is abandoned and locked. Manually reopen to continue." | Logging session on ABANDONED book         |
-| `BookNotFoundException`        | 404 Not Found   | "Book with ID '...' not found."                                   | Invalid book_id reference                 |
-| `DuplicateISBNException`       | 409 Conflict    | "A book with ISBN '...' already exists in your library."          | ISBN uniqueness violation                 |
-| `ValidationException`          | 400 Bad Request | Field-specific error messages                                     | Input validation fails                    |
+| Exception                      | HTTP Code       | Message                                                                                          | Trigger                                      |
+| ------------------------------ | --------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| `BookClosedException`          | 403 Forbidden   | "This book is abandoned and locked. Manually reopen to continue."                                | Logging session on ABANDONED book            |
+| `BookPendingReviewError`       | 403 Forbidden   | "Book requires review (score) before logging new sessions. Complete or abandon the book first."  | Logging session on PENDING_SCORE book        |
+| `BookNotFoundException`        | 404 Not Found   | "Book with ID '...' not found."                                                                  | Invalid book_id reference                    |
+| `DuplicateISBNException`       | 409 Conflict    | "A book with ISBN '...' already exists in your library."                                         | ISBN uniqueness violation                    |
+| `ValidationException`          | 400 Bad Request | Field-specific error messages                                                                    | Input validation fails                       |
 | `ImmutableSessionException`    | 403 Forbidden   | "Cannot modify sessions in completed reading cycles."             | Attempt to edit/delete past cycle session |
 | `IntegrityConstraintViolation` | 409 Conflict    | "Cannot delete book with existing sessions."                      | Hard delete with FK references            |
 | `MissingScoreException`        | 400 Bad Request | "Score required when marking book as completed or abandoned."     | Missing score on transition               |
@@ -579,8 +603,6 @@ LogSessionResponse {
   } | null
 }
 ```
-
-
 
 ---
 

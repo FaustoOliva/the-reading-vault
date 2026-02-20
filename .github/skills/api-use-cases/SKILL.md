@@ -98,7 +98,20 @@ Refer to:
 - Test domain behavior, not implementation details
 - Mock only repositories or infrastructure
 
+**For transactional services (mutates 2+ tables):**
+- Create unit tests: `<service>.test.js`
+- Create integration tests: `transactionIntegration.test.js` or `<service>TransactionIntegration.test.js`
+
+**Integration tests must cover:**
+- Timeout handling (`ETIMEOUT`)
+- Deadlock detection (SQL error 1205)
+- Lock timeout (SQL error 1222)
+- Rollback guarantees on any error
+- Concurrent transaction conflicts
+
 Coverage target: ≥ 80%
+
+**Reference:** `api-testing` skill for complete patterns and examples.
 
 ---
 

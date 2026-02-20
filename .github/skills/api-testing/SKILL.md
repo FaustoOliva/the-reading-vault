@@ -35,6 +35,79 @@ This skill applies when:
 - FSM behavior must be explicitly tested.
 - Do NOT test getters or trivial value objects.
 
+### Transaction Integration Tests (Mandatory for Transactional Services)
+
+When a service uses transactions (mutates 2+ tables), create a dedicated integration test file.
+
+**File naming:** `transactionIntegration.test.js` or `<service>TransactionIntegration.test.js`
+
+**Required scenarios:**
+
+1. **Timeout Handling**
+   - Operation exceeds timeout limit
+   - Multiple concurrent timeouts
+   - Error code: `ETIMEOUT`
+
+2. **Deadlock Detection**
+   - SQL Server deadlock error (1205)
+   - Verify rollback on deadlock
+   - Test all transaction steps (not just first)
+
+3. **Lock Timeout**
+   - Resource locked by another transaction
+   - Error code: `EREQUEST` with number 1222
+
+4. **Rollback Guarantees**
+   - Any error triggers rollback
+   - Commit never executes after error
+   - Rollback failure doesn't commit
+
+5. **Concurrent Conflicts**
+   - Concurrent modifications to same resource
+   - One succeeds, one fails pattern
+
+**Pattern:**
+
+```javascript
+describe("Transaction Integration Tests", () => {
+  it("should rollback transaction when operation times out", async () => {
+    // Arrange
+    const mockTransaction = {
+      begin: vi.fn().mockResolvedValue(undefined),
+      commit: vi.fn().mockResolvedValue(undefined),
+      rollback: vi.fn().mockResolvedValue(undefined)
+    };
+    
+    const originalTransaction = sql.Transaction;
+    sql.Transaction = vi.fn(() => mockTransaction);
+    
+    // Simulate timeout error
+    const timeoutError = new Error("Timeout");
+    timeoutError.code = "ETIMEOUT";
+    mockRepository.create.mockRejectedValue(timeoutError);
+    
+    // Act & Assert
+    await expect(service.execute(input)).rejects.toThrow(timeoutError);
+    
+    // Verify transaction lifecycle
+    expect(mockTransaction.begin).toHaveBeenCalledTimes(1);
+    expect(mockTransaction.rollback).toHaveBeenCalledTimes(1);
+    expect(mockTransaction.commit).not.toHaveBeenCalled();
+    
+    // Restore
+    sql.Transaction = originalTransaction;
+  });
+});
+```
+
+**Key assertions:**
+- `begin()` called exactly once
+- `rollback()` called on error
+- `commit()` never called on error
+- Original error re-thrown
+
+**Reference:** See `test/transactionIntegration.test.js` for complete examples.
+
 ---
 
 ## What NOT to Test
@@ -86,6 +159,12 @@ Mixing steps is forbidden.
 - Tests live under `/test`
 - Folder structure must mirror `/services` or `/models`
 - One test file per service or domain entity
+- Transaction integration tests: dedicated files (e.g., `transactionIntegration.test.js`)
+
+**For transactional services:**
+- Create both unit test (`<service>.test.js`) AND integration test
+- Unit tests: mock transaction, test business logic
+- Integration tests: verify transaction lifecycle, timeouts, deadlocks
 
 ---
 
@@ -95,6 +174,10 @@ Mixing steps is forbidden.
 - Target coverage: 80%+
 - Coverage is a quality signal, not a goal.
 - Missing edge cases are more important than numbers.
+
+**Mandatory for transactional services:**
+- Unit tests covering business logic
+- Integration tests covering transaction errors (timeout, deadlock, rollback)
 
 ---
 
