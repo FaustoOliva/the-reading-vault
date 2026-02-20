@@ -11,7 +11,7 @@
 
 import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
 import { api } from '@/services/api';
-import { Book, BookDetails, BooksFilter, PaginationParams, CreateBookInput } from '@/types/book';
+import { Book, BookDetails, BooksFilter, PaginationParams, CreateBookInput, UpdateBookInput, ReviewBookInput } from '@/types/book';
 
 /**
  * Query Keys Factory
@@ -121,6 +121,82 @@ export function useCreateBook() {
     mutationFn: (data: CreateBookInput) => api.post<Book>('/api/books', data),
     onSuccess: () => {
       // Invalidate all book lists to show new book
+      queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook: Update book metadata
+ */
+export function useUpdateBook() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateBookInput }) =>
+      api.put<{ success: boolean; data: Book }>(`/api/books/${id}`, data),
+    onSuccess: (_, variables) => {
+      // Invalidate book details and lists
+      queryClient.invalidateQueries({ queryKey: booksKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook: Review a PENDING_SCORE book (mark as COMPLETED or ABANDONED with score)
+ */
+export function useReviewBook() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: ReviewBookInput }) =>
+      api.request<{ success: boolean; data: Book }>(`/api/books/${id}/review`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: (_, variables) => {
+      // Invalidate book details and lists
+      queryClient.invalidateQueries({ queryKey: booksKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook: Reopen an ABANDONED book
+ */
+export function useReopenBook() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) =>
+      api.request<{ success: boolean; data: Book }>(`/api/books/${id}/reopen`, {
+        method: 'PATCH',
+      }),
+    onSuccess: (_, bookId) => {
+      // Invalidate book details and lists
+      queryClient.invalidateQueries({ queryKey: booksKeys.detail(bookId) });
+      queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook: Request review (manual transition from READING to PENDING_SCORE)
+ * Use case: User wants to abandon book without completing all pages
+ */
+export function useRequestReview() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) =>
+      api.request<{ success: boolean; data: Book }>(`/api/books/${id}/request-review`, {
+        method: 'PATCH',
+      }),
+    onSuccess: (_, bookId) => {
+      // Invalidate book details and lists
+      queryClient.invalidateQueries({ queryKey: booksKeys.detail(bookId) });
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
     },
   });

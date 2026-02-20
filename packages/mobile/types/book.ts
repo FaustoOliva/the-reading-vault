@@ -8,6 +8,7 @@ export enum BookStatus {
   READING = 'READING',
   COMPLETED = 'COMPLETED',
   ABANDONED = 'ABANDONED',
+  PENDING_SCORE = 'PENDING_SCORE',
 }
 
 export interface Book {
@@ -72,10 +73,25 @@ export interface CreateBookInput {
   isbn?: string;
   totalPages?: number;
   status?: BookStatus;
+  score?: number;
+  comment?: string;
   author: {
     name: string;
     nationality?: string;
   };
+}
+
+export interface UpdateBookInput {
+  title?: string;
+  totalPages?: number;
+  score?: number;
+  comment?: string;
+}
+
+export interface ReviewBookInput {
+  targetStatus: BookStatus.COMPLETED | BookStatus.ABANDONED;
+  score: number;
+  comment?: string;
 }
 
 export interface BooksFilter {

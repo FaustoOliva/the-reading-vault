@@ -63,6 +63,11 @@ export const Status = {
     text: '#B91C1C',         // red-700 - Contrast: 7.5:1
     border: '#FECACA',       // red-200
   },
+  pendingScore: {
+    background: '#FFFBEB',   // amber-50
+    text: '#B45309',         // amber-700 - Contrast: 7.5:1
+    border: '#FDE68A',       // amber-200
+  },
 } as const;
 
 /**
@@ -169,6 +174,7 @@ export function getStatusColors(status: BookStatus) {
     [BookStatus.READING]: Status.reading,
     [BookStatus.COMPLETED]: Status.completed,
     [BookStatus.ABANDONED]: Status.abandoned,
+    [BookStatus.PENDING_SCORE]: Status.pendingScore,
   };
 
   return statusMap[status];

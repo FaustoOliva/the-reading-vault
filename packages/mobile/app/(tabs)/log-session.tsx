@@ -1,6 +1,6 @@
 /**
  * Log Reading Session Screen
- * Form to create reading sessions for books in READING status
+ * Form to create reading sessions for books in WISH_LIST or READING status
  */
 
 import { useState } from 'react';
@@ -39,10 +39,8 @@ export default function LogSessionScreen() {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Fetch books in READING status
-  const { data: booksResponse, isLoading: booksLoading } = useBooks({
-    status: BookStatus.READING,
-  });
+  // Fetch all books - will filter on client side
+  const { data: booksResponse, isLoading: booksLoading } = useBooks();
 
   // Fetch selected book details
   const { data: bookDetails, isLoading: detailsLoading } = useBookDetails(
@@ -53,7 +51,10 @@ export default function LogSessionScreen() {
   // Create session mutation
   const createSession = useCreateReadingSession();
 
-  const books = booksResponse?.data ?? [];
+  // Filter books to show only WISH_LIST and READING statuses
+  const books = (booksResponse?.data ?? []).filter(
+    (book) => book.status === BookStatus.WISH_LIST || book.status === BookStatus.READING
+  );
 
   // Calculate pages read in current cycle
   const calculatePagesReadInCycle = (): number => {
@@ -162,7 +163,9 @@ export default function LogSessionScreen() {
       if (error.message?.includes('BookNotFoundError')) {
         setErrorMessage('Book not found. Please refresh the list.');
       } else if (error.message?.includes('BookClosedError')) {
-        setErrorMessage('This book is abandoned. Reopen it to log sessions.');
+        setErrorMessage('This book is closed. Please reopen or review it first.');
+      } else if (error.message?.includes('BookPendingReviewError')) {
+        setErrorMessage('This book requires review (score) before logging more sessions.');
       } else if (error.message?.includes('InvalidStateTransitionError')) {
         setErrorMessage('Invalid operation. Please refresh and try again.');
       } else {
@@ -195,7 +198,7 @@ export default function LogSessionScreen() {
               selectable
               accessibilityRole="text"
               accessibilityLabel="No books available">
-              No books in progress. Start a book first!
+              No books available. Add a book to your wish list or start reading!
             </Text>
           ) : (
             <View style={styles.pickerContainer}>
@@ -204,8 +207,8 @@ export default function LogSessionScreen() {
                 onValueChange={(value) => setSelectedBookId(value)}
                 style={styles.picker}
                 accessibilityLabel="Select book"
-                accessibilityHint="Choose a book you're currently reading">
-                <Picker.Item label="Select a book you're reading" value={null} />
+                accessibilityHint="Choose a book from your wish list or currently reading">
+                <Picker.Item label="Select a book to log session" value={null} />
                 {books.map((book) => (
                   <Picker.Item
                     key={book.id}

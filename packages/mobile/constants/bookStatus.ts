@@ -12,6 +12,7 @@ export const BOOK_STATUS_LABELS: Record<BookStatus, string> = {
   [BookStatus.READING]: 'Reading',
   [BookStatus.COMPLETED]: 'Completed',
   [BookStatus.ABANDONED]: 'Abandoned',
+  [BookStatus.PENDING_SCORE]: 'Review Pending',
 };
 
 export const BOOK_STATUS_OPTIONS = [
