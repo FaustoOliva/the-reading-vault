@@ -488,13 +488,13 @@ describe("Book Domain Entity", () => {
         // Assert
         expect(transition).toEqual({
           oldStatus: BookStatus.READING,
-          newStatus: BookStatus.COMPLETED,
+          newStatus: BookStatus.PENDING_SCORE,
           newCycle: 1,
           shouldTransition: true
         });
       });
 
-      it("should transition to COMPLETED when total pages read exceeds total pages", () => {
+      it("should transition to PENDING_SCORE when total pages read exceeds total pages", () => {
         // Arrange
         const book = new Book({
           id: 1,
@@ -514,7 +514,7 @@ describe("Book Domain Entity", () => {
         const transition = book.calculateTransition(150, 100);
 
         // Assert
-        expect(transition.newStatus).toBe(BookStatus.COMPLETED);
+        expect(transition.newStatus).toBe(BookStatus.PENDING_SCORE);
         expect(transition.shouldTransition).toBe(true);
       });
 

@@ -3,8 +3,8 @@
  * Tests for the LogReadingSession use case
  * 
  * Coverage:
- * - Guard clauses (ABANDONED status)
- * - Smart transitions (WISH_LIST → READING, COMPLETED → READING, auto-completion)
+ * - Guard clauses (ABANDONED status, PENDING_SCORE status)
+ * - Smart transitions (WISH_LIST → READING, COMPLETED → READING, READING → PENDING_SCORE)
  * - Validation (pages_read constraint)
  * - Transaction rollback on failure
  */
@@ -89,6 +89,27 @@ describe("LogReadingSessionService", () => {
 
       // Act & Assert
       await expect(service.execute(input)).rejects.toThrow(BookClosedError);
+      // Note: Transaction never begins for validation errors, so rollback is not called
+      expect(mockTransaction.begin).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Guard Clause: PENDING_SCORE Status", () => {
+    it("should throw BookPendingReviewError when book is PENDING_SCORE", async () => {
+      // Arrange
+      const input = { bookId: 1, pagesRead: 50 };
+      const pendingScoreBook = new Book({
+        id: 1,
+        title: "Needs Review",
+        status: BookStatus.PENDING_SCORE,
+        totalPages: 300,
+        currentReadingCycle: 1
+      });
+
+      mockBookRepository.getById.mockResolvedValue(pendingScoreBook);
+
+      // Act & Assert
+      await expect(service.execute(input)).rejects.toThrow();
       // Note: Transaction never begins for validation errors, so rollback is not called
       expect(mockTransaction.begin).not.toHaveBeenCalled();
     });
@@ -253,7 +274,7 @@ describe("LogReadingSessionService", () => {
   });
 
   describe("Smart Transition: Auto-Completion", () => {
-    it("should auto-complete book when pages_read reaches total_pages", async () => {
+    it("should transition to PENDING_SCORE when pages_read reaches total_pages", async () => {
       // Arrange
       const input = { bookId: 1, pagesRead: 100 };
       const readingBook = new Book({
@@ -281,7 +302,7 @@ describe("LogReadingSessionService", () => {
       // Assert
       expect(mockBookRepository.updateStatus).toHaveBeenCalledWith(
         1,
-        BookStatus.COMPLETED,
+        BookStatus.PENDING_SCORE,
         1,
         mockTransaction
       );
@@ -289,7 +310,7 @@ describe("LogReadingSessionService", () => {
         {
           bookId: 1,
           oldStatus: BookStatus.READING,
-          newStatus: BookStatus.COMPLETED,
+          newStatus: BookStatus.PENDING_SCORE,
           readingCycle: 1
         },
         mockTransaction
