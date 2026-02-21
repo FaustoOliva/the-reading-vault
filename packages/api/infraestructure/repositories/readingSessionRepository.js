@@ -162,4 +162,101 @@ export class ReadingSessionRepository {
 
     return result.recordset;
   }
+
+  /**
+   * Calculate global reading session metrics
+   * No transaction needed (read-only)
+   * @returns {Promise<Object>} Global session statistics
+   */
+  async calculateGlobalMetrics() {
+    const pool = await this.mssqlClient.getConnection();
+    
+    const query = `
+      SELECT 
+        COUNT(*) as totalSessions,
+        ISNULL(SUM(pages_read), 0) as totalPages,
+        COUNT(DISTINCT book_id) as booksWithSessions,
+        MIN(occurred_at) as firstSessionDate,
+        MAX(occurred_at) as lastSessionDate,
+        COUNT(DISTINCT CAST(occurred_at AS DATE)) as readingDays
+      FROM ReadingSessions
+    `;
+    
+    const result = await pool.request().query(query);
+    return result.recordset[0];
+  }
+
+  /**
+   * Get all sessions ordered by date (for streak calculation)
+   * @returns {Promise<Array>} Sessions with dates
+   */
+  async getAllSessionDates() {
+    const pool = await this.mssqlClient.getConnection();
+    
+    const query = `
+      SELECT DISTINCT CAST(occurred_at AS DATE) as session_date
+      FROM ReadingSessions
+      ORDER BY session_date DESC
+    `;
+    
+    const result = await pool.request().query(query);
+    return result.recordset.map(r => r.session_date);
+  }
+
+  /**
+   * Get reading statistics by book (cycle breakdown)
+   * @param {number} bookId - Book ID
+   * @returns {Promise<Array>} Cycle statistics
+   */
+  async getStatsByBook(bookId) {
+    const pool = await this.mssqlClient.getConnection();
+    
+    const query = `
+      SELECT 
+        reading_cycle as cycleNumber,
+        MIN(occurred_at) as firstSession,
+        MAX(occurred_at) as lastSession,
+        SUM(pages_read) as totalPages,
+        COUNT(*) as sessions,
+        DATEDIFF(DAY, MIN(occurred_at), MAX(occurred_at)) + 1 as durationDays
+      FROM ReadingSessions
+      WHERE book_id = @bookId
+      GROUP BY reading_cycle
+      ORDER BY reading_cycle ASC
+    `;
+    
+    const result = await pool
+      .request()
+      .input("bookId", sql.Int, bookId)
+      .query(query);
+    
+    return result.recordset;
+  }
+
+  /**
+   * Get overall stats for a specific book (all cycles aggregated)
+   * @param {number} bookId - Book ID
+   * @returns {Promise<Object>} Overall statistics
+   */
+  async getOverallStatsByBook(bookId) {
+    const pool = await this.mssqlClient.getConnection();
+    
+    const query = `
+      SELECT 
+        ISNULL(SUM(pages_read), 0) as totalPagesRead,
+        COUNT(*) as totalSessions,
+        COUNT(DISTINCT reading_cycle) as totalCycles,
+        MIN(occurred_at) as firstSession,
+        MAX(occurred_at) as lastSession
+      FROM ReadingSessions
+      WHERE book_id = @bookId
+    `;
+    
+    const result = await pool
+      .request()
+      .input("bookId", sql.Int, bookId)
+      .query(query);
+    
+    return result.recordset[0];
+  }
 }

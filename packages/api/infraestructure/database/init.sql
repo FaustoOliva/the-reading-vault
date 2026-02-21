@@ -88,5 +88,6 @@ GO
 INSERT INTO BookStatuses (internal_code, display_name, ui_color) VALUES 
 ('WISH_LIST', 'Wish List', '#FFA500'),
 ('READING', 'Reading', '#007BFF'),
+('PENDING_SCORE', 'Pending Score', '#F59E0B'),
 ('COMPLETED', 'Completed', '#28A745'),
 ('ABANDONED', 'Abandoned', '#DC3545');

@@ -107,6 +107,7 @@ export class BooksController {
     reopenBookService,
     requestReviewService,
     createBookService,
+    getBookReadingStatsService
   ) {
     this.getBooksService = getBooksService;
     this.getBookByIdService = getBookByIdService;
@@ -115,6 +116,7 @@ export class BooksController {
     this.reopenBookService = reopenBookService;
     this.requestReviewService = requestReviewService;
     this.createBookService = createBookService;
+    this.getBookReadingStatsService = getBookReadingStatsService;
   }
 
   /**
@@ -291,6 +293,29 @@ export class BooksController {
       res.status(200).json({
         success: true,
         data: book.toJSON(),
+      });
+    } catch (error) {
+      // Forward to global error middleware
+      next(error);
+    }
+  }
+
+  /**
+   * GET /books/:id/stats
+   * Get detailed reading statistics for a specific book
+   */
+  async getBookStats(req, res, next) {
+    try {
+      // Validate book ID
+      const bookId = z.coerce.number().int().positive().parse(req.params.id);
+
+      // Execute use case
+      const stats = await this.getBookReadingStatsService.execute(bookId);
+
+      // Return stats
+      res.status(200).json({
+        success: true,
+        data: stats,
       });
     } catch (error) {
       // Forward to global error middleware

@@ -7,6 +7,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { CreateReadingSessionInput, ReadingSession } from '@/types/reading-session';
 import { booksKeys } from './useBooks';
+import { kpiKeys } from './useKPIs';
+import { bookStatsKeys } from './useBookStats';
 
 /**
  * Hook: Create a reading session
@@ -25,6 +27,12 @@ export function useCreateReadingSession() {
       queryClient.invalidateQueries({
         queryKey: booksKeys.detail(variables.bookId),
       });
+
+      // Invalidate KPIs (pages read, sessions count, streaks change)
+      queryClient.invalidateQueries({ queryKey: kpiKeys.all });
+
+      // Invalidate book stats
+      queryClient.invalidateQueries({ queryKey: bookStatsKeys.detail(variables.bookId) });
     },
   });
 }

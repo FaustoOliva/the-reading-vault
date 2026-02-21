@@ -12,6 +12,8 @@
 import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { Book, BookDetails, BooksFilter, PaginationParams, CreateBookInput, UpdateBookInput, ReviewBookInput } from '@/types/book';
+import { kpiKeys } from './useKPIs';
+import { bookStatsKeys } from './useBookStats';
 
 /**
  * Query Keys Factory
@@ -122,6 +124,8 @@ export function useCreateBook() {
     onSuccess: () => {
       // Invalidate all book lists to show new book
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
+      // Invalidate KPIs (total books count changes)
+      queryClient.invalidateQueries({ queryKey: kpiKeys.all });
     },
   });
 }
@@ -139,6 +143,8 @@ export function useUpdateBook() {
       // Invalidate book details and lists
       queryClient.invalidateQueries({ queryKey: booksKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
+      // Invalidate book stats
+      queryClient.invalidateQueries({ queryKey: bookStatsKeys.detail(variables.id) });
     },
   });
 }
@@ -159,6 +165,10 @@ export function useReviewBook() {
       // Invalidate book details and lists
       queryClient.invalidateQueries({ queryKey: booksKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
+      // Invalidate KPIs (completion stats change)
+      queryClient.invalidateQueries({ queryKey: kpiKeys.all });
+      // Invalidate book stats
+      queryClient.invalidateQueries({ queryKey: bookStatsKeys.detail(variables.id) });
     },
   });
 }
@@ -178,6 +188,10 @@ export function useReopenBook() {
       // Invalidate book details and lists
       queryClient.invalidateQueries({ queryKey: booksKeys.detail(bookId) });
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
+      // Invalidate KPIs (status changes)
+      queryClient.invalidateQueries({ queryKey: kpiKeys.all });
+      // Invalidate book stats
+      queryClient.invalidateQueries({ queryKey: bookStatsKeys.detail(bookId) });
     },
   });
 }
@@ -198,6 +212,10 @@ export function useRequestReview() {
       // Invalidate book details and lists
       queryClient.invalidateQueries({ queryKey: booksKeys.detail(bookId) });
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
+      // Invalidate KPIs (status changes)
+      queryClient.invalidateQueries({ queryKey: kpiKeys.all });
+      // Invalidate book stats
+      queryClient.invalidateQueries({ queryKey: bookStatsKeys.detail(bookId) });
     },
   });
 }

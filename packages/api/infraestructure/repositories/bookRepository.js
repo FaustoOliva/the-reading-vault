@@ -337,4 +337,59 @@ export class BookRepository {
 
     return Book.fromDatabase(fullResult.recordset[0]);
   }
+
+  /**
+   * Calculate global KPIs for all books
+   * No transaction needed (read-only)
+   * @returns {Promise<Object>} Global book statistics
+   */
+  async calculateGlobalKPIs() {
+    const pool = await this.mssqlClient.getConnection();
+    
+    const query = `
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN bs.internal_code = 'COMPLETED' THEN 1 ELSE 0 END) as completed,
+        SUM(CASE WHEN bs.internal_code = 'ABANDONED' THEN 1 ELSE 0 END) as abandoned,
+        SUM(CASE WHEN bs.internal_code = 'READING' THEN 1 ELSE 0 END) as reading,
+        SUM(CASE WHEN bs.internal_code = 'PENDING_SCORE' THEN 1 ELSE 0 END) as pendingScore,
+        SUM(CASE WHEN bs.internal_code = 'WISH_LIST' THEN 1 ELSE 0 END) as wishList,
+        AVG(CASE WHEN b.score IS NOT NULL THEN b.score ELSE NULL END) as avgScore,
+        COUNT(CASE WHEN b.score IS NOT NULL THEN 1 END) as booksRated
+      FROM Books b
+      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+    `;
+    
+    const result = await pool.request().query(query);
+    return result.recordset[0];
+  }
+
+  /**
+   * Get average days to completion per book
+   * Calculated from first session to completion date via BookStatusHistory
+   * @returns {Promise<number|null>} Average days or null if no completed books
+   */
+  async getAverageDaysToComplete() {
+    const pool = await this.mssqlClient.getConnection();
+  
+    const query = `
+      SELECT 
+        AVG(DATEDIFF(DAY, first_session, last_session)) as average_days
+      FROM (
+        SELECT 
+          b.id,
+          MIN(rs.occurred_at) as first_session,
+          MAX(rs.occurred_at) as last_session
+        FROM Books b
+        INNER JOIN BookStatuses bs ON b.status_id = bs.id
+        INNER JOIN ReadingSessions rs ON rs.book_id = b.id
+        WHERE bs.internal_code = 'COMPLETED'
+        GROUP BY b.id
+        HAVING MIN(rs.occurred_at) <= MAX(rs.occurred_at)
+      ) as completed_books
+    `;
+    
+    const result = await pool.request().query(query);
+    return result.recordset[0].average_days || null;
+  }
 }

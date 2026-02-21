@@ -3,7 +3,8 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "expo start --tunnel --clear",
+    "start": "expo start --clear",
+    "start:tunnel": "expo start --tunnel --clear",
     "reset-project": "node ./scripts/reset-project.js",
     "lint": "expo lint"
   },

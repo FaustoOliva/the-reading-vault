@@ -76,4 +76,34 @@ export class BookStatusHistoryRepository {
 
     return result.recordset;
   }
+
+  /**
+   * Get status transitions for a book (for reading stats)
+   * @param {number} bookId - Book ID
+   * @returns {Promise<Object[]>} Status transitions with cycle info
+   */
+  async getTransitionsByBook(bookId) {
+    const pool = await this.mssqlClient.getConnection();
+    
+    const query = `
+      SELECT 
+        bsh.id,
+        oldStatus.internal_code as oldStatus,
+        newStatus.internal_code as newStatus,
+        bsh.reading_cycle as readingCycle,
+        bsh.created_at as createdAt
+      FROM BookStatusHistory bsh
+      LEFT JOIN BookStatuses oldStatus ON bsh.old_status_id = oldStatus.id
+      INNER JOIN BookStatuses newStatus ON bsh.new_status_id = newStatus.id
+      WHERE bsh.book_id = @bookId
+      ORDER BY bsh.created_at ASC
+    `;
+    
+    const result = await pool
+      .request()
+      .input("bookId", sql.Int, bookId)
+      .query(query);
+    
+    return result.recordset;
+  }
 }

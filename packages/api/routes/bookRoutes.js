@@ -89,5 +89,14 @@ export default function bookRoutes(getController) {
     getController(BooksController).reopenBook(req, res, next)
   );
 
+  /**
+   * GET /books/:id/stats
+   * Get detailed reading statistics for a specific book
+   * Params: id (number)
+   */
+  router.get("/books/:id/stats", (req, res, next) =>
+    getController(BooksController).getBookStats(req, res, next)
+  );
+
   return router;
 }

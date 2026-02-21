@@ -57,22 +57,17 @@ export default function LogSessionScreen() {
   );
 
   // Calculate pages read in current cycle
+  // The API already provides this value in bookDetails.book.pages_read_in_current_cycle
   const calculatePagesReadInCycle = (): number => {
-    if (!bookDetails) return 0;
-
-    const currentCycle = bookDetails.currentReadingCycle;
-    const sessionsInCycle = bookDetails.readingSessions.filter(
-      (session) => session.readingCycle === currentCycle
-    );
-
-    return sessionsInCycle.reduce((sum, session) => sum + session.pagesRead, 0);
+    if (!bookDetails?.book) return 0;
+    return bookDetails.book.pages_read_in_current_cycle;
   };
 
   // Calculate remaining pages
   const getRemainingPages = (): number | null => {
-    if (!bookDetails?.totalPages) return null;
+    if (!bookDetails?.book.total_pages) return null;
     const pagesReadInCycle = calculatePagesReadInCycle();
-    return bookDetails.totalPages - pagesReadInCycle;
+    return bookDetails.book.total_pages - pagesReadInCycle;
   };
 
   // Validation

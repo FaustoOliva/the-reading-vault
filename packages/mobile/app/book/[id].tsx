@@ -18,6 +18,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, Pressable, Alert } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useBookDetails, useReopenBook, useRequestReview } from '@/hooks/useBooks';
+import { useBookStats } from '@/hooks/useBookStats';
 import { BookInfoCard } from '@/components/bookInfoCard';
 import { CurrentCycleStatsCard } from '@/components/currentCycleStatsCard';
 import { ReadingCyclesHistoryCard } from '@/components/readingCyclesHistoryCard';
@@ -46,6 +47,11 @@ export default function BookDetailScreen() {
     isLoading,
     error,
   } = useBookDetails(bookId);
+
+  const {
+    data: bookStats,
+    isLoading: statsLoading,
+  } = useBookStats(bookId);
 
   const reopenMutation = useReopenBook();
   const requestReviewMutation = useRequestReview();
@@ -322,6 +328,145 @@ export default function BookDetailScreen() {
 
         {/* Reading Cycles History */}
         <ReadingCyclesHistoryCard cycles={reading_cycles ?? []} />
+
+        {/* Detailed Book Statistics */}
+        {book.status !== BookStatus.WISH_LIST && (
+          <View
+            style={{
+              backgroundColor: Background.surface,
+              padding: 16,
+              borderRadius: 12,
+              gap: 16,
+              borderWidth: 1,
+              borderColor: Border.default,
+              borderCurve: 'continuous',
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: '700', color: TextColors.primary }}>
+              📊 Reading Statistics
+            </Text>
+
+            {statsLoading ? (
+              <View style={{ padding: 16, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={Interactive.primary.default} />
+                <Text style={{ marginTop: 8, fontSize: 13, color: TextColors.secondary }}>
+                  Loading statistics...
+                </Text>
+              </View>
+            ) : bookStats ? (
+              <View style={{ gap: 16 }}>
+                {/* Overall Stats */}
+                <View style={{ gap: 8 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: TextColors.secondary }}>
+                    Overall Statistics
+                  </Text>
+                  <View style={{ gap: 6 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
+                        Total Pages Read
+                      </Text>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary, fontVariant: ['tabular-nums'] }}>
+                        {bookStats.overall_stats.total_pages_read.toLocaleString()}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
+                        Total Sessions
+                      </Text>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary, fontVariant: ['tabular-nums'] }}>
+                        {bookStats.overall_stats.total_sessions}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
+                        Total Cycles
+                      </Text>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary, fontVariant: ['tabular-nums'] }}>
+                        {bookStats.overall_stats.total_cycles}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Current Cycle Detailed Stats */}
+                {bookStats.current_cycle_stats.sessions_count > 0 && (
+                  <View style={{ gap: 8 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: TextColors.secondary }}>
+                      Current Cycle (#{bookStats.current_cycle_stats.cycle_number})
+                    </Text>
+                    <View style={{ gap: 6 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
+                          Days Elapsed
+                        </Text>
+                        <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary, fontVariant: ['tabular-nums'] }}>
+                          {bookStats.current_cycle_stats.days_elapsed}
+                        </Text>
+                      </View>
+                      {bookStats.current_cycle_stats.velocity && (
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                          <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
+                            Velocity
+                          </Text>
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary, fontVariant: ['tabular-nums'] }}>
+                            {bookStats.current_cycle_stats.velocity} pages/day
+                          </Text>
+                        </View>
+                      )}
+                      {bookStats.current_cycle_stats.progress_percent !== null && (
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                          <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
+                            Progress
+                          </Text>
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary, fontVariant: ['tabular-nums'] }}>
+                            {bookStats.current_cycle_stats.progress_percent}%
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                )}
+
+                {/* Cycle History Summary */}
+                {bookStats.cycle_history.length > 0 && (
+                  <View style={{ gap: 8 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: TextColors.secondary }}>
+                      Previous Cycles
+                    </Text>
+                    {bookStats.cycle_history.map((cycle) => (
+                      <View
+                        key={cycle.cycle_number}
+                        style={{
+                          padding: 12,
+                          backgroundColor: Background.primary,
+                          borderRadius: 8,
+                          gap: 6,
+                          borderCurve: 'continuous',
+                        }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary }}>
+                          Cycle #{cycle.cycle_number}
+                        </Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                          <Text style={{ fontSize: 12, color: TextColors.tertiary }}>
+                            {cycle.pages_read} pages • {cycle.sessions_count} sessions
+                          </Text>
+                          <Text style={{ fontSize: 12, color: TextColors.tertiary, fontVariant: ['tabular-nums'] }}>
+                            {cycle.average_velocity} p/day
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 11, color: TextColors.tertiary }}>
+                          {cycle.duration_days} days
+                          {cycle.completed && ' • ✅ Completed'}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            ) : null}
+          </View>
+        )}
       </ScrollView>
 
       {/* Review Modal */}

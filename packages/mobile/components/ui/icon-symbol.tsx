@@ -24,6 +24,7 @@ const MAPPING = {
   'book.fill': 'book',
   'plus.circle.fill': 'add-circle',
   'book.pages': 'menu-book',
+  'chart.pie.fill': 'show-chart',
 } as IconMapping;
 
 /**

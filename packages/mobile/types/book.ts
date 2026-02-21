@@ -4,11 +4,11 @@
  */
 
 export enum BookStatus {
-  WISH_LIST = 'WISH_LIST',
-  READING = 'READING',
-  COMPLETED = 'COMPLETED',
-  ABANDONED = 'ABANDONED',
-  PENDING_SCORE = 'PENDING_SCORE',
+  WISH_LIST = "WISH_LIST",
+  READING = "READING",
+  COMPLETED = "COMPLETED",
+  ABANDONED = "ABANDONED",
+  PENDING_SCORE = "PENDING_SCORE",
 }
 
 export interface Book {
@@ -40,14 +40,14 @@ export interface BookDetails {
     };
     total_pages: number | null;
     status: BookStatus;
-    current_reading_cycle: number;
+    currentReadingCycle: number;
     pages_read_total: number;
     pages_read_in_current_cycle: number;
     score: number | null;
     comment: string | null;
     created_at: Date;
   };
-  current_cycle_stats: {
+  currentReadingCycle: {
     sessions_count: number;
     first_session_date: Date | null;
     last_session_date: Date | null;
@@ -112,12 +112,4 @@ export interface PaginatedResponse<T> {
     total: number;
     totalPages: number;
   };
-}
-
-interface ReadingSession {
-  id: number;
-  pagesRead: number;
-  readingCycle: number;
-  occurredAt: string;
-  createdAt: string;
 }
