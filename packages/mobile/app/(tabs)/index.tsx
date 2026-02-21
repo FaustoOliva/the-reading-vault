@@ -15,15 +15,15 @@
  * - Use RefreshControl for pull-to-refresh
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, ActivityIndicator, RefreshControl, Pressable } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useBooks } from '@/hooks/useBooks';
 import { BookListItem } from '@/components/list/bookListItem';
-import { PaginationControls } from '@/components/list/paginationControls';
+import { LoadMoreButton } from '@/components/list/loadMoreButton';
 import { SearchBar } from '@/components/forms/searchBar';
 import { AdvancedFiltersModal } from '@/components/modals/advancedFiltersModal';
-import { BookStatus, BooksFilter } from '@/types/book';
+import { BookStatus, BooksFilter, Book } from '@/types/book';
 import { BOOK_STATUS_OPTIONS } from '@/constants/bookStatus';
 import {
   Background,
@@ -33,15 +33,17 @@ import {
   Feedback,
 } from '@/constants/colors';
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 30;
+const AUTO_LOAD_THRESHOLD = 50;
 
 export default function BooksListScreen() {
   const [filters, setFilters] = useState<BooksFilter>({});
   const [page, setPage] = useState(1);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [accumulatedBooks, setAccumulatedBooks] = useState<Book[]>([]);
 
   if (__DEV__) {
-    console.log('🏠 BooksListScreen render:', { filters, page });
+    console.log('🏠 BooksListScreen render:', { filters, page, accumulatedBooksCount: accumulatedBooks.length });
   }
 
   const {
@@ -60,11 +62,76 @@ export default function BooksListScreen() {
       errorMessage: error?.message,
       hasData: !!response,
       booksCount: response?.data?.length,
+      totalBooks: response?.pagination?.total,
     });
   }
 
-  const books = response?.data || [];
+  const currentPageBooks = response?.data || [];
   const pagination = response?.pagination;
+
+  /**
+   * Reset accumulated books when filters change or on initial load
+   */
+  useEffect(() => {
+    if (page === 1 && currentPageBooks.length > 0) {
+      if (__DEV__) {
+        console.log('🔄 Resetting accumulated books (page 1)');
+      }
+      setAccumulatedBooks(currentPageBooks);
+    }
+  }, [page, currentPageBooks.length > 0 ? currentPageBooks[0]?.id : null]);
+
+  /**
+   * Accumulate books when loading more pages
+   */
+  useEffect(() => {
+    if (page > 1 && currentPageBooks.length > 0) {
+      if (__DEV__) {
+        console.log('➕ Adding books to accumulated list (page', page, ')');
+      }
+      setAccumulatedBooks((prev) => {
+        // Avoid duplicates
+        const newBooks = currentPageBooks.filter(
+          (newBook) => !prev.some((existingBook) => existingBook.id === newBook.id)
+        );
+        return [...prev, ...newBooks];
+      });
+    }
+  }, [page, currentPageBooks.length]);
+
+  /**
+   * Auto-load all books if total is below threshold
+   */
+  useEffect(() => {
+    if (
+      pagination &&
+      pagination.total <= AUTO_LOAD_THRESHOLD &&
+      pagination.total > accumulatedBooks.length &&
+      !isLoading &&
+      !isRefetching
+    ) {
+      if (__DEV__) {
+        console.log('🚀 Auto-loading all books (total:', pagination.total, ')');
+      }
+      // Load all remaining pages
+      const totalPages = pagination.totalPages;
+      if (page < totalPages) {
+        setPage(page + 1);
+      }
+    }
+  }, [pagination?.total, pagination?.totalPages, accumulatedBooks.length, isLoading, isRefetching, page]);
+
+  /**
+   * Determine which books to display
+   * - Use accumulated books if we have multiple pages loaded
+   * - Use current page books on initial load
+   */
+  const displayedBooks = useMemo(() => {
+    if (page > 1 || accumulatedBooks.length > 0) {
+      return accumulatedBooks;
+    }
+    return currentPageBooks;
+  }, [page, accumulatedBooks, currentPageBooks]);
 
   /**
    * Handle status filter change
@@ -75,6 +142,7 @@ export default function BooksListScreen() {
       status: status ? (status as BookStatus) : undefined,
     }));
     setPage(1); // Reset to first page when filter changes
+    setAccumulatedBooks([]); // Clear accumulated books
   };
 
   /**
@@ -86,6 +154,7 @@ export default function BooksListScreen() {
       titleSearch: searchText || undefined,
     }));
     setPage(1); // Reset to first page when search changes
+    setAccumulatedBooks([]); // Clear accumulated books
   };
 
   /**
@@ -94,6 +163,7 @@ export default function BooksListScreen() {
   const handleAdvancedFiltersApply = (newFilters: BooksFilter) => {
     setFilters(newFilters);
     setPage(1); // Reset to first page when filters change
+    setAccumulatedBooks([]); // Clear accumulated books
   };
 
   /**
@@ -115,16 +185,26 @@ export default function BooksListScreen() {
   const activeFiltersCount = getActiveFiltersCount();
 
   /**
-   * Handle page change
+   * Handle Load More button press
    */
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
+  const handleLoadMore = () => {
+    if (pagination && page < pagination.totalPages) {
+      if (__DEV__) {
+        console.log('📄 Loading next page:', page + 1);
+      }
+      setPage(page + 1);
+    }
   };
 
   /**
    * Handle pull-to-refresh
    */
   const handleRefresh = () => {
+    if (__DEV__) {
+      console.log('🔄 Refreshing books list');
+    }
+    setPage(1);
+    setAccumulatedBooks([]);
     refetch();
   };
 
@@ -359,14 +439,14 @@ export default function BooksListScreen() {
   return (
     <>
       <FlatList
-        data={books}
+        data={displayedBooks}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => <BookListItem book={item} />}
         contentInsetAdjustmentBehavior="automatic"
         style={{ backgroundColor: Background.primary }}
         contentContainerStyle={{ padding: 16, gap: 12 }}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} />
+          <RefreshControl refreshing={isRefetching && page === 1} onRefresh={handleRefresh} />
         }
         ListHeaderComponent={
           <>
@@ -449,12 +529,13 @@ export default function BooksListScreen() {
           </>
         }
         ListFooterComponent={
-          pagination && pagination.totalPages > 1 ? (
-            <PaginationControls
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              totalItems={pagination.total}
-              onPageChange={handlePageChange}
+          pagination && pagination.total > 0 ? (
+            <LoadMoreButton
+              displayedCount={displayedBooks.length}
+              totalCount={pagination.total}
+              pageSize={ITEMS_PER_PAGE}
+              isLoading={isLoading || isRefetching}
+              onLoadMore={handleLoadMore}
             />
           ) : null
         }
