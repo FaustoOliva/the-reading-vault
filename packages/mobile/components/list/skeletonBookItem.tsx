@@ -1,7 +1,7 @@
 /**
  * SkeletonBookItem Component
  * Loading placeholder for book list items
- * 
+ *
  * Rules:
  * - Match dimensions of actual BookListItem
  * - Use subtle animation (pulse effect)
@@ -9,21 +9,21 @@
  * - Simple rectangular shapes
  */
 
-import { View, StyleSheet } from 'react-native';
-import { Background, Border } from '@/constants/colors';
+import { View, StyleSheet } from "react-native";
+import { Background, Border } from "@/constants/colors";
 
 export function SkeletonBookItem() {
   return (
     <View style={styles.container}>
       {/* Book status badge skeleton */}
       <View style={styles.badge} />
-      
+
       {/* Title skeleton */}
       <View style={styles.title} />
-      
+
       {/* Author skeleton */}
       <View style={styles.author} />
-      
+
       {/* Stats row skeleton */}
       <View style={styles.statsRow}>
         <View style={styles.stat} />
@@ -51,21 +51,21 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   title: {
-    width: '85%',
+    width: "85%",
     height: 20,
     backgroundColor: Border.default,
     borderRadius: 4,
     opacity: 0.5,
   },
   author: {
-    width: '60%',
+    width: "60%",
     height: 16,
     backgroundColor: Border.default,
     borderRadius: 4,
     opacity: 0.5,
   },
   statsRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginTop: 4,
   },

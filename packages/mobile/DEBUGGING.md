@@ -22,16 +22,19 @@ The app now has extensive console logging to help you debug network issues. Here
 ```
 
 **What to check:**
+
 - ✅ `EXPO_PUBLIC_API_URL` should be your machine's IP (NOT `localhost`)
 - ✅ `API_BASE_URL` should match `EXPO_PUBLIC_API_URL`
 - ✅ `allEnvVars` should include `EXPO_PUBLIC_API_URL`
 
 **Problems:**
+
 - ❌ If `EXPO_PUBLIC_API_URL` is `undefined`: `.env` file not loaded or Expo not restarted
 - ❌ If it shows `localhost`: Update `.env` to use your local IP
 - ❌ If `allEnvVars` is empty: Expo didn't load environment variables
 
 **Fix:**
+
 1. Verify `.env` file exists in `packages/mobile/.env`
 2. Restart Expo dev server: `npx expo start --clear`
 
@@ -50,6 +53,7 @@ The app now has extensive console logging to help you debug network issues. Here
 ```
 
 **What to check:**
+
 - ✅ Filters and page values are correct
 - ✅ Log appears when you open the Books tab
 
@@ -68,6 +72,7 @@ The app now has extensive console logging to help you debug network issues. Here
 ```
 
 **What to check:**
+
 - ✅ Hook is being called
 - ✅ Pagination parameters are correct
 
@@ -84,6 +89,7 @@ The app now has extensive console logging to help you debug network issues. Here
 ```
 
 **What to check:**
+
 - ✅ queryFn is executing (if not, React Query might be using cached data)
 - ✅ Endpoint path looks correct
 
@@ -104,11 +110,13 @@ The app now has extensive console logging to help you debug network issues. Here
 ```
 
 **What to check:**
+
 - ✅ `url` is complete and correct
 - ✅ `baseUrl` matches your machine's IP
 - ✅ `endpoint` includes the query parameters
 
 **Problems:**
+
 - ❌ `url` shows `localhost`: `.env` not loaded correctly
 - ❌ Port is wrong: Check if backend is running on port 3000
 - ❌ This log doesn't appear: Hook might not be executing
@@ -129,10 +137,12 @@ The app now has extensive console logging to help you debug network issues. Here
 ```
 
 **What to check:**
+
 - ✅ `status: 200` means success
 - ✅ `ok: true` means no HTTP error
 
 **Problems:**
+
 - ❌ This log doesn't appear: Network error, request never reached server
 - ❌ `status: 404`: Route not found on backend
 - ❌ `status: 500`: Backend error
@@ -152,6 +162,7 @@ The app now has extensive console logging to help you debug network issues. Here
 ```
 
 **What to check:**
+
 - ✅ `dataKeys` includes expected fields (`success`, `data`, `pagination`)
 
 ---
@@ -169,6 +180,7 @@ The app now has extensive console logging to help you debug network issues. Here
 ```
 
 **What to check:**
+
 - ✅ `booksCount` shows number of books returned
 - ✅ `pagination` object looks correct
 
@@ -188,6 +200,7 @@ The app now has extensive console logging to help you debug network issues. Here
 ```
 
 **What to check:**
+
 - Status codes:
   - `400`: Bad request (validation error)
   - `404`: Route not found
@@ -195,6 +208,7 @@ The app now has extensive console logging to help you debug network issues. Here
   - `CORS error`: CORS policy blocking request
 
 **Fix:**
+
 - Check backend logs for more details
 - Verify route exists in backend: `GET /api/books`
 
@@ -214,6 +228,7 @@ The app now has extensive console logging to help you debug network issues. Here
 ```
 
 **Common errors:**
+
 1. **"Network request failed"**
    - Backend not running
    - Wrong IP address
@@ -229,6 +244,7 @@ The app now has extensive console logging to help you debug network issues. Here
    - Network connectivity issue
 
 **Fix:**
+
 1. Verify backend is running: `npm start` in `packages/api`
 2. Test endpoint in browser: `http://192.168.1.6:3000/api/health`
 3. Check if phone/emulator is on same WiFi network
@@ -253,6 +269,7 @@ The app now has extensive console logging to help you debug network issues. Here
 ```
 
 **What to check:**
+
 - ✅ `isLoading: true` → First load
 - ✅ `isRefetching: true` → Pull-to-refresh or refetch
 - ✅ `hasError: false` → No errors
@@ -260,6 +277,7 @@ The app now has extensive console logging to help you debug network issues. Here
 - ✅ `booksCount` → Number of books in response
 
 **Problem states:**
+
 - ❌ `hasError: true` → Check `errorMessage`
 - ❌ `hasData: false` after loading → Request failed
 - ⚠️ `isLoading: true` forever → Request hanging
@@ -269,12 +287,14 @@ The app now has extensive console logging to help you debug network issues. Here
 ## 🐛 On-Screen Debug Panel
 
 The app shows a yellow debug panel at the top with:
+
 - Current API URL
 - Full endpoint being called
 - Request status (Loading/Error/Success)
 - Error message if any
 
 **This helps verify:**
+
 - The app is using the correct IP address
 - The endpoint format is correct
 - Whether errors are happening
@@ -288,21 +308,25 @@ The app shows a yellow debug panel at the top with:
 Use this sequence when debugging:
 
 1. **Check Module Load:**
+
    ```
    ✅ See "🔧 API Configuration" with correct IP?
    ```
 
 2. **Check Hook Execution:**
+
    ```
    ✅ See "📚 useBooks called with"?
    ```
 
 3. **Check Network Request:**
+
    ```
    ✅ See "🌐 API Request" with full URL?
    ```
 
 4. **Check for Response or Error:**
+
    ```
    ✅ See "✅ API Response" OR "💥 API Request Failed"?
    ```
@@ -318,23 +342,27 @@ Use this sequence when debugging:
 ## 📱 How to View Console Logs
 
 ### iOS Simulator
+
 ```bash
 # Run in terminal:
 npx react-native log-ios
 ```
 
 ### Android Emulator
+
 ```bash
 # Run in terminal:
 npx react-native log-android
 ```
 
 ### Expo Go (Physical Device)
+
 - Shake device → Open dev menu → "Debug Remote JS"
 - Or press `j` in Expo terminal
 - Logs appear in browser console (Chrome DevTools)
 
 ### VS Code Terminal
+
 - Logs automatically appear in the terminal running Expo
 
 ---
@@ -346,6 +374,7 @@ npx react-native log-android
 **Root cause:** Can't connect to backend
 
 **Debug logs to check:**
+
 ```
 🔧 API Configuration: { EXPO_PUBLIC_API_URL: "???" }
 🌐 API Request: { url: "???" }
@@ -353,6 +382,7 @@ npx react-native log-android
 ```
 
 **Fix:**
+
 1. Check `.env` has correct IP (not localhost)
 2. Backend is running: `npm start` in packages/api
 3. Test in browser: `http://YOUR_IP:3000/api/health`
@@ -363,6 +393,7 @@ npx react-native log-android
 **Root cause:** Request sent but no response
 
 **Fix:**
+
 - Backend probably crashed or hanging
 - Check backend terminal for errors
 - Restart backend
@@ -372,17 +403,20 @@ npx react-native log-android
 **Root cause:** Route doesn't exist
 
 **Fix:**
+
 - Verify backend route: `GET /api/books`
 - Check backend logs for routing errors
 
 ### 4. Environment variable is undefined
 
 **Debug log:**
+
 ```
 🔧 API Configuration: { EXPO_PUBLIC_API_URL: undefined }
 ```
 
 **Fix:**
+
 1. Create `.env` file in `packages/mobile/`
 2. Add: `EXPO_PUBLIC_API_URL=http://YOUR_IP:3000`
 3. **Restart Expo dev server** (required!)
@@ -401,6 +435,7 @@ npx react-native log-android
 ## 🆘 Still Having Issues?
 
 Share these logs:
+
 1. `🔧 API Configuration` log
 2. `🌐 API Request` log
 3. `💥 API Request Failed` log (if present)

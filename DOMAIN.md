@@ -510,17 +510,18 @@ END
 
 ### 8.1 Book Status Transitions (Complete State Machine)
 
-| From            | To              | Trigger                         | Automatic?            | Requirements           | History Entry                                                               |
-| --------------- | --------------- | ------------------------------- | --------------------- | ---------------------- | --------------------------------------------------------------------------- |
-| `WISH_LIST`     | `READING`       | Log Session                     | ✅ Yes                 | None                   | `(WISH_LIST → READING, "USER_LOG_SESSION", cycle=1)`                       |
-| `READING`       | `PENDING_SCORE` | pages_read_total >= total_pages | ✅ Yes (Auto-complete) | None (condition-based) | `(READING → PENDING_SCORE, "AUTO_COMPLETION", cycle=N)`                     |
-| `READING`       | `PENDING_SCORE` | User Request Review             | ❌ Manual              | None                   | `(READING → PENDING_SCORE, "USER_REQUEST_REVIEW", cycle=N)`                |
-| `PENDING_SCORE` | `COMPLETED`     | User Review                     | ❌ Manual              | Score required         | `(PENDING_SCORE → COMPLETED, "USER_REVIEW", cycle=N)`                       |
-| `PENDING_SCORE` | `ABANDONED`     | User Review                     | ❌ Manual              | Score required         | `(PENDING_SCORE → ABANDONED, "USER_REVIEW", cycle=N)`                       |
-| `COMPLETED`     | `READING`       | Log Session                     | ✅ Yes                 | None                   | `(COMPLETED → READING, "USER_LOG_SESSION", cycle=N+1)` Increments cycle    |
-| `ABANDONED`     | `READING`       | User Reopen                     | ❌ Manual              | None                   | `(ABANDONED → READING, "USER_REOPENED", cycle=N+1)` Increments cycle       |
+| From            | To              | Trigger                         | Automatic?             | Requirements           | History Entry                                                           |
+| --------------- | --------------- | ------------------------------- | ---------------------- | ---------------------- | ----------------------------------------------------------------------- |
+| `WISH_LIST`     | `READING`       | Log Session                     | ✅ Yes                 | None                   | `(WISH_LIST → READING, "USER_LOG_SESSION", cycle=1)`                    |
+| `READING`       | `PENDING_SCORE` | pages_read_total >= total_pages | ✅ Yes (Auto-complete) | None (condition-based) | `(READING → PENDING_SCORE, "AUTO_COMPLETION", cycle=N)`                 |
+| `READING`       | `PENDING_SCORE` | User Request Review             | ❌ Manual              | None                   | `(READING → PENDING_SCORE, "USER_REQUEST_REVIEW", cycle=N)`             |
+| `PENDING_SCORE` | `COMPLETED`     | User Review                     | ❌ Manual              | Score required         | `(PENDING_SCORE → COMPLETED, "USER_REVIEW", cycle=N)`                   |
+| `PENDING_SCORE` | `ABANDONED`     | User Review                     | ❌ Manual              | Score required         | `(PENDING_SCORE → ABANDONED, "USER_REVIEW", cycle=N)`                   |
+| `COMPLETED`     | `READING`       | Log Session                     | ✅ Yes                 | None                   | `(COMPLETED → READING, "USER_LOG_SESSION", cycle=N+1)` Increments cycle |
+| `ABANDONED`     | `READING`       | User Reopen                     | ❌ Manual              | None                   | `(ABANDONED → READING, "USER_REOPENED", cycle=N+1)` Increments cycle    |
 
 **Invalid Transitions (Blocked):**
+
 - `PENDING_SCORE` → `READING` via Log Session (throws `BookPendingReviewError`)
 - `ABANDONED` → anywhere (except `READING` via reopen)
 
@@ -564,16 +565,16 @@ START: User logs reading session
 
 ### 9.1 Domain Exceptions
 
-| Exception                      | HTTP Code       | Message                                                                                          | Trigger                                      |
-| ------------------------------ | --------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| `BookClosedException`          | 403 Forbidden   | "This book is abandoned and locked. Manually reopen to continue."                                | Logging session on ABANDONED book            |
-| `BookPendingReviewError`       | 403 Forbidden   | "Book requires review (score) before logging new sessions. Complete or abandon the book first."  | Logging session on PENDING_SCORE book        |
-| `BookNotFoundException`        | 404 Not Found   | "Book with ID '...' not found."                                                                  | Invalid book_id reference                    |
-| `DuplicateISBNException`       | 409 Conflict    | "A book with ISBN '...' already exists in your library."                                         | ISBN uniqueness violation                    |
-| `ValidationException`          | 400 Bad Request | Field-specific error messages                                                                    | Input validation fails                       |
-| `ImmutableSessionException`    | 403 Forbidden   | "Cannot modify sessions in completed reading cycles."             | Attempt to edit/delete past cycle session |
-| `IntegrityConstraintViolation` | 409 Conflict    | "Cannot delete book with existing sessions."                      | Hard delete with FK references            |
-| `MissingScoreException`        | 400 Bad Request | "Score required when marking book as completed or abandoned."     | Missing score on transition               |
+| Exception                      | HTTP Code       | Message                                                                                         | Trigger                                   |
+| ------------------------------ | --------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `BookClosedException`          | 403 Forbidden   | "This book is abandoned and locked. Manually reopen to continue."                               | Logging session on ABANDONED book         |
+| `BookPendingReviewError`       | 403 Forbidden   | "Book requires review (score) before logging new sessions. Complete or abandon the book first." | Logging session on PENDING_SCORE book     |
+| `BookNotFoundException`        | 404 Not Found   | "Book with ID '...' not found."                                                                 | Invalid book_id reference                 |
+| `DuplicateISBNException`       | 409 Conflict    | "A book with ISBN '...' already exists in your library."                                        | ISBN uniqueness violation                 |
+| `ValidationException`          | 400 Bad Request | Field-specific error messages                                                                   | Input validation fails                    |
+| `ImmutableSessionException`    | 403 Forbidden   | "Cannot modify sessions in completed reading cycles."                                           | Attempt to edit/delete past cycle session |
+| `IntegrityConstraintViolation` | 409 Conflict    | "Cannot delete book with existing sessions."                                                    | Hard delete with FK references            |
+| `MissingScoreException`        | 400 Bad Request | "Score required when marking book as completed or abandoned."                                   | Missing score on transition               |
 
 ### 9.2 Success Response Format
 

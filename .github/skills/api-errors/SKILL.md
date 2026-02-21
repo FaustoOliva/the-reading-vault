@@ -25,11 +25,11 @@ This skill applies when working on:
 
 ### Available Error Classes
 
-| Class                 | Code | Use Case                              |
-| --------------------- | ---- | ------------------------------------- |
-| `BadRequestError`     | 400  | Input validation, malformed data      |
-| `NotFoundError`       | 404  | Resource not found                    |
-| `ConflictError`       | 409  | Duplicate or state conflict           |
+| Class             | Code | Use Case                         |
+| ----------------- | ---- | -------------------------------- |
+| `BadRequestError` | 400  | Input validation, malformed data |
+| `NotFoundError`   | 404  | Resource not found               |
+| `ConflictError`   | 409  | Duplicate or state conflict      |
 
 ---
 
@@ -80,11 +80,11 @@ This skill applies when working on:
 
 ## HTTP Error Mapping
 
-| Scenario                       | Error Class             | Notes                              |
-| ------------------------------ | ----------------------- | ---------------------------------- |
-| Input validation fails (Zod)   | `BadRequestError` (400) | Handled in middleware              |
-| Resource not found             | `NotFoundError` (404)   | Repository or service              |
-| Unique constraint violation    | `ConflictError` (409)   | Service catches DB error           |
+| Scenario                     | Error Class             | Notes                    |
+| ---------------------------- | ----------------------- | ------------------------ |
+| Input validation fails (Zod) | `BadRequestError` (400) | Handled in middleware    |
+| Resource not found           | `NotFoundError` (404)   | Repository or service    |
+| Unique constraint violation  | `ConflictError` (409)   | Service catches DB error |
 
 ---
 

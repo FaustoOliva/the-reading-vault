@@ -1,7 +1,7 @@
 /**
  * ReviewBookService Tests
  * Tests for the ReviewBook use case
- * 
+ *
  * Coverage:
  * - PENDING_SCORE → COMPLETED with score
  * - PENDING_SCORE → ABANDONED with score
@@ -56,7 +56,7 @@ describe("ReviewBookService", () => {
     service = new ReviewBookService(
       mockMssqlClient,
       mockBookRepository,
-      mockBookStatusHistoryRepository
+      mockBookStatusHistoryRepository,
     );
   });
 
@@ -97,7 +97,7 @@ describe("ReviewBookService", () => {
         BookStatus.COMPLETED,
         8.5,
         "Really enjoyed it",
-        mockTransaction
+        mockTransaction,
       );
       expect(mockBookStatusHistoryRepository.create).toHaveBeenCalledWith(
         {
@@ -106,7 +106,7 @@ describe("ReviewBookService", () => {
           newStatus: BookStatus.COMPLETED,
           readingCycle: 1,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(mockTransaction.commit).toHaveBeenCalled();
     });
@@ -158,7 +158,7 @@ describe("ReviewBookService", () => {
         service.execute(999, {
           targetStatus: BookStatus.COMPLETED,
           score: 8.0,
-        })
+        }),
       ).rejects.toThrow(NotFoundError);
       expect(mockTransaction.begin).not.toHaveBeenCalled();
     });
@@ -179,7 +179,7 @@ describe("ReviewBookService", () => {
         service.execute(1, {
           targetStatus: BookStatus.COMPLETED,
           score: 8.0,
-        })
+        }),
       ).rejects.toThrow(InvalidStateTransitionError);
       expect(mockTransaction.begin).not.toHaveBeenCalled();
     });
@@ -195,7 +195,7 @@ describe("ReviewBookService", () => {
 
       mockBookRepository.getById.mockResolvedValue(pendingBook);
       mockBookRepository.updateReview.mockRejectedValue(
-        new Error("Database error")
+        new Error("Database error"),
       );
 
       // Act & Assert
@@ -203,7 +203,7 @@ describe("ReviewBookService", () => {
         service.execute(1, {
           targetStatus: BookStatus.COMPLETED,
           score: 8.0,
-        })
+        }),
       ).rejects.toThrow("Database error");
       expect(mockTransaction.rollback).toHaveBeenCalled();
       expect(mockTransaction.commit).not.toHaveBeenCalled();

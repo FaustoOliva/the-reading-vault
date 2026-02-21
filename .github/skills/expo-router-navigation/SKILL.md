@@ -10,6 +10,7 @@ license: MIT
 ## When to Use
 
 Apply when:
+
 - Creating new screens or routes
 - Navigating between screens
 - Structuring app navigation (tabs, stacks, modals)
@@ -35,12 +36,14 @@ app/
 ```
 
 **Route syntax:**
+
 - `index.tsx` → root path in folder
 - `[id].tsx` → dynamic segment (`:id`)
 - `(folder)` → group (layout only, not in URL)
 - `_layout.tsx` → nested layout
 
 **MUST:**
+
 - Ensure a route always matches "/" (usually `app/index.tsx`)
 - Remove old route files when restructuring
 - Never put components/hooks/types in `app/` (use `components/`, `hooks/`, `types/`)
@@ -62,19 +65,21 @@ import { Link } from 'expo-router';
 **Imperative:**
 
 ```tsx
-import { router } from 'expo-router';
+import { router } from "expo-router";
 
-router.push('/books');
-router.replace('/login');
+router.push("/books");
+router.replace("/login");
 router.back();
 ```
 
 **Use Link for:**
+
 - Navigation from UI elements
 - Tab/list items
 - Menu items
 
 **Use router for:**
+
 - Programmatic navigation after actions (form submit, delete, etc.)
 - Conditional redirects
 - Back navigation
@@ -85,7 +90,7 @@ router.back();
 
 ```tsx
 // app/(tabs)/_layout.tsx
-import { Tabs } from 'expo-router';
+import { Tabs } from "expo-router";
 
 export default function TabLayout() {
   return (
@@ -93,15 +98,19 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <Image source="sf:house.fill" tintColor={color} />,
+          title: "Home",
+          tabBarIcon: ({ color }) => (
+            <Image source="sf:house.fill" tintColor={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="books"
         options={{
-          title: 'Books',
-          tabBarIcon: ({ color }) => <Image source="sf:book.fill" tintColor={color} />,
+          title: "Books",
+          tabBarIcon: ({ color }) => (
+            <Image source="sf:book.fill" tintColor={color} />
+          ),
         }}
       />
     </Tabs>
@@ -117,13 +126,13 @@ Native tabs provide better performance and platform consistency.
 
 ```tsx
 // app/_layout.tsx
-import { Stack } from 'expo-router';
+import { Stack } from "expo-router";
 
 export default function RootLayout() {
   return (
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="modal" options={{ presentation: "modal" }} />
     </Stack>
   );
 }
@@ -136,11 +145,11 @@ export default function RootLayout() {
 **Access params:**
 
 ```tsx
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from "expo-router";
 
 export default function BookDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  
+
   return <Text>Book ID: {id}</Text>;
 }
 ```
@@ -148,7 +157,7 @@ export default function BookDetails() {
 **Navigate to dynamic route:**
 
 ```tsx
-<Link href={`/books/${bookId}`}>View Book</Link>
+<Link href={`/books/${bookId}`}>View Book</Link>;
 // or
 router.push(`/books/${bookId}`);
 ```
@@ -160,7 +169,7 @@ router.push(`/books/${bookId}`);
 ```tsx
 // app/_layout.tsx
 <Stack>
-  <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+  <Stack.Screen name="modal" options={{ presentation: "modal" }} />
 </Stack>
 ```
 
@@ -177,9 +186,7 @@ router.dismiss();
 **Pass data:**
 
 ```tsx
-<Link href={{ pathname: '/search', params: { query: 'react' } }}>
-  Search
-</Link>
+<Link href={{ pathname: "/search", params: { query: "react" } }}>Search</Link>
 ```
 
 **Read data:**
@@ -193,7 +200,7 @@ const { query } = useLocalSearchParams<{ query: string }>();
 **Check if can go back:**
 
 ```tsx
-import { router } from 'expo-router';
+import { router } from "expo-router";
 
 const canGoBack = router.canGoBack();
 if (canGoBack) router.back();
@@ -202,7 +209,7 @@ if (canGoBack) router.back();
 **Get current route:**
 
 ```tsx
-import { usePathname } from 'expo-router';
+import { usePathname } from "expo-router";
 
 const pathname = usePathname(); // "/books/123"
 ```
@@ -210,12 +217,14 @@ const pathname = usePathname(); // "/books/123"
 ## Best Practices
 
 **DO:**
+
 - Use `<Link>` for navigation from UI
 - Use native tab bars when possible
 - Keep routes shallow (avoid deep nesting)
 - Type route params with `useLocalSearchParams<T>()`
 
 **DON'T:**
+
 - Put business logic in route files (extract to services/hooks)
 - Mix navigation and data fetching in components (use hooks)
 - Over-nest layouts (keep hierarchy simple)

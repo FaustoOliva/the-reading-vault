@@ -1,11 +1,11 @@
 /**
  * UpdateBookService (Command Use Case)
  * Updates book metadata (title, totalPages, score, comment) without changing status
- * 
+ *
  * Responsibilities:
  * - Update book metadata fields
  * - Does not modify status (use dedicated endpoints for status transitions)
- * 
+ *
  * Rules:
  * - Framework-agnostic
  * - No validation (handled by controller)
@@ -46,7 +46,7 @@ export class UpdateBookService {
       const updatedBook = await this.bookRepository.updateMetadata(
         bookId,
         data,
-        transaction
+        transaction,
       );
 
       await transaction.commit();

@@ -1,7 +1,7 @@
 /**
  * GetCountriesService Test Suite
  * Tests for GetCountries query use case
- * 
+ *
  * Pattern: AAA (Arrange-Act-Assert)
  * Target Coverage: ≥ 80%
  */
@@ -19,7 +19,7 @@ describe("GetCountriesService", () => {
 
     // Mock repository
     mockCountryRepository = {
-      getAll: vi.fn()
+      getAll: vi.fn(),
     };
 
     // Instantiate service
@@ -33,7 +33,7 @@ describe("GetCountriesService", () => {
         { id: 1, name: "United States" },
         { id: 2, name: "United Kingdom" },
         { id: 3, name: "Canada" },
-        { id: 4, name: "France" }
+        { id: 4, name: "France" },
       ];
 
       mockCountryRepository.getAll.mockResolvedValue(mockCountries);
@@ -51,7 +51,7 @@ describe("GetCountriesService", () => {
       const filters = { nameLike: "United" };
       const mockCountries = [
         { id: 1, name: "United States" },
-        { id: 2, name: "United Kingdom" }
+        { id: 2, name: "United Kingdom" },
       ];
 
       mockCountryRepository.getAll.mockResolvedValue(mockCountries);
@@ -80,9 +80,7 @@ describe("GetCountriesService", () => {
     it("should handle partial name matches", async () => {
       // Arrange
       const filters = { nameLike: "Stat" };
-      const mockCountries = [
-        { id: 1, name: "United States" }
-      ];
+      const mockCountries = [{ id: 1, name: "United States" }];
 
       mockCountryRepository.getAll.mockResolvedValue(mockCountries);
 
@@ -102,7 +100,9 @@ describe("GetCountriesService", () => {
       mockCountryRepository.getAll.mockRejectedValue(repositoryError);
 
       // Act & Assert
-      await expect(service.execute()).rejects.toThrow("Database connection failed");
+      await expect(service.execute()).rejects.toThrow(
+        "Database connection failed",
+      );
     });
   });
 });

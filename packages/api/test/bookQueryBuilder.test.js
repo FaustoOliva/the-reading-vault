@@ -395,11 +395,7 @@ describe("BookQueryBuilder", () => {
 
   describe("reset", () => {
     it("should clear all filters and parameters", () => {
-      builder
-        .withStatus("READING")
-        .withAuthorId(5)
-        .paginate(2, 10)
-        .reset();
+      builder.withStatus("READING").withAuthorId(5).paginate(2, 10).reset();
 
       const query = builder.buildSelectQuery();
 

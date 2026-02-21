@@ -1,7 +1,7 @@
 /**
  * LogReadingSessionService Tests
  * Tests for the LogReadingSession use case
- * 
+ *
  * Coverage:
  * - Guard clauses (ABANDONED status, PENDING_SCORE status)
  * - Smart transitions (WISH_LIST → READING, COMPLETED → READING, READING → PENDING_SCORE)
@@ -13,21 +13,25 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { BookStatus } from "../models/BookStatus.js";
 import { Book } from "../models/Book.js";
 import { ReadingSession } from "../models/ReadingSession.js";
-import { BookClosedError, NotFoundError, BadRequestError } from "../errors/index.js";
+import {
+  BookClosedError,
+  NotFoundError,
+  BadRequestError,
+} from "../errors/index.js";
 
 // Mock transaction (must be defined before vi.mock)
 const mockTransaction = {
   begin: vi.fn().mockResolvedValue(undefined),
   commit: vi.fn().mockResolvedValue(undefined),
   rollback: vi.fn().mockResolvedValue(undefined),
-  request: vi.fn().mockReturnThis()
+  request: vi.fn().mockReturnThis(),
 };
 
 // Mock mssql module (must be hoisted)
 vi.mock("mssql", () => ({
   default: {
-    Transaction: vi.fn(() => mockTransaction)
-  }
+    Transaction: vi.fn(() => mockTransaction),
+  },
 }));
 
 // Import service AFTER mocks are set up
@@ -46,22 +50,22 @@ describe("LogReadingSessionService", () => {
 
     // Create mock MSSQL client
     mockMssqlClient = {
-      getConnection: vi.fn().mockResolvedValue({})
+      getConnection: vi.fn().mockResolvedValue({}),
     };
 
     // Create mock repositories
     mockBookRepository = {
       getById: vi.fn(),
-      updateStatus: vi.fn()
+      updateStatus: vi.fn(),
     };
 
     mockReadingSessionRepository = {
       create: vi.fn(),
-      getTotalPagesInCycle: vi.fn()
+      getTotalPagesInCycle: vi.fn(),
     };
 
     mockBookStatusHistoryRepository = {
-      create: vi.fn()
+      create: vi.fn(),
     };
 
     // Instantiate service
@@ -69,7 +73,7 @@ describe("LogReadingSessionService", () => {
       mockMssqlClient,
       mockBookRepository,
       mockReadingSessionRepository,
-      mockBookStatusHistoryRepository
+      mockBookStatusHistoryRepository,
     );
   });
 
@@ -82,7 +86,7 @@ describe("LogReadingSessionService", () => {
         title: "Test Book",
         status: BookStatus.ABANDONED,
         totalPages: 300,
-        currentReadingCycle: 1
+        currentReadingCycle: 1,
       });
 
       mockBookRepository.getById.mockResolvedValue(abandonedBook);
@@ -103,7 +107,7 @@ describe("LogReadingSessionService", () => {
         title: "Needs Review",
         status: BookStatus.PENDING_SCORE,
         totalPages: 300,
-        currentReadingCycle: 1
+        currentReadingCycle: 1,
       });
 
       mockBookRepository.getById.mockResolvedValue(pendingScoreBook);
@@ -137,7 +141,7 @@ describe("LogReadingSessionService", () => {
         title: "Test Book",
         status: BookStatus.READING,
         totalPages: 300,
-        currentReadingCycle: 1
+        currentReadingCycle: 1,
       });
 
       mockBookRepository.getById.mockResolvedValue(book);
@@ -158,14 +162,14 @@ describe("LogReadingSessionService", () => {
         title: "Test Book",
         status: BookStatus.READING,
         totalPages: 300,
-        currentReadingCycle: 1
+        currentReadingCycle: 1,
       });
 
       const expectedSession = new ReadingSession({
         id: 1,
         bookId: 1,
         pagesRead: 150,
-        readingCycle: 1
+        readingCycle: 1,
       });
 
       mockBookRepository.getById.mockResolvedValue(book);
@@ -190,14 +194,14 @@ describe("LogReadingSessionService", () => {
         title: "New Book",
         status: BookStatus.WISH_LIST,
         totalPages: 300,
-        currentReadingCycle: 1
+        currentReadingCycle: 1,
       });
 
       const expectedSession = new ReadingSession({
         id: 1,
         bookId: 1,
         pagesRead: 50,
-        readingCycle: 1
+        readingCycle: 1,
       });
 
       mockBookRepository.getById.mockResolvedValue(wishlistBook);
@@ -212,16 +216,16 @@ describe("LogReadingSessionService", () => {
         1,
         BookStatus.READING,
         1,
-        mockTransaction
+        mockTransaction,
       );
       expect(mockBookStatusHistoryRepository.create).toHaveBeenCalledWith(
         {
           bookId: 1,
           oldStatus: BookStatus.WISH_LIST,
           newStatus: BookStatus.READING,
-          readingCycle: 1
+          readingCycle: 1,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(mockTransaction.commit).toHaveBeenCalled();
     });
@@ -236,14 +240,14 @@ describe("LogReadingSessionService", () => {
         title: "Completed Book",
         status: BookStatus.COMPLETED,
         totalPages: 300,
-        currentReadingCycle: 1
+        currentReadingCycle: 1,
       });
 
       const expectedSession = new ReadingSession({
         id: 1,
         bookId: 1,
         pagesRead: 50,
-        readingCycle: 2 // Cycle incremented
+        readingCycle: 2, // Cycle incremented
       });
 
       mockBookRepository.getById.mockResolvedValue(completedBook);
@@ -258,16 +262,16 @@ describe("LogReadingSessionService", () => {
         1,
         BookStatus.READING,
         2, // Cycle incremented
-        mockTransaction
+        mockTransaction,
       );
       expect(mockBookStatusHistoryRepository.create).toHaveBeenCalledWith(
         {
           bookId: 1,
           oldStatus: BookStatus.COMPLETED,
           newStatus: BookStatus.READING,
-          readingCycle: 2
+          readingCycle: 2,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(mockTransaction.commit).toHaveBeenCalled();
     });
@@ -282,14 +286,14 @@ describe("LogReadingSessionService", () => {
         title: "Almost Done",
         status: BookStatus.READING,
         totalPages: 300,
-        currentReadingCycle: 1
+        currentReadingCycle: 1,
       });
 
       const expectedSession = new ReadingSession({
         id: 1,
         bookId: 1,
         pagesRead: 100,
-        readingCycle: 1
+        readingCycle: 1,
       });
 
       mockBookRepository.getById.mockResolvedValue(readingBook);
@@ -304,16 +308,16 @@ describe("LogReadingSessionService", () => {
         1,
         BookStatus.PENDING_SCORE,
         1,
-        mockTransaction
+        mockTransaction,
       );
       expect(mockBookStatusHistoryRepository.create).toHaveBeenCalledWith(
         {
           bookId: 1,
           oldStatus: BookStatus.READING,
           newStatus: BookStatus.PENDING_SCORE,
-          readingCycle: 1
+          readingCycle: 1,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(mockTransaction.commit).toHaveBeenCalled();
     });
@@ -326,14 +330,14 @@ describe("LogReadingSessionService", () => {
         title: "In Progress",
         status: BookStatus.READING,
         totalPages: 300,
-        currentReadingCycle: 1
+        currentReadingCycle: 1,
       });
 
       const expectedSession = new ReadingSession({
         id: 1,
         bookId: 1,
         pagesRead: 50,
-        readingCycle: 1
+        readingCycle: 1,
       });
 
       mockBookRepository.getById.mockResolvedValue(readingBook);
@@ -359,12 +363,14 @@ describe("LogReadingSessionService", () => {
         title: "Test",
         status: BookStatus.READING,
         totalPages: 300,
-        currentReadingCycle: 1
+        currentReadingCycle: 1,
       });
 
       mockBookRepository.getById.mockResolvedValue(book);
       mockReadingSessionRepository.getTotalPagesInCycle.mockResolvedValue(0);
-      mockReadingSessionRepository.create.mockRejectedValue(new Error("DB Error"));
+      mockReadingSessionRepository.create.mockRejectedValue(
+        new Error("DB Error"),
+      );
 
       // Act & Assert
       await expect(service.execute(input)).rejects.toThrow("DB Error");
@@ -383,7 +389,7 @@ describe("LogReadingSessionService", () => {
         title: "Test",
         status: BookStatus.READING,
         totalPages: 300,
-        currentReadingCycle: 1
+        currentReadingCycle: 1,
       });
 
       mockBookRepository.getById.mockResolvedValue(book);
@@ -396,9 +402,9 @@ describe("LogReadingSessionService", () => {
       // Assert
       expect(mockReadingSessionRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          occurredAt: customDate
+          occurredAt: customDate,
         }),
-        mockTransaction
+        mockTransaction,
       );
     });
 
@@ -410,7 +416,7 @@ describe("LogReadingSessionService", () => {
         title: "Test",
         status: BookStatus.READING,
         totalPages: 300,
-        currentReadingCycle: 1
+        currentReadingCycle: 1,
       });
 
       mockBookRepository.getById.mockResolvedValue(book);
@@ -423,12 +429,10 @@ describe("LogReadingSessionService", () => {
       // Assert
       expect(mockReadingSessionRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          occurredAt: expect.any(Date)
+          occurredAt: expect.any(Date),
         }),
-        mockTransaction
+        mockTransaction,
       );
     });
   });
 });
-
-

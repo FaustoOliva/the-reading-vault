@@ -1,22 +1,27 @@
 /**
  * SearchBar Component
  * Text input with search icon and debouncing for book title search
- * 
+ *
  * Features:
  * - Debounced input (300ms delay)
  * - Clear button when text is present
  * - Search icon
  * - Platform-specific styling
- * 
+ *
  * Rules:
  * - Use useEffect with debounce for onChange
  * - Don't call onChange on every keystroke
  * - Clear button should reset local state and call onChange('')
  */
 
-import { useState, useEffect } from 'react';
-import { View, TextInput, Text, Pressable, StyleSheet } from 'react-native';
-import { Background, Text as TextColors, Border, Interactive } from '@/constants/colors';
+import { useState, useEffect } from "react";
+import { View, TextInput, Text, Pressable, StyleSheet } from "react-native";
+import {
+  Background,
+  Text as TextColors,
+  Border,
+  Interactive,
+} from "@/constants/colors";
 
 interface SearchBarProps {
   value: string;
@@ -25,11 +30,11 @@ interface SearchBarProps {
   debounceMs?: number;
 }
 
-export function SearchBar({ 
-  value, 
-  onChange, 
-  placeholder = 'Search books by title...',
-  debounceMs = 300 
+export function SearchBar({
+  value,
+  onChange,
+  placeholder = "Search books by title...",
+  debounceMs = 300,
 }: SearchBarProps) {
   const [localValue, setLocalValue] = useState(value);
 
@@ -50,8 +55,8 @@ export function SearchBar({
   }, [localValue, debounceMs, onChange, value]);
 
   const handleClear = () => {
-    setLocalValue('');
-    onChange('');
+    setLocalValue("");
+    onChange("");
   };
 
   return (
@@ -98,8 +103,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Background.elevated,
     borderRadius: 12,
     borderWidth: 1,
@@ -123,8 +128,8 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     backgroundColor: Interactive.secondary.default,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   clearButtonPressed: {
     backgroundColor: Interactive.secondary.pressed,
@@ -132,7 +137,7 @@ const styles = StyleSheet.create({
   clearIcon: {
     fontSize: 14,
     color: TextColors.secondary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   hintText: {
     fontSize: 13,

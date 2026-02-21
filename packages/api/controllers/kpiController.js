@@ -35,7 +35,7 @@ const getGlobalKPIsQuerySchema = z
     {
       message: "date_from must be before or equal to date_to",
       path: ["date_from"],
-    }
+    },
   );
 
 export class KpiController {

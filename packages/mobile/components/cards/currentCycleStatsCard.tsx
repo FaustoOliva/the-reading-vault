@@ -1,7 +1,7 @@
 /**
  * CurrentCycleStatsCard Component
  * Displays statistics for the current reading cycle
- * 
+ *
  * Shows:
  * - Sessions count
  * - First session date
@@ -9,7 +9,7 @@
  * - Days elapsed
  * - Reading velocity (pages/day)
  * - Estimated completion date
- * 
+ *
  * Rules:
  * - Use flex gap for spacing
  * - Use borderCurve: 'continuous' for rounded corners
@@ -18,17 +18,17 @@
  * - Handle null values gracefully
  */
 
-import { View, Text } from 'react-native';
-import { BookDetails } from '@/types/book';
+import { View, Text } from "react-native";
+import { BookDetails } from "@/types/book";
 import {
   Background,
   Text as TextColors,
   Border,
   Feedback,
-} from '@/constants/colors';
+} from "@/constants/colors";
 
 interface CurrentCycleStatsCardProps {
-  stats: BookDetails['current_cycle_stats'];
+  stats: BookDetails["current_cycle_stats"];
 }
 
 /**
@@ -36,13 +36,13 @@ interface CurrentCycleStatsCardProps {
  * Example: "Jan 15, 2026"
  */
 function formatDate(date: Date | null): string {
-  if (!date) return 'N/A';
-  
+  if (!date) return "N/A";
+
   const dateObj = new Date(date);
-  return dateObj.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  return dateObj.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 }
 
@@ -51,7 +51,7 @@ function formatDate(date: Date | null): string {
  * Example: "12.5 pages/day"
  */
 function formatVelocity(velocity: number | null): string {
-  if (velocity === null) return 'N/A';
+  if (velocity === null) return "N/A";
   return `${velocity.toFixed(1)} pages/day`;
 }
 
@@ -67,11 +67,13 @@ export function CurrentCycleStatsCard({ stats }: CurrentCycleStatsCardProps) {
         gap: 16,
         borderWidth: 1,
         borderColor: Border.default,
-        borderCurve: 'continuous',
+        borderCurve: "continuous",
       }}
     >
       {/* Section Title */}
-      <Text style={{ fontSize: 16, fontWeight: '700', color: TextColors.primary }}>
+      <Text
+        style={{ fontSize: 16, fontWeight: "700", color: TextColors.primary }}
+      >
         📊 Current Cycle Statistics
       </Text>
 
@@ -84,10 +86,16 @@ export function CurrentCycleStatsCard({ stats }: CurrentCycleStatsCardProps) {
             backgroundColor: Feedback.info.background,
             borderWidth: 1,
             borderColor: Feedback.info.border,
-            borderCurve: 'continuous',
+            borderCurve: "continuous",
           }}
         >
-          <Text style={{ fontSize: 14, color: Feedback.info.text, textAlign: 'center' }}>
+          <Text
+            style={{
+              fontSize: 14,
+              color: Feedback.info.text,
+              textAlign: "center",
+            }}
+          >
             No reading sessions logged in this cycle yet
           </Text>
         </View>
@@ -95,11 +103,22 @@ export function CurrentCycleStatsCard({ stats }: CurrentCycleStatsCardProps) {
         <>
           {/* Sessions Count */}
           <View style={{ gap: 4 }}>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: "600",
+                color: TextColors.tertiary,
+              }}
+            >
               Sessions Logged
             </Text>
             <Text
-              style={{ fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'], color: TextColors.primary }}
+              style={{
+                fontSize: 18,
+                fontWeight: "700",
+                fontVariant: ["tabular-nums"],
+                color: TextColors.primary,
+              }}
               selectable
             >
               {stats?.sessions_count ?? 0}
@@ -107,10 +126,16 @@ export function CurrentCycleStatsCard({ stats }: CurrentCycleStatsCardProps) {
           </View>
 
           {/* Date Range (horizontal row) */}
-          <View style={{ flexDirection: 'row', gap: 12 }}>
+          <View style={{ flexDirection: "row", gap: 12 }}>
             {/* First Session */}
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "600",
+                  color: TextColors.tertiary,
+                }}
+              >
                 Started
               </Text>
               <Text
@@ -123,7 +148,13 @@ export function CurrentCycleStatsCard({ stats }: CurrentCycleStatsCardProps) {
 
             {/* Last Session */}
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "600",
+                  color: TextColors.tertiary,
+                }}
+              >
                 Last Session
               </Text>
               <Text
@@ -137,20 +168,37 @@ export function CurrentCycleStatsCard({ stats }: CurrentCycleStatsCardProps) {
 
           {/* Days Elapsed */}
           <View style={{ gap: 4 }}>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: "600",
+                color: TextColors.tertiary,
+              }}
+            >
               Days Elapsed
             </Text>
             <Text
-              style={{ fontSize: 16, fontVariant: ['tabular-nums'], color: TextColors.primary }}
+              style={{
+                fontSize: 16,
+                fontVariant: ["tabular-nums"],
+                color: TextColors.primary,
+              }}
               selectable
             >
-              {stats?.days_elapsed ?? 0} {(stats?.days_elapsed ?? 0) === 1 ? 'day' : 'days'}
+              {stats?.days_elapsed ?? 0}{" "}
+              {(stats?.days_elapsed ?? 0) === 1 ? "day" : "days"}
             </Text>
           </View>
 
           {/* Velocity */}
           <View style={{ gap: 4 }}>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: "600",
+                color: TextColors.tertiary,
+              }}
+            >
               Reading Velocity
             </Text>
             <View
@@ -161,15 +209,15 @@ export function CurrentCycleStatsCard({ stats }: CurrentCycleStatsCardProps) {
                 backgroundColor: Feedback.success.background,
                 borderWidth: 1,
                 borderColor: Feedback.success.border,
-                alignSelf: 'flex-start',
-                borderCurve: 'continuous',
+                alignSelf: "flex-start",
+                borderCurve: "continuous",
               }}
             >
               <Text
                 style={{
                   fontSize: 16,
-                  fontWeight: '600',
-                  fontVariant: ['tabular-nums'],
+                  fontWeight: "600",
+                  fontVariant: ["tabular-nums"],
                   color: Feedback.success.text,
                 }}
                 selectable
@@ -182,7 +230,13 @@ export function CurrentCycleStatsCard({ stats }: CurrentCycleStatsCardProps) {
           {/* Estimated Completion */}
           {stats?.estimated_completion && (
             <View style={{ gap: 4 }}>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "600",
+                  color: TextColors.tertiary,
+                }}
+              >
                 Estimated Completion
               </Text>
               <View
@@ -193,14 +247,14 @@ export function CurrentCycleStatsCard({ stats }: CurrentCycleStatsCardProps) {
                   backgroundColor: Feedback.warning.background,
                   borderWidth: 1,
                   borderColor: Feedback.warning.border,
-                  alignSelf: 'flex-start',
-                  borderCurve: 'continuous',
+                  alignSelf: "flex-start",
+                  borderCurve: "continuous",
                 }}
               >
                 <Text
                   style={{
                     fontSize: 14,
-                    fontWeight: '600',
+                    fontWeight: "600",
                     color: Feedback.warning.text,
                   }}
                   selectable

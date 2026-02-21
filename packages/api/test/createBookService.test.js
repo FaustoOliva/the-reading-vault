@@ -1,7 +1,7 @@
 /**
  * CreateBookService Test Suite
  * Tests for CreateBook use case
- * 
+ *
  * Pattern: AAA (Arrange-Act-Assert)
  * Target Coverage: ≥ 80%
  */
@@ -14,14 +14,14 @@ import { Book } from "../models/Book.js";
 // Mock transaction and request (must be defined before vi.mock)
 const mockRequest = {
   input: vi.fn().mockReturnThis(),
-  query: vi.fn()
+  query: vi.fn(),
 };
 
 const mockTransaction = {
   begin: vi.fn().mockResolvedValue(undefined),
   commit: vi.fn().mockResolvedValue(undefined),
   rollback: vi.fn().mockResolvedValue(undefined),
-  request: vi.fn().mockReturnValue(mockRequest)
+  request: vi.fn().mockReturnValue(mockRequest),
 };
 
 // Mock mssql module (must be hoisted)
@@ -30,8 +30,8 @@ vi.mock("mssql", () => ({
     Transaction: vi.fn(() => mockTransaction),
     Request: vi.fn(() => mockRequest),
     Int: {},
-    NVarChar: {}
-  }
+    NVarChar: {},
+  },
 }));
 
 // Import service AFTER mocks are set up
@@ -53,27 +53,27 @@ describe("CreateBookService", () => {
 
     // Mock MSSQL client
     mockMssqlClient = {
-      getConnection: vi.fn().mockResolvedValue({})
+      getConnection: vi.fn().mockResolvedValue({}),
     };
 
     // Mock repositories
     mockBookRepository = {
       findByIsbn: vi.fn(),
-      create: vi.fn()
+      create: vi.fn(),
     };
 
     mockAuthorRepository = {
       findByName: vi.fn(),
-      create: vi.fn()
+      create: vi.fn(),
     };
 
     mockCountryRepository = {
       findByName: vi.fn(),
-      create: vi.fn()
+      create: vi.fn(),
     };
 
     mockBookStatusHistoryRepository = {
-      create: vi.fn()
+      create: vi.fn(),
     };
 
     // Instantiate service
@@ -82,7 +82,7 @@ describe("CreateBookService", () => {
       mockBookRepository,
       mockAuthorRepository,
       mockCountryRepository,
-      mockBookStatusHistoryRepository
+      mockBookStatusHistoryRepository,
     );
   });
 
@@ -95,8 +95,8 @@ describe("CreateBookService", () => {
         totalPages: 432,
         author: {
           name: "Robert C. Martin",
-          nationality: "United States"
-        }
+          nationality: "United States",
+        },
       };
 
       const mockCountry = { id: 1, name: "United States" };
@@ -111,7 +111,7 @@ describe("CreateBookService", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       mockBookRepository.findByIsbn.mockResolvedValue(null);
@@ -127,16 +127,22 @@ describe("CreateBookService", () => {
       const result = await service.execute(input);
 
       // Assert
-      expect(mockBookRepository.findByIsbn).toHaveBeenCalledWith("9780134494166");
-      expect(mockCountryRepository.findByName).toHaveBeenCalledWith("United States");
+      expect(mockBookRepository.findByIsbn).toHaveBeenCalledWith(
+        "9780134494166",
+      );
+      expect(mockCountryRepository.findByName).toHaveBeenCalledWith(
+        "United States",
+      );
       expect(mockCountryRepository.create).toHaveBeenCalledWith(
         { name: "United States" },
-        mockTransaction
+        mockTransaction,
       );
-      expect(mockAuthorRepository.findByName).toHaveBeenCalledWith("Robert C. Martin");
+      expect(mockAuthorRepository.findByName).toHaveBeenCalledWith(
+        "Robert C. Martin",
+      );
       expect(mockAuthorRepository.create).toHaveBeenCalledWith(
         { name: "Robert C. Martin", nationalityId: 1 },
-        mockTransaction
+        mockTransaction,
       );
       expect(mockBookRepository.create).toHaveBeenCalledWith(
         {
@@ -144,18 +150,18 @@ describe("CreateBookService", () => {
           isbn: "9780134494166",
           authorId: 1,
           totalPages: 432,
-          statusId: 1
+          statusId: 1,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(mockBookStatusHistoryRepository.create).toHaveBeenCalledWith(
         {
           bookId: 1,
           oldStatus: null,
           newStatus: BookStatus.WISH_LIST,
-          readingCycle: 1
+          readingCycle: 1,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(mockTransaction.commit).toHaveBeenCalled();
       expect(result).toEqual(mockBook);
@@ -169,8 +175,8 @@ describe("CreateBookService", () => {
         totalPages: 256,
         author: {
           name: "Robert C. Martin",
-          nationality: "United States"
-        }
+          nationality: "United States",
+        },
       };
 
       const mockCountry = { id: 1, name: "United States" };
@@ -185,7 +191,7 @@ describe("CreateBookService", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       mockBookRepository.findByIsbn.mockResolvedValue(null);
@@ -200,7 +206,9 @@ describe("CreateBookService", () => {
       // Assert
       expect(mockCountryRepository.create).not.toHaveBeenCalled();
       expect(mockAuthorRepository.create).not.toHaveBeenCalled();
-      expect(mockAuthorRepository.findByName).toHaveBeenCalledWith("Robert C. Martin");
+      expect(mockAuthorRepository.findByName).toHaveBeenCalledWith(
+        "Robert C. Martin",
+      );
       expect(result).toEqual(mockBook);
     });
 
@@ -211,8 +219,8 @@ describe("CreateBookService", () => {
         isbn: "9780321125217",
         totalPages: 560,
         author: {
-          name: "Eric Evans"
-        }
+          name: "Eric Evans",
+        },
       };
 
       const mockAuthor = { id: 2, name: "Eric Evans", nationalityId: null };
@@ -226,7 +234,7 @@ describe("CreateBookService", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       mockBookRepository.findByIsbn.mockResolvedValue(null);
@@ -243,7 +251,7 @@ describe("CreateBookService", () => {
       expect(mockCountryRepository.create).not.toHaveBeenCalled();
       expect(mockAuthorRepository.create).toHaveBeenCalledWith(
         { name: "Eric Evans", nationalityId: null },
-        mockTransaction
+        mockTransaction,
       );
       expect(result).toEqual(mockBook);
     });
@@ -254,8 +262,8 @@ describe("CreateBookService", () => {
         title: "Old Programming Book",
         totalPages: 300,
         author: {
-          name: "Unknown Author"
-        }
+          name: "Unknown Author",
+        },
       };
 
       const mockAuthor = { id: 3, name: "Unknown Author", nationalityId: null };
@@ -269,7 +277,7 @@ describe("CreateBookService", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       mockAuthorRepository.findByName.mockResolvedValue(null);
@@ -290,8 +298,8 @@ describe("CreateBookService", () => {
       const input = {
         title: "Ancient Manuscript",
         author: {
-          name: "Ancient Author"
-        }
+          name: "Ancient Author",
+        },
       };
 
       const mockAuthor = { id: 4, name: "Ancient Author", nationalityId: null };
@@ -305,7 +313,7 @@ describe("CreateBookService", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       mockAuthorRepository.findByName.mockResolvedValue(null);
@@ -319,9 +327,9 @@ describe("CreateBookService", () => {
       // Assert
       expect(mockBookRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          totalPages: undefined
+          totalPages: undefined,
         }),
-        mockTransaction
+        mockTransaction,
       );
       expect(result.totalPages).toBeNull();
     });
@@ -330,7 +338,7 @@ describe("CreateBookService", () => {
       // Arrange
       const input = {
         title: "Test Book",
-        author: { name: "Test Author" }
+        author: { name: "Test Author" },
       };
 
       const mockAuthor = { id: 1, name: "Test Author", nationalityId: null };
@@ -344,7 +352,7 @@ describe("CreateBookService", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       mockAuthorRepository.findByName.mockResolvedValue(null);
@@ -361,9 +369,9 @@ describe("CreateBookService", () => {
           bookId: 1,
           oldStatus: null,
           newStatus: BookStatus.WISH_LIST,
-          readingCycle: 1
+          readingCycle: 1,
         },
-        mockTransaction
+        mockTransaction,
       );
     });
 
@@ -371,7 +379,7 @@ describe("CreateBookService", () => {
       // Arrange
       const input = {
         title: "Test Book",
-        author: { name: "Test Author" }
+        author: { name: "Test Author" },
       };
 
       const mockAuthor = { id: 1, name: "Test Author", nationalityId: null };
@@ -385,7 +393,7 @@ describe("CreateBookService", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       mockAuthorRepository.findByName.mockResolvedValue(null);
@@ -409,7 +417,7 @@ describe("CreateBookService", () => {
       const input = {
         title: "Duplicate Book",
         isbn: "9780134494166",
-        author: { name: "Test Author" }
+        author: { name: "Test Author" },
       };
 
       const existingBook = new Book({
@@ -422,7 +430,7 @@ describe("CreateBookService", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       mockBookRepository.findByIsbn.mockResolvedValue(existingBook);
@@ -430,7 +438,7 @@ describe("CreateBookService", () => {
       // Act & Assert
       await expect(service.execute(input)).rejects.toThrow(ConflictError);
       await expect(service.execute(input)).rejects.toThrow(
-        "Book with ISBN 9780134494166 already exists"
+        "Book with ISBN 9780134494166 already exists",
       );
       // Transaction is not started when ISBN conflict is detected (happens before transaction)
       expect(mockTransaction.rollback).not.toHaveBeenCalled();
@@ -440,11 +448,13 @@ describe("CreateBookService", () => {
       // Arrange
       const input = {
         title: "Test Book",
-        author: { name: "Test Author" }
+        author: { name: "Test Author" },
       };
 
       mockAuthorRepository.findByName.mockResolvedValue(null);
-      mockAuthorRepository.create.mockRejectedValue(new Error("Database error"));
+      mockAuthorRepository.create.mockRejectedValue(
+        new Error("Database error"),
+      );
 
       // Act & Assert
       await expect(service.execute(input)).rejects.toThrow("Database error");
@@ -460,8 +470,8 @@ describe("CreateBookService", () => {
         totalPages: 500,
         status: BookStatus.COMPLETED,
         author: {
-          name: "Legacy Author"
-        }
+          name: "Legacy Author",
+        },
       };
 
       const mockAuthor = { id: 10, name: "Legacy Author", nationalityId: null };
@@ -475,7 +485,7 @@ describe("CreateBookService", () => {
         status: BookStatus.COMPLETED,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       mockBookRepository.findByIsbn.mockResolvedValue(null);
@@ -490,7 +500,9 @@ describe("CreateBookService", () => {
 
       // Assert
       expect(mockRequest.query).toHaveBeenCalledWith(
-        expect.stringContaining("SELECT id FROM BookStatuses WHERE internal_code = @statusCode")
+        expect.stringContaining(
+          "SELECT id FROM BookStatuses WHERE internal_code = @statusCode",
+        ),
       );
       expect(mockBookRepository.create).toHaveBeenCalledWith(
         {
@@ -498,18 +510,18 @@ describe("CreateBookService", () => {
           isbn: "9781234567890",
           authorId: 10,
           totalPages: 500,
-          statusId: 3
+          statusId: 3,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(mockBookStatusHistoryRepository.create).toHaveBeenCalledWith(
         {
           bookId: 10,
           oldStatus: null,
           newStatus: BookStatus.COMPLETED,
-          readingCycle: 1
+          readingCycle: 1,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(result).toEqual(mockBook);
     });
@@ -521,11 +533,15 @@ describe("CreateBookService", () => {
         totalPages: 300,
         status: BookStatus.READING,
         author: {
-          name: "Another Author"
-        }
+          name: "Another Author",
+        },
       };
 
-      const mockAuthor = { id: 11, name: "Another Author", nationalityId: null };
+      const mockAuthor = {
+        id: 11,
+        name: "Another Author",
+        nationalityId: null,
+      };
       const mockBook = new Book({
         id: 11,
         title: "In Progress Legacy Book",
@@ -536,7 +552,7 @@ describe("CreateBookService", () => {
         status: BookStatus.READING,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       mockBookRepository.findByIsbn.mockResolvedValue(null);
@@ -556,18 +572,18 @@ describe("CreateBookService", () => {
           isbn: undefined,
           authorId: 11,
           totalPages: 300,
-          statusId: 2
+          statusId: 2,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(mockBookStatusHistoryRepository.create).toHaveBeenCalledWith(
         {
           bookId: 11,
           oldStatus: null,
           newStatus: BookStatus.READING,
-          readingCycle: 1
+          readingCycle: 1,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(result).toEqual(mockBook);
     });
@@ -577,11 +593,15 @@ describe("CreateBookService", () => {
       const input = {
         title: "Default Status Book",
         author: {
-          name: "Default Author"
-        }
+          name: "Default Author",
+        },
       };
 
-      const mockAuthor = { id: 12, name: "Default Author", nationalityId: null };
+      const mockAuthor = {
+        id: 12,
+        name: "Default Author",
+        nationalityId: null,
+      };
       const mockBook = new Book({
         id: 12,
         title: "Default Status Book",
@@ -592,7 +612,7 @@ describe("CreateBookService", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       mockBookRepository.findByIsbn.mockResolvedValue(null);
@@ -612,18 +632,18 @@ describe("CreateBookService", () => {
           isbn: undefined,
           authorId: 12,
           totalPages: undefined,
-          statusId: 1
+          statusId: 1,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(mockBookStatusHistoryRepository.create).toHaveBeenCalledWith(
         {
           bookId: 12,
           oldStatus: null,
           newStatus: BookStatus.WISH_LIST,
-          readingCycle: 1
+          readingCycle: 1,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(result).toEqual(mockBook);
     });

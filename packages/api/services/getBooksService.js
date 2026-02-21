@@ -1,12 +1,12 @@
 /**
  * GetBooksService (Query Use Case)
  * Retrieves all books with optional filtering
- * 
+ *
  * Responsibilities:
  * - Implement GetBooks use case as defined in USE_CASES.md
  * - Orchestrate repository calls
  * - Return Book domain entities
- * 
+ *
  * Rules:
  * - Framework-agnostic
  * - No validation (handled by controller)
@@ -28,7 +28,7 @@ export class GetBooksService {
   async execute(filters = {}, pagination = { page: 1, limit: 10 }) {
     // Delegate to repository
     const result = await this.bookRepository.getAll(filters, pagination);
-    
+
     return result;
   }
 }

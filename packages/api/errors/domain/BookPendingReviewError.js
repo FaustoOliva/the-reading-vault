@@ -9,7 +9,7 @@ export class BookPendingReviewError extends ForbiddenError {
   constructor(bookId) {
     super(
       `Book requires review (score) before logging new sessions. Complete or abandon the book first.`,
-      "Book"
+      "Book",
     );
     this.bookId = bookId;
   }

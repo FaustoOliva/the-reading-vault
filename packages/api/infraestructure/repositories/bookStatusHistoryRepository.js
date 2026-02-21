@@ -1,11 +1,11 @@
 /**
  * BookStatusHistoryRepository
  * Handles data persistence operations for BookStatusHistory entity
- * 
+ *
  * Responsibilities:
  * - Insert status change history records
  * - Query status history
- * 
+ *
  * Rules:
  * - No business logic
  * - No HTTP concerns
@@ -53,7 +53,7 @@ export class BookStatusHistoryRepository {
    */
   async getByBookId(bookId) {
     const pool = await this.mssqlClient.getConnection();
-    
+
     const query = `
       SELECT 
         h.id,
@@ -84,7 +84,7 @@ export class BookStatusHistoryRepository {
    */
   async getTransitionsByBook(bookId) {
     const pool = await this.mssqlClient.getConnection();
-    
+
     const query = `
       SELECT 
         bsh.id,
@@ -98,12 +98,12 @@ export class BookStatusHistoryRepository {
       WHERE bsh.book_id = @bookId
       ORDER BY bsh.created_at ASC
     `;
-    
+
     const result = await pool
       .request()
       .input("bookId", sql.Int, bookId)
       .query(query);
-    
+
     return result.recordset;
   }
 }

@@ -1,7 +1,7 @@
 /**
  * PaginationControls Component
  * Navigation controls for paginated lists
- * 
+ *
  * Rules:
  * - Use Pressable for buttons
  * - Disable buttons when not applicable
@@ -10,8 +10,8 @@
  * - Use accessible colors from constants
  */
 
-import { View, Text, Pressable } from 'react-native';
-import { Interactive, Text as TextColors, Border } from '@/constants/colors';
+import { View, Text, Pressable } from "react-native";
+import { Interactive, Text as TextColors, Border } from "@/constants/colors";
 
 interface PaginationControlsProps {
   currentPage: number;
@@ -32,9 +32,9 @@ export function PaginationControls({
   return (
     <View
       style={{
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
         paddingVertical: 16,
         gap: 12,
       }}
@@ -53,14 +53,14 @@ export function PaginationControls({
               ? Interactive.primary.pressed
               : Interactive.primary.default
             : Border.default,
-          alignItems: 'center',
-          borderCurve: 'continuous',
+          alignItems: "center",
+          borderCurve: "continuous",
         })}
       >
         <Text
           style={{
             fontSize: 15,
-            fontWeight: '600',
+            fontWeight: "600",
             color: hasPrevious ? Interactive.primary.text : TextColors.disabled,
           }}
         >
@@ -69,13 +69,13 @@ export function PaginationControls({
       </Pressable>
 
       {/* Page Info */}
-      <View style={{ alignItems: 'center', gap: 2, minWidth: 80 }}>
+      <View style={{ alignItems: "center", gap: 2, minWidth: 80 }}>
         <Text
           style={{
             fontSize: 16,
-            fontWeight: '600',
+            fontWeight: "600",
             color: TextColors.primary,
-            fontVariant: ['tabular-nums'],
+            fontVariant: ["tabular-nums"],
           }}
           selectable
         >
@@ -86,7 +86,7 @@ export function PaginationControls({
             style={{
               fontSize: 12,
               color: TextColors.tertiary,
-              fontVariant: ['tabular-nums'],
+              fontVariant: ["tabular-nums"],
             }}
             selectable
           >
@@ -109,14 +109,14 @@ export function PaginationControls({
               ? Interactive.primary.pressed
               : Interactive.primary.default
             : Border.default,
-          alignItems: 'center',
-          borderCurve: 'continuous',
+          alignItems: "center",
+          borderCurve: "continuous",
         })}
       >
         <Text
           style={{
             fontSize: 15,
-            fontWeight: '600',
+            fontWeight: "600",
             color: hasNext ? Interactive.primary.text : TextColors.disabled,
           }}
         >

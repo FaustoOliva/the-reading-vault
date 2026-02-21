@@ -3,6 +3,7 @@
 ## Problem: Network Error / API Not Reachable
 
 ### Root Cause
+
 When using Expo on a physical device or emulator, `localhost` refers to the **device itself**, not your development machine. The API running on your computer is not accessible via `localhost` from the device.
 
 ### Solution: Use Your Machine's Local IP
@@ -10,12 +11,15 @@ When using Expo on a physical device or emulator, `localhost` refers to the **de
 #### Step 1: Find Your Local IP Address
 
 **Windows:**
+
 ```powershell
 ipconfig | Select-String 'IPv4'
 ```
+
 Look for the WiFi or Ethernet adapter (not VirtualBox/Docker adapters).
 
 **Mac/Linux:**
+
 ```bash
 ifconfig | grep inet
 # or
@@ -23,6 +27,7 @@ ipconfig getifaddr en0  # WiFi
 ```
 
 **Example output:**
+
 ```
 WiFi Adapter:
   IPv4 Address: 192.168.1.6
@@ -53,6 +58,7 @@ npx expo start
 ```
 
 Or use:
+
 ```bash
 npx expo start --clear  # Clears cache
 ```
@@ -67,6 +73,7 @@ npm start
 ```
 
 You should see:
+
 ```
 Server running on port 3000
 ```
@@ -74,11 +81,13 @@ Server running on port 3000
 #### Step 5: Test Connection
 
 Open your browser and navigate to:
+
 ```
 http://192.168.1.6:3000/api/health
 ```
 
 You should see:
+
 ```json
 {
   "success": true,
@@ -111,19 +120,20 @@ You should see:
 #### IP Address Changes?
 
 If you switch WiFi networks or your router assigns a new IP:
+
 1. Re-run `ipconfig` to get new IP
 2. Update `.env` file
 3. Restart Expo
 
 ### Quick Reference
 
-| Scenario | Use |
-|----------|-----|
-| Web browser (localhost) | `http://localhost:3000` |
-| Expo Go on physical device | `http://[YOUR_LOCAL_IP]:3000` |
-| iOS Simulator | `http://localhost:3000` (works) |
-| Android Emulator | `http://10.0.2.2:3000` or use local IP |
-| Expo tunnel mode | No IP needed (uses ngrok) |
+| Scenario                   | Use                                    |
+| -------------------------- | -------------------------------------- |
+| Web browser (localhost)    | `http://localhost:3000`                |
+| Expo Go on physical device | `http://[YOUR_LOCAL_IP]:3000`          |
+| iOS Simulator              | `http://localhost:3000` (works)        |
+| Android Emulator           | `http://10.0.2.2:3000` or use local IP |
+| Expo tunnel mode           | No IP needed (uses ngrok)              |
 
 ### Current Configuration
 

@@ -1,26 +1,26 @@
 /**
  * AdvancedFiltersModal Component
  * Modal with comprehensive filtering options for books
- * 
+ *
  * Filters:
  * - Country (author's nationality)
  * - Author
  * - Score range (min/max)
  * - Page count range (min/max)
  * - Date range (start/end)
- * 
+ *
  * Features:
  * - Apply button (closes modal)
  * - Reset button (clears all filters)
  * - Close button (discards changes)
- * 
+ *
  * Rules:
  * - Use local state for form values
  * - Only call onApply when user confirms
  * - Show active filter count in parent button
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -30,17 +30,17 @@ import {
   TextInput,
   StyleSheet,
   Platform,
-} from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { useAuthors } from '@/hooks/useAuthors';
-import { useCountries } from '@/hooks/useCountries';
-import { BooksFilter } from '@/types/book';
+} from "react-native";
+import { Picker } from "@react-native-picker/picker";
+import { useAuthors } from "@/hooks/useAuthors";
+import { useCountries } from "@/hooks/useCountries";
+import { BooksFilter } from "@/types/book";
 import {
   Background,
   Text as TextColors,
   Border,
   Interactive,
-} from '@/constants/colors';
+} from "@/constants/colors";
 
 interface AdvancedFiltersModalProps {
   visible: boolean;
@@ -56,14 +56,26 @@ export function AdvancedFiltersModal({
   onApply,
 }: AdvancedFiltersModalProps) {
   // Local form state
-  const [countryId, setCountryId] = useState<number | undefined>(filters.countryId);
-  const [authorId, setAuthorId] = useState<number | undefined>(filters.authorId);
-  const [minScore, setMinScore] = useState<string>(filters.minScore?.toString() || '');
-  const [maxScore, setMaxScore] = useState<string>(filters.maxScore?.toString() || '');
-  const [minPages, setMinPages] = useState<string>(filters.minPages?.toString() || '');
-  const [maxPages, setMaxPages] = useState<string>(filters.maxPages?.toString() || '');
-  const [startDate, setStartDate] = useState<string>(filters.startDate || '');
-  const [endDate, setEndDate] = useState<string>(filters.endDate || '');
+  const [countryId, setCountryId] = useState<number | undefined>(
+    filters.countryId,
+  );
+  const [authorId, setAuthorId] = useState<number | undefined>(
+    filters.authorId,
+  );
+  const [minScore, setMinScore] = useState<string>(
+    filters.minScore?.toString() || "",
+  );
+  const [maxScore, setMaxScore] = useState<string>(
+    filters.maxScore?.toString() || "",
+  );
+  const [minPages, setMinPages] = useState<string>(
+    filters.minPages?.toString() || "",
+  );
+  const [maxPages, setMaxPages] = useState<string>(
+    filters.maxPages?.toString() || "",
+  );
+  const [startDate, setStartDate] = useState<string>(filters.startDate || "");
+  const [endDate, setEndDate] = useState<string>(filters.endDate || "");
 
   const { data: authorsResponse } = useAuthors();
   const { data: countriesResponse } = useCountries();
@@ -75,23 +87,23 @@ export function AdvancedFiltersModal({
   useEffect(() => {
     setCountryId(filters.countryId);
     setAuthorId(filters.authorId);
-    setMinScore(filters.minScore?.toString() || '');
-    setMaxScore(filters.maxScore?.toString() || '');
-    setMinPages(filters.minPages?.toString() || '');
-    setMaxPages(filters.maxPages?.toString() || '');
-    setStartDate(filters.startDate || '');
-    setEndDate(filters.endDate || '');
+    setMinScore(filters.minScore?.toString() || "");
+    setMaxScore(filters.maxScore?.toString() || "");
+    setMinPages(filters.minPages?.toString() || "");
+    setMaxPages(filters.maxPages?.toString() || "");
+    setStartDate(filters.startDate || "");
+    setEndDate(filters.endDate || "");
   }, [filters, visible]);
 
   const handleReset = () => {
     setCountryId(undefined);
     setAuthorId(undefined);
-    setMinScore('');
-    setMaxScore('');
-    setMinPages('');
-    setMaxPages('');
-    setStartDate('');
-    setEndDate('');
+    setMinScore("");
+    setMaxScore("");
+    setMinPages("");
+    setMaxPages("");
+    setStartDate("");
+    setEndDate("");
   };
 
   const handleApply = () => {
@@ -136,11 +148,15 @@ export function AdvancedFiltersModal({
         >
           {/* Country Filter */}
           <View style={styles.section}>
-            <Text style={styles.label}>Country (Author&apos;s Nationality)</Text>
+            <Text style={styles.label}>
+              Country (Author&apos;s Nationality)
+            </Text>
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={countryId}
-                onValueChange={(value) => setCountryId(value === 0 ? undefined : value)}
+                onValueChange={(value) =>
+                  setCountryId(value === 0 ? undefined : value)
+                }
                 style={styles.picker}
               >
                 <Picker.Item label="All Countries" value={0} />
@@ -161,17 +177,25 @@ export function AdvancedFiltersModal({
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={authorId}
-                onValueChange={(value) => setAuthorId(value === 0 ? undefined : value)}
+                onValueChange={(value) =>
+                  setAuthorId(value === 0 ? undefined : value)
+                }
                 style={styles.picker}
               >
                 <Picker.Item label="All Authors" value={0} />
-                {authors.map((author: { id: number; name: string; nationality?: string | null }) => (
-                  <Picker.Item
-                    key={author.id}
-                    label={`${author.name}${author.nationality ? ` (${author.nationality})` : ''}`}
-                    value={author.id}
-                  />
-                ))}
+                {authors.map(
+                  (author: {
+                    id: number;
+                    name: string;
+                    nationality?: string | null;
+                  }) => (
+                    <Picker.Item
+                      key={author.id}
+                      label={`${author.name}${author.nationality ? ` (${author.nationality})` : ""}`}
+                      value={author.id}
+                    />
+                  ),
+                )}
               </Picker>
             </View>
           </View>
@@ -307,9 +331,9 @@ const styles = StyleSheet.create({
     backgroundColor: Background.primary,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
@@ -320,18 +344,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: Interactive.secondary.default,
   },
   closeButtonText: {
     fontSize: 20,
     color: TextColors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: TextColors.primary,
   },
   scrollView: {
@@ -346,7 +370,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: TextColors.primary,
     marginBottom: 4,
   },
@@ -360,14 +384,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Border.default,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   picker: {
-    height: Platform.OS === 'ios' ? 200 : 50,
+    height: Platform.OS === "ios" ? 200 : 50,
   },
   rangeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   rangeInput: {
@@ -376,7 +400,7 @@ const styles = StyleSheet.create({
   },
   rangeLabel: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     color: TextColors.secondary,
   },
   rangeSeparator: {
@@ -401,7 +425,7 @@ const styles = StyleSheet.create({
     color: TextColors.primary,
   },
   footer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 16,
     gap: 12,
     borderTopWidth: 1,
@@ -413,15 +437,15 @@ const styles = StyleSheet.create({
     backgroundColor: Interactive.secondary.default,
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   resetButtonPressed: {
     backgroundColor: Interactive.secondary.pressed,
   },
   resetButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: TextColors.primary,
   },
   applyButton: {
@@ -429,15 +453,15 @@ const styles = StyleSheet.create({
     backgroundColor: Interactive.primary.default,
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   applyButtonPressed: {
     backgroundColor: Interactive.primary.pressed,
   },
   applyButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Interactive.primary.text,
   },
 });

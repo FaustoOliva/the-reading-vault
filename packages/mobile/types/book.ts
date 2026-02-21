@@ -40,14 +40,15 @@ export interface BookDetails {
     };
     total_pages: number | null;
     status: BookStatus;
-    current_reading_cycle: number;  // backend uses snake_case
+    current_reading_cycle: number; // backend uses snake_case
     pages_read_total: number;
     pages_read_in_current_cycle: number;
     score: number | null;
     comment: string | null;
     created_at: Date;
   };
-  current_cycle_stats: {  // backend uses snake_case
+  current_cycle_stats: {
+    // backend uses snake_case
     sessions_count: number;
     first_session_date: Date | null;
     last_session_date: Date | null;
@@ -59,13 +60,13 @@ export interface BookDetails {
 }
 
 export interface ReadingCycle {
-  cycle_number: number;  // backend uses cycle_number, not reading_cycle
+  cycle_number: number; // backend uses cycle_number, not reading_cycle
   status: BookStatus;
   sessions_count: number;
-  total_pages_read: number;  // backend uses total_pages_read, not pages_read
-  first_session: Date | null;  // backend uses first_session, not first_session_date
-  last_session: Date | null;  // backend uses last_session, not last_session_date
-  duration_days: number;  // additional field from backend
+  total_pages_read: number; // backend uses total_pages_read, not pages_read
+  first_session: Date | null; // backend uses first_session, not first_session_date
+  last_session: Date | null; // backend uses last_session, not last_session_date
+  duration_days: number; // additional field from backend
 }
 
 export interface CreateBookInput {
@@ -104,7 +105,7 @@ export interface BooksFilter {
   minPages?: number;
   maxPages?: number;
   startDate?: string; // ISO 8601 date string
-  endDate?: string;   // ISO 8601 date string
+  endDate?: string; // ISO 8601 date string
 }
 
 export interface PaginationParams {

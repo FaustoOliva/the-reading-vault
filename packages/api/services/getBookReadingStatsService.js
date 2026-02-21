@@ -1,12 +1,12 @@
 /**
  * GetBookReadingStatsService (Query Use Case)
  * Calculates detailed reading statistics for a specific book
- * 
+ *
  * Responsibilities:
  * - Implement GetBookReadingStats use case as defined in USE_CASES.md (7.2)
  * - Orchestrate repository calls for book-specific statistics
  * - Calculate cycle-by-cycle breakdown and velocities
- * 
+ *
  * Rules:
  * - Framework-agnostic
  * - No validation (handled by controller)
@@ -17,7 +17,11 @@
 import { NotFoundError } from "../errors/index.js";
 
 export class GetBookReadingStatsService {
-  constructor(bookRepository, readingSessionRepository, bookStatusHistoryRepository) {
+  constructor(
+    bookRepository,
+    readingSessionRepository,
+    bookStatusHistoryRepository,
+  ) {
     this.bookRepository = bookRepository;
     this.readingSessionRepository = readingSessionRepository;
     this.bookStatusHistoryRepository = bookStatusHistoryRepository;
@@ -39,27 +43,27 @@ export class GetBookReadingStatsService {
     const [cycleStats, overallStats, statusHistory] = await Promise.all([
       this.readingSessionRepository.getStatsByBook(bookId),
       this.readingSessionRepository.getOverallStatsByBook(bookId),
-      this.bookStatusHistoryRepository.getTransitionsByBook(bookId)
+      this.bookStatusHistoryRepository.getTransitionsByBook(bookId),
     ]);
 
     // Calculate current cycle stats
     const currentCycleStats = this._calculateCurrentCycleStats(
       cycleStats,
       book.currentReadingCycle,
-      book.totalPages
+      book.totalPages,
     );
 
     // Build cycle history
     const cycleHistory = cycleStats
-      .filter(cycle => cycle.cycleNumber < book.currentReadingCycle)
-      .map(cycle => this._buildCycleHistoryEntry(cycle, statusHistory));
+      .filter((cycle) => cycle.cycleNumber < book.currentReadingCycle)
+      .map((cycle) => this._buildCycleHistoryEntry(cycle, statusHistory));
 
     return {
       book: {
         id: book.id,
         title: book.title,
         status: book.status,
-        current_cycle: book.currentReadingCycle
+        current_cycle: book.currentReadingCycle,
       },
       overall_stats: {
         total_pages_read: overallStats.totalPagesRead,
@@ -67,10 +71,10 @@ export class GetBookReadingStatsService {
         total_cycles: overallStats.totalCycles,
         first_session: overallStats.firstSession,
         last_session: overallStats.lastSession,
-        score: book.score
+        score: book.score,
       },
       current_cycle_stats: currentCycleStats,
-      cycle_history: cycleHistory
+      cycle_history: cycleHistory,
     };
   }
 
@@ -79,8 +83,10 @@ export class GetBookReadingStatsService {
    * @private
    */
   _calculateCurrentCycleStats(cycleStats, currentCycle, totalPages) {
-    const currentCycleData = cycleStats.find(c => c.cycleNumber === currentCycle);
-    
+    const currentCycleData = cycleStats.find(
+      (c) => c.cycleNumber === currentCycle,
+    );
+
     if (!currentCycleData) {
       return {
         cycle_number: currentCycle,
@@ -93,13 +99,14 @@ export class GetBookReadingStatsService {
         velocity_7d: null,
         velocity_30d: null,
         estimated_completion: null,
-        progress_percent: null
+        progress_percent: null,
       };
     }
 
     const daysElapsed = currentCycleData.durationDays;
-    const velocity = daysElapsed > 0 ? currentCycleData.totalPages / daysElapsed : null;
-    
+    const velocity =
+      daysElapsed > 0 ? currentCycleData.totalPages / daysElapsed : null;
+
     // For simplicity, use overall velocity for 7d and 30d (could be enhanced with date filtering)
     const velocity7d = velocity;
     const velocity30d = velocity;
@@ -110,13 +117,16 @@ export class GetBookReadingStatsService {
     if (totalPages && velocity && velocity > 0) {
       const remainingPages = totalPages - currentCycleData.totalPages;
       const estimatedDaysLeft = remainingPages / velocity;
-      
+
       if (remainingPages > 0) {
         estimatedCompletion = new Date(currentCycleData.lastSession);
-        estimatedCompletion.setDate(estimatedCompletion.getDate() + Math.ceil(estimatedDaysLeft));
+        estimatedCompletion.setDate(
+          estimatedCompletion.getDate() + Math.ceil(estimatedDaysLeft),
+        );
       }
-      
-      progressPercent = Math.round((currentCycleData.totalPages / totalPages) * 100 * 10) / 10;
+
+      progressPercent =
+        Math.round((currentCycleData.totalPages / totalPages) * 100 * 10) / 10;
     }
 
     return {
@@ -130,7 +140,7 @@ export class GetBookReadingStatsService {
       velocity_7d: velocity7d ? Math.round(velocity7d * 10) / 10 : null,
       velocity_30d: velocity30d ? Math.round(velocity30d * 10) / 10 : null,
       estimated_completion: estimatedCompletion,
-      progress_percent: progressPercent
+      progress_percent: progressPercent,
     };
   }
 
@@ -139,12 +149,16 @@ export class GetBookReadingStatsService {
    * @private
    */
   _buildCycleHistoryEntry(cycle, statusHistory) {
-    const velocity = cycle.durationDays > 0 ? cycle.totalPages / cycle.durationDays : 0;
-    
+    const velocity =
+      cycle.durationDays > 0 ? cycle.totalPages / cycle.durationDays : 0;
+
     // Find completion date for this cycle
     const completionTransition = statusHistory.find(
-      h => h.readingCycle === cycle.cycleNumber && 
-           (h.newStatus === 'COMPLETED' || h.newStatus === 'ABANDONED' || h.newStatus === 'PENDING_SCORE')
+      (h) =>
+        h.readingCycle === cycle.cycleNumber &&
+        (h.newStatus === "COMPLETED" ||
+          h.newStatus === "ABANDONED" ||
+          h.newStatus === "PENDING_SCORE"),
     );
 
     return {
@@ -156,7 +170,9 @@ export class GetBookReadingStatsService {
       duration_days: cycle.durationDays,
       average_velocity: Math.round(velocity * 10) / 10,
       completed: !!completionTransition,
-      completion_date: completionTransition ? completionTransition.createdAt : null
+      completion_date: completionTransition
+        ? completionTransition.createdAt
+        : null,
     };
   }
 }

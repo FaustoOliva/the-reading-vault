@@ -1,7 +1,7 @@
 /**
  * Form Picker Component
  * Reusable picker/select with label and error handling
- * 
+ *
  * Design Rules:
  * - Uses accessible colors from @/constants/colors
  * - Rounded corners with continuous curve
@@ -9,9 +9,14 @@
  * - Proper contrast ratios (WCAG AA)
  */
 
-import { View, Text } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { Text as TextColors, Border, Feedback, Background } from '@/constants/colors';
+import { View, Text } from "react-native";
+import { Picker } from "@react-native-picker/picker";
+import {
+  Text as TextColors,
+  Border,
+  Feedback,
+  Background,
+} from "@/constants/colors";
 
 interface FormPickerProps<T extends string | number> {
   label: string;
@@ -34,11 +39,11 @@ export function FormPicker<T extends string | number>({
 }: FormPickerProps<T>) {
   return (
     <View style={{ gap: 6 }}>
-      <Text 
-        style={{ 
-          fontSize: 15, 
-          fontWeight: '600', 
-          color: TextColors.primary 
+      <Text
+        style={{
+          fontSize: 15,
+          fontWeight: "600",
+          color: TextColors.primary,
         }}
       >
         {label}
@@ -48,13 +53,13 @@ export function FormPicker<T extends string | number>({
           borderWidth: 1,
           borderColor: error ? Feedback.error.border : Border.default,
           borderRadius: 8,
-          borderCurve: 'continuous',
+          borderCurve: "continuous",
           backgroundColor: Background.surface,
-          overflow: 'hidden',
+          overflow: "hidden",
         }}
       >
-        <Picker 
-          selectedValue={value} 
+        <Picker
+          selectedValue={value}
           onValueChange={onValueChange}
           accessibilityLabel={accessibilityLabel || label}
           accessibilityHint={accessibilityHint}
@@ -72,13 +77,13 @@ export function FormPicker<T extends string | number>({
         </Picker>
       </View>
       {error && (
-        <Text 
+        <Text
           selectable
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"
-          style={{ 
-            fontSize: 14, 
-            color: Feedback.error.text 
+          style={{
+            fontSize: 14,
+            color: Feedback.error.text,
           }}
         >
           {error}

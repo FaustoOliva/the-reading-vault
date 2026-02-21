@@ -9,7 +9,7 @@ export class InsufficientPagesError extends BadRequestError {
   constructor(bookId, pagesRead, totalPages) {
     super(
       `Cannot complete book: only ${pagesRead} of ${totalPages} pages read.`,
-      { bookId, pagesRead, totalPages }
+      { bookId, pagesRead, totalPages },
     );
     this.bookId = bookId;
     this.pagesRead = pagesRead;

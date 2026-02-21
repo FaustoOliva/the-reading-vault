@@ -1,7 +1,7 @@
 /**
  * UpdateBookService Tests
  * Tests for the UpdateBook use case
- * 
+ *
  * Coverage:
  * - Successful partial updates (title, totalPages, score, comment)
  * - Book not found error
@@ -77,7 +77,7 @@ describe("UpdateBookService", () => {
       expect(mockBookRepository.updateMetadata).toHaveBeenCalledWith(
         1,
         { title: "New Title" },
-        mockTransaction
+        mockTransaction,
       );
       expect(mockTransaction.commit).toHaveBeenCalled();
     });
@@ -125,7 +125,7 @@ describe("UpdateBookService", () => {
 
       // Act & Assert
       await expect(
-        service.execute(999, { title: "New Title" })
+        service.execute(999, { title: "New Title" }),
       ).rejects.toThrow(NotFoundError);
       expect(mockTransaction.begin).not.toHaveBeenCalled();
     });
@@ -141,13 +141,13 @@ describe("UpdateBookService", () => {
 
       mockBookRepository.getById.mockResolvedValue(existingBook);
       mockBookRepository.updateMetadata.mockRejectedValue(
-        new Error("Database error")
+        new Error("Database error"),
       );
 
       // Act & Assert
-      await expect(
-        service.execute(1, { title: "New Title" })
-      ).rejects.toThrow("Database error");
+      await expect(service.execute(1, { title: "New Title" })).rejects.toThrow(
+        "Database error",
+      );
       expect(mockTransaction.rollback).toHaveBeenCalled();
       expect(mockTransaction.commit).not.toHaveBeenCalled();
     });

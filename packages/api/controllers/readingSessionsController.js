@@ -1,13 +1,13 @@
 /**
  * ReadingSessionsController
  * Handles HTTP requests for reading session operations
- * 
+ *
  * Responsibilities:
  * - Validate input using Zod
  * - Call services
  * - Format HTTP responses
  * - Forward errors to global middleware
- * 
+ *
  * Rules:
  * - No business logic
  * - Validation only happens here
@@ -19,11 +19,13 @@ import { z } from "zod";
 /**
  * Validation schema for LogReadingSession request body
  */
-const logSessionBodySchema = z.object({
-  bookId: z.number().int().positive(),
-  pagesRead: z.number().int().positive(),
-  occurredAt: z.string().datetime().optional()
-}).strict();
+const logSessionBodySchema = z
+  .object({
+    bookId: z.number().int().positive(),
+    pagesRead: z.number().int().positive(),
+    occurredAt: z.string().datetime().optional(),
+  })
+  .strict();
 
 export class ReadingSessionsController {
   constructor(logReadingSessionService) {
@@ -42,7 +44,9 @@ export class ReadingSessionsController {
       // Convert occurredAt string to Date if provided
       const input = {
         ...validated,
-        occurredAt: validated.occurredAt ? new Date(validated.occurredAt) : undefined
+        occurredAt: validated.occurredAt
+          ? new Date(validated.occurredAt)
+          : undefined,
       };
 
       // Execute use case
@@ -51,7 +55,7 @@ export class ReadingSessionsController {
       // Return created resource
       res.status(201).json({
         success: true,
-        data: session.toJSON()
+        data: session.toJSON(),
       });
     } catch (error) {
       // Forward to global error middleware

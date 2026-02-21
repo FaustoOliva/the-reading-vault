@@ -1,16 +1,16 @@
 /**
  * RequestReviewService (Manual Review Request Use Case)
  * Transitions book from READING to PENDING_SCORE manually
- * 
+ *
  * Use Case:
  * - User wants to abandon book without completing all pages
  * - User completes reading but book doesn't auto-transition (e.g., no totalPages)
- * 
+ *
  * Responsibilities:
  * - Validate book is in READING status
  * - Transition to PENDING_SCORE
  * - Create history entry
- * 
+ *
  * Rules:
  * - Only READING → PENDING_SCORE allowed
  * - No score required at this stage (will be required on review)
@@ -62,7 +62,7 @@ export class RequestReviewService {
         bookId,
         newStatus,
         currentCycle,
-        transaction
+        transaction,
       );
 
       // 3.2 Insert BookStatusHistory
@@ -73,7 +73,7 @@ export class RequestReviewService {
           newStatus,
           readingCycle: currentCycle,
         },
-        transaction
+        transaction,
       );
 
       await transaction.commit();

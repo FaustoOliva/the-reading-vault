@@ -1,7 +1,7 @@
 /**
  * Book Statistics Query Hooks
  * React Query hooks for fetching detailed book reading statistics
- * 
+ *
  * Rules:
  * - Use React Query for server state
  * - Define query keys consistently
@@ -9,8 +9,8 @@
  * - Type all responses
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/services/api';
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/services/api";
 
 /**
  * Reading Cycle Statistics
@@ -75,7 +75,7 @@ export interface BookReadingStats {
  * Query Keys Factory
  */
 export const bookStatsKeys = {
-  all: ['bookStats'] as const,
+  all: ["bookStats"] as const,
   detail: (bookId: number) => [...bookStatsKeys.all, bookId] as const,
 };
 
@@ -90,7 +90,7 @@ export function useBookStats(bookId: number | undefined) {
         success: boolean;
         data: BookReadingStats;
       }>(`/api/books/${bookId}/stats`);
-      
+
       return response.data;
     },
     enabled: !!bookId && bookId > 0,

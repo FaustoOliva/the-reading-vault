@@ -10,6 +10,7 @@ license: MIT
 ## When to Use
 
 Apply when:
+
 - Fetching or mutating server data
 - Managing UI state (toggles, selected items, etc.)
 - Handling form inputs and validation
@@ -20,6 +21,7 @@ Apply when:
 ### 1. Server State → React Query
 
 **What qualifies as server state:**
+
 - Data from API endpoints
 - Remote resources (books, sessions, users)
 - Anything that requires HTTP requests
@@ -27,19 +29,19 @@ Apply when:
 **Use `@tanstack/react-query`:**
 
 ```tsx
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 // Fetching
 const { data, isLoading, error } = useQuery({
-  queryKey: ['books'],
-  queryFn: () => api.get<Book[]>('/api/books'),
+  queryKey: ["books"],
+  queryFn: () => api.get<Book[]>("/api/books"),
 });
 
 // Mutating
 const mutation = useMutation({
-  mutationFn: (newBook: CreateBookInput) => api.post('/api/books', newBook),
+  mutationFn: (newBook: CreateBookInput) => api.post("/api/books", newBook),
   onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['books'] });
+    queryClient.invalidateQueries({ queryKey: ["books"] });
   },
 });
 ```
@@ -47,7 +49,7 @@ const mutation = useMutation({
 **Setup (in `app/_layout.tsx`):**
 
 ```tsx
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,6 +72,7 @@ export default function RootLayout() {
 ### 2. UI State → useState / useReducer
 
 **What qualifies as UI state:**
+
 - Modal open/closed
 - Selected tab/item
 - Expanded/collapsed sections
@@ -93,6 +96,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
 ### 3. Form State → Local State + Validation
 
 **What qualifies as form state:**
+
 - Input values (controlled)
 - Validation errors
 - Touched/dirty fields
@@ -101,8 +105,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
 **Pattern:**
 
 ```tsx
-const [title, setTitle] = useState('');
-const [authorName, setAuthorName] = useState('');
+const [title, setTitle] = useState("");
+const [authorName, setAuthorName] = useState("");
 const [errors, setErrors] = useState<Record<string, string>>({});
 
 const handleSubmit = async () => {
@@ -119,11 +123,13 @@ const handleSubmit = async () => {
 ```
 
 **MUST:**
+
 - Validate on submit (not on every keystroke)
 - Use Zod schemas for type-safe validation
 - Clear errors when user starts typing (optional UX enhancement)
 
 **MUST NOT:**
+
 - Use React Query for form state
 - Send unvalidated data to API
 - Store form data in Context unless shared across routes
@@ -136,17 +142,17 @@ const handleSubmit = async () => {
 
 ```tsx
 // List
-['books']
-['books', { status: 'READING' }]
-
-// Detail
-['books', bookId]
-
-// Nested
-['books', bookId, 'sessions']
+["books"][("books", { status: "READING" })][
+  // Detail
+  ("books", bookId)
+][
+  // Nested
+  ("books", bookId, "sessions")
+];
 ```
 
 **Convention:**
+
 - First element: resource type
 - Second element: identifier or filter object
 - Third+: nested resources
@@ -160,7 +166,7 @@ const mutation = useMutation({
   mutationFn: createBook,
   onSuccess: () => {
     // Invalidate list
-    queryClient.invalidateQueries({ queryKey: ['books'] });
+    queryClient.invalidateQueries({ queryKey: ["books"] });
   },
 });
 ```
@@ -169,10 +175,10 @@ const mutation = useMutation({
 
 ```tsx
 // Specific book
-queryClient.invalidateQueries({ queryKey: ['books', bookId] });
+queryClient.invalidateQueries({ queryKey: ["books", bookId] });
 
 // All books queries
-queryClient.invalidateQueries({ queryKey: ['books'] });
+queryClient.invalidateQueries({ queryKey: ["books"] });
 ```
 
 ### Optimistic Updates
@@ -183,18 +189,18 @@ queryClient.invalidateQueries({ queryKey: ['books'] });
 const mutation = useMutation({
   mutationFn: deleteBook,
   onMutate: async (bookId) => {
-    await queryClient.cancelQueries({ queryKey: ['books'] });
-    
-    const previous = queryClient.getQueryData(['books']);
-    
-    queryClient.setQueryData(['books'], (old) =>
-      old?.filter((book) => book.id !== bookId)
+    await queryClient.cancelQueries({ queryKey: ["books"] });
+
+    const previous = queryClient.getQueryData(["books"]);
+
+    queryClient.setQueryData(["books"], (old) =>
+      old?.filter((book) => book.id !== bookId),
     );
-    
+
     return { previous };
   },
   onError: (err, bookId, context) => {
-    queryClient.setQueryData(['books'], context.previous);
+    queryClient.setQueryData(["books"], context.previous);
   },
 });
 ```
@@ -207,7 +213,7 @@ const mutation = useMutation({
 
 ```tsx
 const { data, isLoading, error } = useQuery({
-  queryKey: ['books'],
+  queryKey: ["books"],
   queryFn: fetchBooks,
 });
 
@@ -223,7 +229,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       onError: (error) => {
-        console.error('Query failed:', error);
+        console.error("Query failed:", error);
       },
     },
   },
@@ -233,11 +239,13 @@ const queryClient = new QueryClient({
 ## Context (Shared State)
 
 **ONLY use Context for:**
+
 - Theme/appearance settings
 - User authentication state
 - App-wide configuration
 
 **NEVER use Context for:**
+
 - Server data (use React Query)
 - Form state (use local state)
 - Route-specific state (use local state)
@@ -248,7 +256,7 @@ const queryClient = new QueryClient({
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: PropsWithChildren) {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
@@ -259,7 +267,7 @@ export function ThemeProvider({ children }: PropsWithChildren) {
 
 export function useTheme() {
   const context = useContext(ThemeContext);
-  if (!context) throw new Error('useTheme must be within ThemeProvider');
+  if (!context) throw new Error("useTheme must be within ThemeProvider");
   return context;
 }
 ```
@@ -267,12 +275,14 @@ export function useTheme() {
 ## Best Practices
 
 **DO:**
+
 - Separate concerns (server vs UI vs form state)
 - Use React Query for all API data
 - Keep UI state close to where it's used
 - Validate forms before submission
 
 **DON'T:**
+
 - Mix server state and UI state in useState
 - Fetch data in useEffect (use useQuery)
 - Put everything in Context

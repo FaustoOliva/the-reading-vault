@@ -1,13 +1,13 @@
 /**
  * CreateBookService (Command Use Case)
  * Creates a new book with automatic author and country creation
- * 
+ *
  * Responsibilities:
  * - Implement CreateBook use case
  * - Orchestrate repositories within a transaction
  * - Ensure author and country exist (create if needed)
  * - Support legacy books with custom initial status
- * 
+ *
  * Rules:
  * - Framework-agnostic
  * - No validation (handled by controller)
@@ -27,7 +27,7 @@ export class CreateBookService {
     bookRepository,
     authorRepository,
     countryRepository,
-    bookStatusHistoryRepository
+    bookStatusHistoryRepository,
   ) {
     this.mssqlClient = mssqlClient;
     this.bookRepository = bookRepository;
@@ -48,7 +48,10 @@ export class CreateBookService {
     if (isbn) {
       const existingBook = await this.bookRepository.findByIsbn(isbn);
       if (existingBook) {
-        throw new ConflictError(`Book with ISBN ${isbn} already exists`, "ISBN");
+        throw new ConflictError(
+          `Book with ISBN ${isbn} already exists`,
+          "ISBN",
+        );
       }
     }
 
@@ -80,7 +83,7 @@ export class CreateBookService {
       if (needsCountryCreation) {
         const country = await this.countryRepository.create(
           { name: author.nationality },
-          transaction
+          transaction,
         );
         countryId = country.id;
       }
@@ -89,18 +92,20 @@ export class CreateBookService {
       if (needsAuthorCreation) {
         authorRecord = await this.authorRepository.create(
           { name: author.name, nationalityId: countryId },
-          transaction
+          transaction,
         );
       }
 
       // Step 5: Determine target status (default to WISH_LIST if not provided)
       const targetStatus = status || BookStatus.WISH_LIST;
-      
+
       // Get status ID for target status
       const request = new sql.Request(transaction);
-      const statusResult = await request
-        .input("statusCode", sql.NVarChar, targetStatus)
-        .query(`
+      const statusResult = await request.input(
+        "statusCode",
+        sql.NVarChar,
+        targetStatus,
+      ).query(`
           SELECT id FROM BookStatuses WHERE internal_code = @statusCode
         `);
       const statusId = statusResult.recordset[0].id;
@@ -112,9 +117,9 @@ export class CreateBookService {
           isbn,
           authorId: authorRecord.id,
           totalPages,
-          statusId
+          statusId,
         },
-        transaction
+        transaction,
       );
 
       // Step 7: Create BookStatusHistory entry (NULL → targetStatus)
@@ -123,9 +128,9 @@ export class CreateBookService {
           bookId: book.id,
           oldStatus: null,
           newStatus: targetStatus,
-          readingCycle: 1
+          readingCycle: 1,
         },
-        transaction
+        transaction,
       );
 
       await transaction.commit();

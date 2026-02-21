@@ -1,7 +1,7 @@
 /**
  * Book Domain Entity
  * Represents a book in the system with its status and reading cycles
- * 
+ *
  * This entity enforces domain invariants and owns business behavior
  * Rich entity: encapsulates state transition logic
  */
@@ -12,7 +12,6 @@ import {
   BookPendingReviewError,
   InvalidStateTransitionError,
   MissingScoreError,
-  InsufficientPagesError,
 } from "../errors/index.js";
 
 export class Book {
@@ -27,7 +26,7 @@ export class Book {
     status,
     currentReadingCycle,
     score,
-    comment
+    comment,
   }) {
     this.id = id;
     this.title = title;
@@ -57,7 +56,7 @@ export class Book {
       status: record.status_code,
       currentReadingCycle: record.current_reading_cycle,
       score: record.score,
-      comment: record.comment
+      comment: record.comment,
     });
   }
 
@@ -72,13 +71,13 @@ export class Book {
       author: {
         id: this.authorId,
         name: this.authorName,
-        nationality: this.authorNationality
+        nationality: this.authorNationality,
       },
       totalPages: this.totalPages,
       status: this.status,
       currentReadingCycle: this.currentReadingCycle,
       score: this.score,
-      comment: this.comment
+      comment: this.comment,
     };
   }
 
@@ -93,7 +92,10 @@ export class Book {
    * Check if book is closed (completed or abandoned)
    */
   isClosed() {
-    return this.status === BookStatus.COMPLETED || this.status === BookStatus.ABANDONED;
+    return (
+      this.status === BookStatus.COMPLETED ||
+      this.status === BookStatus.ABANDONED
+    );
   }
 
   /**
@@ -114,7 +116,7 @@ export class Book {
   /**
    * Calculate what the new status should be after logging pages
    * Encapsulates smart transition logic from DOMAIN.md section 3.3
-   * 
+   *
    * @param {number} currentPagesInCycle - Pages already read in current cycle
    * @param {number} pagesRead - Pages about to be logged
    * @returns {Object} { newStatus, newCycle, shouldTransition }
@@ -136,7 +138,11 @@ export class Book {
     }
 
     // Transition 3: READING → PENDING_SCORE (auto-completion, requires user review)
-    if (this.status === BookStatus.READING && this.totalPages !== null && totalPagesAfterSession >= this.totalPages) {
+    if (
+      this.status === BookStatus.READING &&
+      this.totalPages !== null &&
+      totalPagesAfterSession >= this.totalPages
+    ) {
       newStatus = BookStatus.PENDING_SCORE;
     }
 
@@ -144,7 +150,7 @@ export class Book {
       oldStatus: this.status,
       newStatus,
       newCycle,
-      shouldTransition: this.status !== newStatus
+      shouldTransition: this.status !== newStatus,
     };
   }
 
@@ -155,7 +161,7 @@ export class Book {
    * @returns {boolean}
    */
   canAcceptPages(currentPagesInCycle, pagesRead) {
-    return (currentPagesInCycle + pagesRead) <= this.totalPages;
+    return currentPagesInCycle + pagesRead <= this.totalPages;
   }
 
   /**
@@ -173,17 +179,20 @@ export class Book {
         this.id,
         this.status,
         targetStatus,
-        "Book must be in PENDING_SCORE status to be reviewed."
+        "Book must be in PENDING_SCORE status to be reviewed.",
       );
     }
 
     // Rule 2: Target status must be COMPLETED or ABANDONED
-    if (targetStatus !== BookStatus.COMPLETED && targetStatus !== BookStatus.ABANDONED) {
+    if (
+      targetStatus !== BookStatus.COMPLETED &&
+      targetStatus !== BookStatus.ABANDONED
+    ) {
       throw new InvalidStateTransitionError(
         this.id,
         this.status,
         targetStatus,
-        "Review can only transition to COMPLETED or ABANDONED."
+        "Review can only transition to COMPLETED or ABANDONED.",
       );
     }
 
@@ -205,7 +214,7 @@ export class Book {
         this.id,
         this.status,
         BookStatus.PENDING_SCORE,
-        "Only READING books can request review."
+        "Only READING books can request review.",
       );
     }
   }
@@ -221,7 +230,7 @@ export class Book {
         this.id,
         this.status,
         BookStatus.READING,
-        "Only ABANDONED books can be reopened."
+        "Only ABANDONED books can be reopened.",
       );
     }
   }

@@ -1,14 +1,14 @@
 /**
  * ErrorBoundary Component
  * Catches JavaScript errors anywhere in the component tree and displays a fallback UI
- * 
+ *
  * Features:
  * - Catches React rendering errors
  * - Shows user-friendly error message
  * - Retry button to attempt recovery
  * - Logs errors for debugging
  * - Accessible error display
- * 
+ *
  * Rules:
  * - Use React.Component (not functional component)
  * - Log errors in __DEV__ mode
@@ -16,14 +16,14 @@
  * - Provide clear recovery options
  */
 
-import React, { Component, ReactNode } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import React, { Component, ReactNode } from "react";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import {
   Background,
   Text as TextColors,
   Interactive,
   Feedback,
-} from '@/constants/colors';
+} from "@/constants/colors";
 
 interface Props {
   children: ReactNode;
@@ -58,8 +58,8 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log error details in development
     if (__DEV__) {
-      console.error('ErrorBoundary caught an error:', error);
-      console.error('Component stack:', errorInfo.componentStack);
+      console.error("ErrorBoundary caught an error:", error);
+      console.error("Component stack:", errorInfo.componentStack);
     }
 
     // Update state with error info
@@ -94,8 +94,8 @@ export class ErrorBoundary extends Component<Props, State> {
             flex: 1,
             backgroundColor: Background.primary,
             padding: 16,
-            justifyContent: 'center',
-            alignItems: 'center',
+            justifyContent: "center",
+            alignItems: "center",
           }}
           accessibilityRole="alert"
           accessibilityLiveRegion="assertive"
@@ -103,8 +103,8 @@ export class ErrorBoundary extends Component<Props, State> {
           <ScrollView
             contentContainerStyle={{
               flexGrow: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
+              justifyContent: "center",
+              alignItems: "center",
               padding: 16,
               gap: 24,
             }}
@@ -124,9 +124,9 @@ export class ErrorBoundary extends Component<Props, State> {
             <Text
               style={{
                 fontSize: 24,
-                fontWeight: '600',
+                fontWeight: "600",
                 color: TextColors.primary,
-                textAlign: 'center',
+                textAlign: "center",
               }}
               accessibilityRole="header"
             >
@@ -138,13 +138,14 @@ export class ErrorBoundary extends Component<Props, State> {
               style={{
                 fontSize: 16,
                 color: TextColors.secondary,
-                textAlign: 'center',
+                textAlign: "center",
                 lineHeight: 24,
                 maxWidth: 400,
               }}
               selectable
             >
-              The app encountered an unexpected error. This has been logged and we'll look into it.
+              The app encountered an unexpected error. This has been logged and
+              we'll look into it.
             </Text>
 
             {/* Error Details (only in DEV) */}
@@ -155,16 +156,16 @@ export class ErrorBoundary extends Component<Props, State> {
                   borderWidth: 1,
                   borderColor: Feedback.error.border,
                   borderRadius: 8,
-                  borderCurve: 'continuous',
+                  borderCurve: "continuous",
                   padding: 12,
-                  width: '100%',
+                  width: "100%",
                   maxWidth: 500,
                 }}
               >
                 <Text
                   style={{
                     fontSize: 13,
-                    fontWeight: '600',
+                    fontWeight: "600",
                     color: Feedback.error.text,
                     marginBottom: 8,
                   }}
@@ -175,7 +176,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   style={{
                     fontSize: 12,
                     color: Feedback.error.text,
-                    fontFamily: 'monospace',
+                    fontFamily: "monospace",
                   }}
                   selectable
                 >
@@ -186,7 +187,7 @@ export class ErrorBoundary extends Component<Props, State> {
                     style={{
                       fontSize: 11,
                       color: Feedback.error.text,
-                      fontFamily: 'monospace',
+                      fontFamily: "monospace",
                       marginTop: 8,
                     }}
                     selectable
@@ -211,7 +212,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 paddingHorizontal: 32,
                 paddingVertical: 16,
                 borderRadius: 12,
-                borderCurve: 'continuous',
+                borderCurve: "continuous",
                 marginTop: 8,
               })}
             >
@@ -219,8 +220,8 @@ export class ErrorBoundary extends Component<Props, State> {
                 style={{
                   color: Interactive.primary.text,
                   fontSize: 17,
-                  fontWeight: '600',
-                  textAlign: 'center',
+                  fontWeight: "600",
+                  textAlign: "center",
                 }}
               >
                 Try Again
@@ -232,7 +233,7 @@ export class ErrorBoundary extends Component<Props, State> {
               style={{
                 fontSize: 14,
                 color: TextColors.tertiary,
-                textAlign: 'center',
+                textAlign: "center",
                 marginTop: 16,
               }}
             >

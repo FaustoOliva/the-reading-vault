@@ -1,24 +1,25 @@
 /**
  * Countries Query Hooks
  * React Query hooks for fetching country data
- * 
+ *
  * Rules:
  * - Use React Query for server state
  * - Define query keys consistently
  * - Type all responses
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/services/api';
-import { Country } from '@/types/country';
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/services/api";
+import { Country } from "@/types/country";
 
 /**
  * Query Keys Factory
  */
 export const countriesKeys = {
-  all: ['countries'] as const,
-  lists: () => [...countriesKeys.all, 'list'] as const,
-  list: (filters?: { nameLike?: string }) => [...countriesKeys.lists(), filters] as const,
+  all: ["countries"] as const,
+  lists: () => [...countriesKeys.all, "list"] as const,
+  list: (filters?: { nameLike?: string }) =>
+    [...countriesKeys.lists(), filters] as const,
 };
 
 /**
@@ -28,11 +29,11 @@ function buildQueryString(filters?: { nameLike?: string }): string {
   const params = new URLSearchParams();
 
   if (filters?.nameLike) {
-    params.append('nameLike', filters.nameLike);
+    params.append("nameLike", filters.nameLike);
   }
 
   const queryString = params.toString();
-  return queryString ? `?${queryString}` : '';
+  return queryString ? `?${queryString}` : "";
 }
 
 /**

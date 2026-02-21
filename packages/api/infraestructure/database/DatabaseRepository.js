@@ -1,6 +1,6 @@
 /**
  * Database Repository
- * 
+ *
  * Adapter layer providing query interface to business logic.
  * Isolates infrastructure details (SQL syntax) from use cases.
  */
@@ -17,7 +17,9 @@ export class DatabaseRepository {
   getConnection() {
     const pool = this.mssqlClient.getPool();
     if (!pool) {
-      throw new Error("Database connection not established. Call connect() first.");
+      throw new Error(
+        "Database connection not established. Call connect() first.",
+      );
     }
     return pool;
   }
@@ -31,7 +33,7 @@ export class DatabaseRepository {
   async executeQuery(query, inputs = {}) {
     try {
       const request = this.getConnection().request();
-      
+
       // Bind all input parameters
       Object.entries(inputs).forEach(([key, value]) => {
         request.input(key, value);
@@ -54,7 +56,7 @@ export class DatabaseRepository {
   async executeStoredProcedure(procedureName, inputs = {}) {
     try {
       const request = this.getConnection().request();
-      
+
       Object.entries(inputs).forEach(([key, value]) => {
         request.input(key, value);
       });

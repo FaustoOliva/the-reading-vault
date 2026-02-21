@@ -53,14 +53,19 @@ export class DIContainer {
     const authorRepository = new AuthorRepository(mssqlClient);
     const countryRepository = new CountryRepository(mssqlClient);
     const readingSessionRepository = new ReadingSessionRepository(mssqlClient);
-    const bookStatusHistoryRepository = new BookStatusHistoryRepository(mssqlClient);
-    
+    const bookStatusHistoryRepository = new BookStatusHistoryRepository(
+      mssqlClient,
+    );
+
     this.instances.set("databaseRepository", databaseRepository);
     this.instances.set("bookRepository", bookRepository);
     this.instances.set("authorRepository", authorRepository);
     this.instances.set("countryRepository", countryRepository);
     this.instances.set("readingSessionRepository", readingSessionRepository);
-    this.instances.set("bookStatusHistoryRepository", bookStatusHistoryRepository);
+    this.instances.set(
+      "bookStatusHistoryRepository",
+      bookStatusHistoryRepository,
+    );
   }
 
   /**
@@ -71,58 +76,62 @@ export class DIContainer {
     const bookRepository = this.instances.get("bookRepository");
     const authorRepository = this.instances.get("authorRepository");
     const countryRepository = this.instances.get("countryRepository");
-    const readingSessionRepository = this.instances.get("readingSessionRepository");
-    const bookStatusHistoryRepository = this.instances.get("bookStatusHistoryRepository");
-    
+    const readingSessionRepository = this.instances.get(
+      "readingSessionRepository",
+    );
+    const bookStatusHistoryRepository = this.instances.get(
+      "bookStatusHistoryRepository",
+    );
+
     const getBooksService = new GetBooksService(bookRepository);
     const getBookByIdService = new GetBookByIdService(
       bookRepository,
-      readingSessionRepository
+      readingSessionRepository,
     );
     const createBookService = new CreateBookService(
       mssqlClient,
       bookRepository,
       authorRepository,
       countryRepository,
-      bookStatusHistoryRepository
+      bookStatusHistoryRepository,
     );
     const logReadingSessionService = new LogReadingSessionService(
       mssqlClient,
       bookRepository,
       readingSessionRepository,
-      bookStatusHistoryRepository
+      bookStatusHistoryRepository,
     );
     const updateBookService = new UpdateBookService(
       mssqlClient,
-      bookRepository
+      bookRepository,
     );
     const reviewBookService = new ReviewBookService(
       mssqlClient,
       bookRepository,
-      bookStatusHistoryRepository
+      bookStatusHistoryRepository,
     );
     const reopenBookService = new ReopenBookService(
       mssqlClient,
       bookRepository,
-      bookStatusHistoryRepository
+      bookStatusHistoryRepository,
     );
     const requestReviewService = new RequestReviewService(
       mssqlClient,
       bookRepository,
-      bookStatusHistoryRepository
+      bookStatusHistoryRepository,
     );
     const getAuthorsService = new GetAuthorsService(authorRepository);
     const getCountriesService = new GetCountriesService(countryRepository);
     const calculateReadingKPIService = new CalculateReadingKPIService(
       bookRepository,
-      readingSessionRepository
+      readingSessionRepository,
     );
     const getBookReadingStatsService = new GetBookReadingStatsService(
       bookRepository,
       readingSessionRepository,
-      bookStatusHistoryRepository
+      bookStatusHistoryRepository,
     );
-    
+
     this.instances.set("getBooksService", getBooksService);
     this.instances.set("getBookByIdService", getBookByIdService);
     this.instances.set("createBookService", createBookService);
@@ -133,8 +142,14 @@ export class DIContainer {
     this.instances.set("requestReviewService", requestReviewService);
     this.instances.set("getAuthorsService", getAuthorsService);
     this.instances.set("getCountriesService", getCountriesService);
-    this.instances.set("calculateReadingKPIService", calculateReadingKPIService);
-    this.instances.set("getBookReadingStatsService", getBookReadingStatsService);
+    this.instances.set(
+      "calculateReadingKPIService",
+      calculateReadingKPIService,
+    );
+    this.instances.set(
+      "getBookReadingStatsService",
+      getBookReadingStatsService,
+    );
   }
 
   /**
@@ -148,27 +163,48 @@ export class DIContainer {
     const reviewBookService = this.instances.get("reviewBookService");
     const reopenBookService = this.instances.get("reopenBookService");
     const requestReviewService = this.instances.get("requestReviewService");
-    const logReadingSessionService = this.instances.get("logReadingSessionService");
+    const logReadingSessionService = this.instances.get(
+      "logReadingSessionService",
+    );
     const getAuthorsService = this.instances.get("getAuthorsService");
     const getCountriesService = this.instances.get("getCountriesService");
-    const calculateReadingKPIService = this.instances.get("calculateReadingKPIService");
-    const getBookReadingStatsService = this.instances.get("getBookReadingStatsService");
-    
+    const calculateReadingKPIService = this.instances.get(
+      "calculateReadingKPIService",
+    );
+    const getBookReadingStatsService = this.instances.get(
+      "getBookReadingStatsService",
+    );
+
     this.instances.set("healthController", new HealthController());
-    this.instances.set("booksController", new BooksController(
-      getBooksService,
-      getBookByIdService,
-      updateBookService,
-      reviewBookService,
-      reopenBookService,
-      requestReviewService,
-      createBookService,
-      getBookReadingStatsService
-    ));
-    this.instances.set("readingSessionsController", new ReadingSessionsController(logReadingSessionService));
-    this.instances.set("authorsController", new AuthorsController(getAuthorsService));
-    this.instances.set("countriesController", new CountriesController(getCountriesService));
-    this.instances.set("kpiController", new KpiController(calculateReadingKPIService));
+    this.instances.set(
+      "booksController",
+      new BooksController(
+        getBooksService,
+        getBookByIdService,
+        updateBookService,
+        reviewBookService,
+        reopenBookService,
+        requestReviewService,
+        createBookService,
+        getBookReadingStatsService,
+      ),
+    );
+    this.instances.set(
+      "readingSessionsController",
+      new ReadingSessionsController(logReadingSessionService),
+    );
+    this.instances.set(
+      "authorsController",
+      new AuthorsController(getAuthorsService),
+    );
+    this.instances.set(
+      "countriesController",
+      new CountriesController(getCountriesService),
+    );
+    this.instances.set(
+      "kpiController",
+      new KpiController(calculateReadingKPIService),
+    );
   }
 
   /**

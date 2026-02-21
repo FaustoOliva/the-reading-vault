@@ -1,19 +1,19 @@
 /**
  * Toast Component
  * Centralized toast notification wrapper for react-native-toast-message
- * 
+ *
  * Usage:
  * - Import showToast from this file
  * - Call showToast.success(), showToast.error(), etc.
  * - Toast component must be rendered in root _layout.tsx
- * 
+ *
  * Rules:
  * - Use typed helper functions, not raw Toast.show()
  * - Keep messages concise (1-2 lines)
  * - Use appropriate types (success, error, info, warning)
  */
 
-import Toast from 'react-native-toast-message';
+import Toast from "react-native-toast-message";
 
 /**
  * Typed toast helper functions
@@ -24,10 +24,10 @@ export const showToast = {
    */
   success: (message: string, subtitle?: string) => {
     Toast.show({
-      type: 'success',
+      type: "success",
       text1: message,
       text2: subtitle,
-      position: 'top',
+      position: "top",
       visibilityTime: 3000,
       topOffset: 60,
     });
@@ -38,10 +38,10 @@ export const showToast = {
    */
   error: (message: string, subtitle?: string) => {
     Toast.show({
-      type: 'error',
+      type: "error",
       text1: message,
       text2: subtitle,
-      position: 'top',
+      position: "top",
       visibilityTime: 4000,
       topOffset: 60,
     });
@@ -52,10 +52,10 @@ export const showToast = {
    */
   info: (message: string, subtitle?: string) => {
     Toast.show({
-      type: 'info',
+      type: "info",
       text1: message,
       text2: subtitle,
-      position: 'top',
+      position: "top",
       visibilityTime: 3000,
       topOffset: 60,
     });
@@ -66,10 +66,10 @@ export const showToast = {
    */
   warning: (message: string, subtitle?: string) => {
     Toast.show({
-      type: 'warning',
+      type: "warning",
       text1: message,
       text2: subtitle,
-      position: 'top',
+      position: "top",
       visibilityTime: 3500,
       topOffset: 60,
     });
@@ -86,4 +86,4 @@ export const showToast = {
 /**
  * Export Toast component for root layout
  */
-export { default as ToastComponent } from 'react-native-toast-message';
+export { default as ToastComponent } from "react-native-toast-message";

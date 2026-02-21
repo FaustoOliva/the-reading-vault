@@ -22,10 +22,12 @@ Applies when implementing services that mutate data or affect multiple tables.
 **Ownership:** Services control transactions. Repositories receive them.
 
 **Services:**
+
 - Create, begin, commit, rollback transactions
 - Pass transaction to repositories
 
 **Repositories:**
+
 - Receive transaction as parameter
 - NEVER create or manage transactions
 
@@ -34,10 +36,12 @@ Applies when implementing services that mutate data or affect multiple tables.
 ## When Required
 
 **Mandatory:**
+
 - Any operation affecting 2+ tables
 - Example: LogReadingSession (mutates ReadingSessions, Books, BookStatusHistory)
 
 **Not Required:**
+
 - Read-only queries
 - Single-table operations with no side effects
 
@@ -53,7 +57,12 @@ Applies when implementing services that mutate data or affect multiple tables.
 import sql from "mssql";
 
 export class LogReadingSessionService {
-  constructor(mssqlClient, bookRepository, sessionRepository, historyRepository) {
+  constructor(
+    mssqlClient,
+    bookRepository,
+    sessionRepository,
+    historyRepository,
+  ) {
     this.mssqlClient = mssqlClient;
     this.bookRepository = bookRepository;
     this.sessionRepository = sessionRepository;
@@ -63,7 +72,10 @@ export class LogReadingSessionService {
   async execute(input) {
     // 1. Read data (BEFORE transaction)
     const book = await this.bookRepository.getById(input.bookId);
-    const currentPages = await this.sessionRepository.getTotalPagesInCycle(bookId, book.cycle);
+    const currentPages = await this.sessionRepository.getTotalPagesInCycle(
+      bookId,
+      book.cycle,
+    );
 
     // 2. Execute business logic (delegated to domain)
     book.ensureCanAcceptSession();
@@ -78,7 +90,7 @@ export class LogReadingSessionService {
 
       // 4. Persist mutations
       const session = await this.sessionRepository.create(data, transaction);
-      
+
       if (transition.shouldTransition) {
         await this.bookRepository.updateStatus(id, status, cycle, transaction);
         await this.historyRepository.create(history, transaction);
@@ -86,7 +98,6 @@ export class LogReadingSessionService {
 
       await transaction.commit();
       return session;
-
     } catch (error) {
       await transaction.rollback();
       throw error; // MUST re-throw
@@ -169,11 +180,11 @@ catch (error) {
 ```javascript
 catch (error) {
   await transaction.rollback();
-  
+
   if (error.code === 'ER_DUP_ENTRY') {
     throw new ConflictError("Duplicate entry");
   }
-  
+
   throw error;
 }
 ```
@@ -224,6 +235,7 @@ await transaction.commit(); // All or nothing
 ## Parallel Operations
 
 **Sequential writes (order matters):**
+
 ```javascript
 await this.sessionRepository.create(data, transaction);
 await this.bookRepository.update(id, status, transaction);
@@ -231,10 +243,11 @@ await this.historyRepository.create(history, transaction);
 ```
 
 **Parallel reads (when safe):**
+
 ```javascript
 const [book, sessions] = await Promise.all([
   this.bookRepository.getById(id),
-  this.sessionRepository.getForBook(id)
+  this.sessionRepository.getForBook(id),
 ]);
 ```
 
@@ -312,17 +325,17 @@ function createMockTransaction() {
   return {
     begin: vi.fn().mockResolvedValue(),
     commit: vi.fn().mockResolvedValue(),
-    rollback: vi.fn().mockResolvedValue()
+    rollback: vi.fn().mockResolvedValue(),
   };
 }
 
 // Test rollback on error
-test('rollback on error', async () => {
+test("rollback on error", async () => {
   const mockTx = createMockTransaction();
-  mockRepository.create.mockRejectedValue(new Error('DB Error'));
-  
+  mockRepository.create.mockRejectedValue(new Error("DB Error"));
+
   await expect(service.execute(data)).rejects.toThrow();
-  
+
   expect(mockTx.begin).toHaveBeenCalled();
   expect(mockTx.rollback).toHaveBeenCalled();
   expect(mockTx.commit).not.toHaveBeenCalled();

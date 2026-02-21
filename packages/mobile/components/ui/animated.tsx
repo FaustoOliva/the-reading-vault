@@ -1,27 +1,27 @@
 /**
  * Animated Components
  * Reusable animated wrappers with accessibility support
- * 
+ *
  * Features:
  * - FadeInView: Fade in animation on mount
  * - ScaleButton: Scale animation on press (subtle haptic feel)
  * - Respects useReducedMotion for accessibility
- * 
+ *
  * Rules:
  * - Always check prefersReducedMotion
  * - Keep animations subtle (80-300ms)
  * - Use native driver when possible
  */
 
-import { useEffect } from 'react';
-import { ViewProps, Pressable, PressableProps } from 'react-native';
+import { useEffect } from "react";
+import { ViewProps, Pressable, PressableProps } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSpring,
-} from 'react-native-reanimated';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
+} from "react-native-reanimated";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /**
  * FadeInView
@@ -33,12 +33,12 @@ interface FadeInViewProps extends ViewProps {
   children: React.ReactNode;
 }
 
-export function FadeInView({ 
-  duration = 200, 
-  delay = 0, 
-  children, 
+export function FadeInView({
+  duration = 200,
+  delay = 0,
+  children,
   style,
-  ...props 
+  ...props
 }: FadeInViewProps) {
   const prefersReducedMotion = useReducedMotion();
   const opacity = useSharedValue(prefersReducedMotion ? 1 : 0);

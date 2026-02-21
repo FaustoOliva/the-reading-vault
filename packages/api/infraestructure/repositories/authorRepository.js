@@ -1,11 +1,11 @@
 /**
  * AuthorRepository
  * Handles data persistence operations for Author entity
- * 
+ *
  * Responsibilities:
  * - Query authors from database
  * - Create new authors
- * 
+ *
  * Rules:
  * - No business logic
  * - No HTTP concerns
@@ -27,14 +27,14 @@ export class AuthorRepository {
   async getAll(filters = {}) {
     const pool = await this.mssqlClient.getConnection();
     const request = pool.request();
-    
+
     let whereClause = "";
-    
+
     if (filters.nameLike) {
       whereClause = "WHERE A.name LIKE @nameLike";
       request.input("nameLike", sql.NVarChar, `%${filters.nameLike}%`);
     }
-    
+
     const result = await request.query(`
       SELECT 
         A.id,
@@ -56,10 +56,8 @@ export class AuthorRepository {
    */
   async findByName(name) {
     const pool = await this.mssqlClient.getConnection();
-    
-    const result = await pool
-      .request()
-      .input("name", sql.NVarChar, name)
+
+    const result = await pool.request().input("name", sql.NVarChar, name)
       .query(`
         SELECT id, name, nationality_id AS nationalityId
         FROM Authors
@@ -77,13 +75,12 @@ export class AuthorRepository {
    */
   async create(data, transaction) {
     const { name, nationalityId } = data;
-    
+
     const request = new sql.Request(transaction);
-    
+
     const result = await request
       .input("name", sql.NVarChar, name)
-      .input("nationalityId", sql.Int, nationalityId || null)
-      .query(`
+      .input("nationalityId", sql.Int, nationalityId || null).query(`
         INSERT INTO Authors (name, nationality_id)
         OUTPUT INSERTED.id, INSERTED.name, INSERTED.nationality_id AS nationalityId
         VALUES (@name, @nationalityId)

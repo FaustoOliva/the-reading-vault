@@ -10,6 +10,7 @@ license: MIT
 ## When to Use
 
 Apply when:
+
 - Implementing raw fetch calls
 - Building API client utilities
 - Handling HTTP errors
@@ -30,26 +31,30 @@ return response.json();
 ```
 
 **MUST:**
+
 - Check `response.ok` before parsing
 - Use `JSON.stringify()` for request body
 - Set `Content-Type: application/json` header for JSON requests
 
 **MUST NOT:**
+
 - Call `.json()` without checking `response.ok`
 - Use axios (prefer native fetch)
 
 ## HTTP Methods
 
 **GET:**
+
 ```tsx
 const data = await fetch(`${baseUrl}/resource`);
 ```
 
 **POST:**
+
 ```tsx
 const data = await fetch(`${baseUrl}/resource`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify(payload),
 });
 ```
@@ -65,10 +70,10 @@ class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
-    public code?: string
+    public code?: string,
   ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
   }
 }
 ```
@@ -79,26 +84,27 @@ class ApiError extends Error {
 const fetchApi = async (url: string, options?: RequestInit) => {
   try {
     const response = await fetch(url, options);
-    
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new ApiError(
-        error.message || 'Request failed',
+        error.message || "Request failed",
         response.status,
-        error.code
+        error.code,
       );
     }
-    
+
     return response.json();
   } catch (error) {
     if (error instanceof ApiError) throw error;
     // Network error (offline, timeout)
-    throw new ApiError('Network error', 0, 'NETWORK_ERROR');
+    throw new ApiError("Network error", 0, "NETWORK_ERROR");
   }
 };
 ```
 
 **MUST:**
+
 - Distinguish between HTTP errors and network errors
 - Parse error response body when available
 - Throw typed errors (not strings)
@@ -109,7 +115,7 @@ const fetchApi = async (url: string, options?: RequestInit) => {
 const fetchWithRetry = async (
   url: string,
   options?: RequestInit,
-  maxRetries = 3
+  maxRetries = 3,
 ) => {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
@@ -117,13 +123,14 @@ const fetchWithRetry = async (
     } catch (error) {
       if (attempt === maxRetries - 1) throw error;
       // Exponential backoff: 1s, 2s, 4s
-      await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000));
+      await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 1000));
     }
   }
 };
 ```
 
 **SHOULD:**
+
 - Use exponential backoff between retries
 - Limit retry attempts (3 is reasonable default)
 - Only retry network errors (not 4xx client errors)
@@ -133,16 +140,17 @@ const fetchWithRetry = async (
 **Token Storage:**
 
 ```tsx
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from "expo-secure-store";
 
 export const tokenStorage = {
-  get: () => SecureStore.getItemAsync('auth_token'),
-  set: (token: string) => SecureStore.setItemAsync('auth_token', token),
-  remove: () => SecureStore.deleteItemAsync('auth_token'),
+  get: () => SecureStore.getItemAsync("auth_token"),
+  set: (token: string) => SecureStore.setItemAsync("auth_token", token),
+  remove: () => SecureStore.deleteItemAsync("auth_token"),
 };
 ```
 
 **MUST:**
+
 - Use `expo-secure-store` for tokens (not AsyncStorage)
 - Store sensitive data (tokens, passwords) securely
 
@@ -151,12 +159,12 @@ export const tokenStorage = {
 ```tsx
 const authFetch = async (url: string, options: RequestInit = {}) => {
   const token = await tokenStorage.get();
-  
+
   return fetch(url, {
     ...options,
     headers: {
       ...options.headers,
-      Authorization: token ? `Bearer ${token}` : '',
+      Authorization: token ? `Bearer ${token}` : "",
     },
   });
 };
@@ -169,7 +177,7 @@ let refreshPromise: Promise<string> | null = null;
 
 const getValidToken = async (): Promise<string> => {
   const token = await tokenStorage.get();
-  
+
   if (!token || isTokenExpired(token)) {
     if (!refreshPromise) {
       refreshPromise = refreshToken().finally(() => {
@@ -178,12 +186,13 @@ const getValidToken = async (): Promise<string> => {
     }
     return refreshPromise;
   }
-  
+
   return token;
 };
 ```
 
 **MUST:**
+
 - Deduplicate concurrent token refreshes
 - Clear refresh promise on completion/error
 
@@ -195,21 +204,22 @@ const getValidToken = async (): Promise<string> => {
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export const api = {
-  get: <T>(path: string) => 
+  get: <T>(path: string) =>
     fetchApi<T>(`${BASE_URL}${path}`, { method: 'GET' }),
-  
+
   post: <T>(path: string, body: unknown) =>
     fetchApi<T>(`${BASE_URL}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     }),
-  
+
   // ... other methods
 };
 ```
 
 **MUST:**
+
 - Centralize base URL configuration
 - Type return values with generics
 - Reuse error handling across methods

@@ -1,12 +1,12 @@
 /**
  * GetAuthorsService (Query Use Case)
  * Retrieves all authors with optional filtering, sorted alphabetically
- * 
+ *
  * Responsibilities:
  * - Implement GetAuthors use case as defined in USE_CASES.md
  * - Orchestrate repository calls
  * - Return author records
- * 
+ *
  * Rules:
  * - Framework-agnostic
  * - No validation (handled by controller)
@@ -27,7 +27,7 @@ export class GetAuthorsService {
   async execute(filters = {}) {
     // Delegate to repository
     const authors = await this.authorRepository.getAll(filters);
-    
+
     return { authors };
   }
 }

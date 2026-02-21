@@ -1,12 +1,12 @@
 /**
  * Country Routes
  * Defines HTTP routes for country-related operations
- * 
+ *
  * Responsibilities:
  * - Declare HTTP routes
  * - Bind routes to controller methods
  * - Apply route-level middlewares
- * 
+ *
  * Rules:
  * - No business logic
  * - No validation
@@ -27,7 +27,7 @@ export default function countryRoutes(getController) {
    * Query params: nameLike
    */
   router.get("/countries", (req, res, next) =>
-    getController(CountriesController).getCountries(req, res, next)
+    getController(CountriesController).getCountries(req, res, next),
   );
 
   return router;

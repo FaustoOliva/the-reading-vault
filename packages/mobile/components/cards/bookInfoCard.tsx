@@ -1,7 +1,7 @@
 /**
  * BookInfoCard Component
  * Displays comprehensive book information
- * 
+ *
  * Shows:
  * - Author (name + nationality)
  * - ISBN
@@ -11,7 +11,7 @@
  * - Pages read (total and in current cycle)
  * - Score (colored by value)
  * - Comment
- * 
+ *
  * Rules:
  * - Use flex gap for spacing
  * - Use borderCurve: 'continuous' for rounded corners
@@ -19,18 +19,18 @@
  * - Use selectable text for data fields
  */
 
-import { View, Text } from 'react-native';
-import { BookDetails } from '@/types/book';
-import { BookStatusBadge } from '@/components/ui/bookStatusBadge';
+import { View, Text } from "react-native";
+import { BookDetails } from "@/types/book";
+import { BookStatusBadge } from "@/components/ui/bookStatusBadge";
 import {
   Background,
   Text as TextColors,
   Border,
   getScoreColors,
-} from '@/constants/colors';
+} from "@/constants/colors";
 
 interface BookInfoCardProps {
-  book: BookDetails['book'];
+  book: BookDetails["book"];
 }
 
 export function BookInfoCard({ book }: BookInfoCardProps) {
@@ -45,27 +45,33 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
         gap: 16,
         borderWidth: 1,
         borderColor: Border.default,
-        borderCurve: 'continuous',
+        borderCurve: "continuous",
       }}
     >
       {/* Section Title */}
-      <Text style={{ fontSize: 16, fontWeight: '700', color: TextColors.primary }}>
+      <Text
+        style={{ fontSize: 16, fontWeight: "700", color: TextColors.primary }}
+      >
         📚 Book Information
       </Text>
 
       {/* Author */}
       <View style={{ gap: 4 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+        <Text
+          style={{
+            fontSize: 13,
+            fontWeight: "600",
+            color: TextColors.tertiary,
+          }}
+        >
           Author
         </Text>
-        <Text
-          style={{ fontSize: 16, color: TextColors.primary }}
-          selectable
-        >
-          {book?.author?.name ?? 'Unknown'}
+        <Text style={{ fontSize: 16, color: TextColors.primary }} selectable>
+          {book?.author?.name ?? "Unknown"}
           {book?.author?.nationality && (
             <Text style={{ color: TextColors.secondary }}>
-              {' '}({book.author.nationality})
+              {" "}
+              ({book.author.nationality})
             </Text>
           )}
         </Text>
@@ -74,11 +80,21 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
       {/* ISBN (if exists) */}
       {book.isbn && (
         <View style={{ gap: 4 }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              color: TextColors.tertiary,
+            }}
+          >
             ISBN
           </Text>
           <Text
-            style={{ fontSize: 14, fontFamily: 'monospace', color: TextColors.secondary }}
+            style={{
+              fontSize: 14,
+              fontFamily: "monospace",
+              color: TextColors.secondary,
+            }}
             selectable
           >
             {book.isbn}
@@ -89,11 +105,21 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
       {/* Total Pages */}
       {book.total_pages !== null && (
         <View style={{ gap: 4 }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              color: TextColors.tertiary,
+            }}
+          >
             Total Pages
           </Text>
           <Text
-            style={{ fontSize: 16, fontVariant: ['tabular-nums'], color: TextColors.primary }}
+            style={{
+              fontSize: 16,
+              fontVariant: ["tabular-nums"],
+              color: TextColors.primary,
+            }}
             selectable
           >
             {book.total_pages.toLocaleString()}
@@ -102,10 +128,16 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
       )}
 
       {/* Status and Cycle (horizontal row) */}
-      <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
+      <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
         {/* Status */}
         <View style={{ gap: 4 }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              color: TextColors.tertiary,
+            }}
+          >
             Status
           </Text>
           <BookStatusBadge status={book.status} />
@@ -113,7 +145,13 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
 
         {/* Current Reading Cycle */}
         <View style={{ gap: 4 }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              color: TextColors.tertiary,
+            }}
+          >
             Reading Cycle
           </Text>
           <View
@@ -124,14 +162,14 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
               backgroundColor: Background.primary,
               borderWidth: 1,
               borderColor: Border.default,
-              borderCurve: 'continuous',
+              borderCurve: "continuous",
             }}
           >
             <Text
               style={{
                 fontSize: 14,
-                fontWeight: '600',
-                fontVariant: ['tabular-nums'],
+                fontWeight: "600",
+                fontVariant: ["tabular-nums"],
                 color: TextColors.primary,
               }}
             >
@@ -142,14 +180,24 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
       </View>
 
       {/* Pages Read Stats (horizontal row) */}
-      <View style={{ flexDirection: 'row', gap: 12 }}>
+      <View style={{ flexDirection: "row", gap: 12 }}>
         {/* Pages Read Total */}
         <View style={{ flex: 1, gap: 4 }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              color: TextColors.tertiary,
+            }}
+          >
             Total Pages Read
           </Text>
           <Text
-            style={{ fontSize: 16, fontVariant: ['tabular-nums'], color: TextColors.primary }}
+            style={{
+              fontSize: 16,
+              fontVariant: ["tabular-nums"],
+              color: TextColors.primary,
+            }}
             selectable
           >
             {(book?.pages_read_total ?? 0).toLocaleString()}
@@ -158,11 +206,21 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
 
         {/* Pages Read in Current Cycle */}
         <View style={{ flex: 1, gap: 4 }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              color: TextColors.tertiary,
+            }}
+          >
             Current Cycle
           </Text>
           <Text
-            style={{ fontSize: 16, fontVariant: ['tabular-nums'], color: TextColors.primary }}
+            style={{
+              fontSize: 16,
+              fontVariant: ["tabular-nums"],
+              color: TextColors.primary,
+            }}
             selectable
           >
             {(book?.pages_read_in_current_cycle ?? 0).toLocaleString()}
@@ -173,13 +231,19 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
       {/* Score (if exists) */}
       {book.score !== null && scoreColors && (
         <View style={{ gap: 4 }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              color: TextColors.tertiary,
+            }}
+          >
             Score
           </Text>
           <View
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
+              flexDirection: "row",
+              alignItems: "center",
               gap: 8,
             }}
           >
@@ -191,14 +255,14 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
                 backgroundColor: scoreColors.background,
                 borderWidth: 1.5,
                 borderColor: scoreColors.border,
-                borderCurve: 'continuous',
+                borderCurve: "continuous",
               }}
             >
               <Text
                 style={{
                   fontSize: 18,
-                  fontWeight: '700',
-                  fontVariant: ['tabular-nums'],
+                  fontWeight: "700",
+                  fontVariant: ["tabular-nums"],
                   color: scoreColors.text,
                 }}
               >
@@ -212,7 +276,13 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
       {/* Comment (if exists) */}
       {book.comment && (
         <View style={{ gap: 4 }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.tertiary }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              color: TextColors.tertiary,
+            }}
+          >
             Comment
           </Text>
           <Text
@@ -220,7 +290,7 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
               fontSize: 14,
               lineHeight: 20,
               color: TextColors.secondary,
-              fontStyle: 'italic',
+              fontStyle: "italic",
             }}
             selectable
           >

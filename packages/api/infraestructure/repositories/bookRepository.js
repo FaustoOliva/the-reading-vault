@@ -1,12 +1,12 @@
 /**
  * BookRepository
  * Handles data persistence operations for Book entity
- * 
+ *
  * Responsibilities:
  * - Query books from database
  * - Translate DB records into Book domain entities
  * - Delegate query construction to BookQueryBuilder
- * 
+ *
  * Rules:
  * - No business logic
  * - No HTTP concerns
@@ -31,7 +31,7 @@ export class BookRepository {
    */
   async getAll(filters = {}, pagination = { page: 1, limit: 10 }) {
     const pool = await this.mssqlClient.getConnection();
-    
+
     // Build query using Query Builder pattern
     const queryBuilder = new BookQueryBuilder();
 
@@ -81,10 +81,12 @@ export class BookRepository {
     // Execute queries in parallel
     const [dataResult, countResult] = await Promise.all([
       selectRequest.query(selectQuery),
-      countRequest.query(countQuery)
+      countRequest.query(countQuery),
     ]);
-    
-    const books = dataResult.recordset.map(record => Book.fromDatabase(record));
+
+    const books = dataResult.recordset.map((record) =>
+      Book.fromDatabase(record),
+    );
     const total = countResult.recordset[0].total;
     const { page, limit } = pagination;
 
@@ -93,7 +95,7 @@ export class BookRepository {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
@@ -104,7 +106,7 @@ export class BookRepository {
    */
   async getById(bookId) {
     const pool = await this.mssqlClient.getConnection();
-    
+
     const query = `
       SELECT 
         b.id,
@@ -200,9 +202,7 @@ export class BookRepository {
         WHERE id = @bookId
       `;
 
-      await request
-        .input("bookId", sql.Int, bookId)
-        .query(query);
+      await request.input("bookId", sql.Int, bookId).query(query);
     }
 
     // Fetch updated book within the same transaction
@@ -268,7 +268,7 @@ export class BookRepository {
    */
   async findByIsbn(isbn) {
     const pool = await this.mssqlClient.getConnection();
-    
+
     const query = `
       SELECT 
         b.id,
@@ -309,9 +309,9 @@ export class BookRepository {
    */
   async create(data, transaction) {
     const { title, isbn, authorId, totalPages, statusId } = data;
-    
+
     const request = new sql.Request(transaction);
-    
+
     const query = `
       INSERT INTO Books (title, isbn, author_id, total_pages, status_id, current_reading_cycle)
       OUTPUT INSERTED.id, INSERTED.title, INSERTED.isbn, INSERTED.author_id, 
@@ -365,7 +365,7 @@ export class BookRepository {
    */
   async calculateGlobalKPIs() {
     const pool = await this.mssqlClient.getConnection();
-    
+
     const query = `
       SELECT 
         COUNT(*) as total,
@@ -379,7 +379,7 @@ export class BookRepository {
       FROM Books b
       INNER JOIN BookStatuses bs ON b.status_id = bs.id
     `;
-    
+
     const result = await pool.request().query(query);
     return result.recordset[0];
   }
@@ -391,7 +391,7 @@ export class BookRepository {
    */
   async getAverageDaysToComplete() {
     const pool = await this.mssqlClient.getConnection();
-  
+
     const query = `
       SELECT 
         AVG(DATEDIFF(DAY, first_session, last_session)) as average_days
@@ -408,7 +408,7 @@ export class BookRepository {
         HAVING MIN(rs.occurred_at) <= MAX(rs.occurred_at)
       ) as completed_books
     `;
-    
+
     const result = await pool.request().query(query);
     return result.recordset[0].average_days || null;
   }

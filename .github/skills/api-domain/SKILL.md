@@ -41,18 +41,19 @@ This skill applies when working on:
 - Class names, method names, variables, comments: English only.
 - No Spanish in domain code, even in documentation strings.
 
-
 ---
 
 ## What Domain Is (and Is Not)
 
 Domain IS:
+
 - Business rules
 - State transitions
 - Invariants
 - Decisions intrinsic to the business
 
 Domain IS NOT:
+
 - Data fetching logic
 - Filtering, sorting, pagination
 - Reporting or KPIs
@@ -67,6 +68,7 @@ Domain IS NOT:
 Entities are **rich in behavior**, not data containers.
 
 Entities MUST:
+
 - Encapsulate domain invariants
 - Own state transition logic
 - Enforce business rules
@@ -74,6 +76,7 @@ Entities MUST:
 - Provide factory methods (e.g., `fromDatabase()`)
 
 Entities MUST NOT:
+
 - Perform I/O operations (DB access, HTTP calls)
 - Depend on services or repositories
 - Perform input validation (validation is in controllers via Zod)
@@ -115,6 +118,7 @@ Entities MUST NOT:
 - **Magic numbers are strictly forbidden.**
 
 Example:
+
 ```javascript
 // ✅ CORRECT
 export const BookStatus = Object.freeze({
@@ -137,6 +141,7 @@ if (book.status === 'READING') { ... }  // String literal
 ### Enum Helpers
 
 Enums SHOULD provide helper functions:
+
 - `getValidStatuses()` - Returns all values
 - `isValidStatus(value)` - Validates a value
 - `getTransitionsFrom(status)` - Returns valid transitions (if applicable)
@@ -144,12 +149,13 @@ Enums SHOULD provide helper functions:
 ### Enum Documentation
 
 Each enum value MUST be documented in a comment:
+
 ```javascript
 export const BookStatus = Object.freeze({
-  WISH_LIST: 'WISH_LIST',    // Book is on wishlist, not started
-  READING: 'READING',        // Book is actively being read
-  COMPLETED: 'COMPLETED',    // Book finished in current cycle
-  ABANDONED: 'ABANDONED'     // User stopped reading, locked
+  WISH_LIST: "WISH_LIST", // Book is on wishlist, not started
+  READING: "READING", // Book is actively being read
+  COMPLETED: "COMPLETED", // Book finished in current cycle
+  ABANDONED: "ABANDONED", // User stopped reading, locked
 });
 ```
 
@@ -170,6 +176,7 @@ export const BookStatus = Object.freeze({
 ### FSM Structure
 
 Define:
+
 1. **States** (via enum)
 2. **Transitions** (allowed state changes)
 3. **Triggers** (events causing transitions)
@@ -178,12 +185,13 @@ Define:
 ### FSM Implementation Patterns
 
 **Option 1: Transition Map (Preferred for Simple FSMs)**
+
 ```javascript
 const TRANSITIONS = Object.freeze({
   [BookStatus.WISH_LIST]: [BookStatus.READING],
   [BookStatus.READING]: [BookStatus.COMPLETED],
   [BookStatus.COMPLETED]: [BookStatus.READING],
-  [BookStatus.ABANDONED]: [BookStatus.READING]  // Manual reopen only
+  [BookStatus.ABANDONED]: [BookStatus.READING], // Manual reopen only
 });
 
 function canTransitionTo(fromStatus, toStatus) {
@@ -192,6 +200,7 @@ function canTransitionTo(fromStatus, toStatus) {
 ```
 
 **Option 2: State Pattern (Preferred for Complex FSMs)**
+
 - Separate classes for each state
 - State-specific behavior encapsulated
 - Transitions delegated to state objects
@@ -199,6 +208,7 @@ function canTransitionTo(fromStatus, toStatus) {
 ### Guard Clauses
 
 Guards MUST be explicit and domain-driven:
+
 ```javascript
 if (book.status === BookStatus.ABANDONED) {
   throw new BookClosedError("Book is abandoned. Reopen it manually.");
@@ -219,6 +229,7 @@ if (book.status === BookStatus.ABANDONED) {
 An invariant is a rule that MUST always hold true for a domain object.
 
 Examples:
+
 - `totalPages > 0`
 - `currentReadingCycle >= 1`
 - `pages_read_in_cycle <= total_pages`
@@ -226,6 +237,7 @@ Examples:
 ### Invariant Enforcement
 
 Entities MUST enforce invariants in:
+
 - Constructors (for creation invariants)
 - Methods (for mutation invariants)
 
@@ -234,11 +246,13 @@ Invariants are checked BEFORE state changes, not after.
 ### Invariant Violation = Error
 
 If an invariant is violated:
+
 1. Throw a **domain-specific error** (NOT an HTTP error).
 2. Use descriptive error messages.
 3. Include context (e.g., which field, what value).
 
 Example:
+
 ```javascript
 if (this.totalPages <= 0) {
   throw new InvalidBookDataError("Total pages must be greater than 0.");
@@ -248,6 +262,7 @@ if (this.totalPages <= 0) {
 ### Cross-Entity Invariants
 
 If an invariant spans multiple entities:
+
 - Enforce it in the **service layer**, not in domain.
 - Domain entities remain self-contained.
 
@@ -258,6 +273,7 @@ If an invariant spans multiple entities:
 **All domain changes MUST comply with SOLID principles.**
 
 See the [api-solid-principles](../api-solid-principles/SKILL.md) skill for:
+
 - Detailed SOLID rules for domain entities
 - Self-check checklist (mandatory before committing)
 - Common violations and fixes
@@ -279,13 +295,14 @@ See the [api-solid-principles](../api-solid-principles/SKILL.md) skill for:
 ❌ **Conditional branching explosion for state logic**  
 ❌ **Adding behavior without consulting DOMAIN.md**  
 ❌ **Reinterpreting or simplifying business rules**  
-❌ **Throwing raw `Error` or strings** (use domain-specific errors)  
+❌ **Throwing raw `Error` or strings** (use domain-specific errors)
 
 ---
 
 ## Testing Domain Models
 
 Domain tests must NOT:
+
 - Test persistence mapping
 - Test repositories
 - Test HTTP behavior
@@ -301,14 +318,15 @@ Domain tests must NOT:
 ### Test Pattern
 
 Use **AAA** (Arrange, Act, Assert):
+
 ```javascript
 test("should transition from WISH_LIST to READING when logging session", () => {
   // Arrange
   const book = new Book({ status: BookStatus.WISH_LIST, ... });
-  
+
   // Act
   book.transitionTo(BookStatus.READING);
-  
+
   // Assert
   expect(book.status).toBe(BookStatus.READING);
 });

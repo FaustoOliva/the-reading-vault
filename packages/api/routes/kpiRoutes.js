@@ -1,7 +1,7 @@
 /**
  * KPI Routes
  * Defines HTTP endpoints for KPI and metrics operations
- * 
+ *
  * Architecture:
  * - Routes delegate to controllers
  * - Controllers validate and call services
@@ -22,7 +22,7 @@ export default function kpiRoutes(getController) {
    * Query params: date_from?, date_to?
    */
   router.get("/kpis/global", (req, res, next) =>
-    getController(KpiController).getGlobalKPIs(req, res, next)
+    getController(KpiController).getGlobalKPIs(req, res, next),
   );
 
   return router;

@@ -1,12 +1,12 @@
 /**
  * ReviewBookService (Command Use Case)
  * Transitions book from PENDING_SCORE to COMPLETED or ABANDONED with score
- * 
+ *
  * Responsibilities:
  * - Validate book is in PENDING_SCORE status
  * - Transition to COMPLETED or ABANDONED with mandatory score
  * - Insert status history
- * 
+ *
  * Rules:
  * - Framework-agnostic
  * - No validation (handled by controller)
@@ -57,7 +57,7 @@ export class ReviewBookService {
         targetStatus,
         score,
         comment,
-        transaction
+        transaction,
       );
 
       // 3.2 Insert BookStatusHistory
@@ -66,9 +66,9 @@ export class ReviewBookService {
           bookId,
           oldStatus: book.status,
           newStatus: targetStatus,
-          readingCycle: book.currentReadingCycle
+          readingCycle: book.currentReadingCycle,
         },
-        transaction
+        transaction,
       );
 
       await transaction.commit();

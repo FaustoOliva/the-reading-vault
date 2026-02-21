@@ -1,7 +1,7 @@
 /**
  * Books Query Hooks
  * React Query hooks for fetching and mutating book data
- * 
+ *
  * Rules:
  * - Use React Query for server state
  * - Define query keys consistently
@@ -9,112 +9,125 @@
  * - Type all responses
  */
 
-import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
-import { api } from '@/services/api';
-import { Book, BookDetails, BooksFilter, PaginationParams, CreateBookInput, UpdateBookInput, ReviewBookInput } from '@/types/book';
-import { kpiKeys } from './useKPIs';
-import { bookStatsKeys } from './useBookStats';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  UseQueryOptions,
+} from "@tanstack/react-query";
+import { api } from "@/services/api";
+import {
+  Book,
+  BookDetails,
+  BooksFilter,
+  PaginationParams,
+  CreateBookInput,
+  UpdateBookInput,
+  ReviewBookInput,
+} from "@/types/book";
+import { kpiKeys } from "./useKPIs";
+import { bookStatsKeys } from "./useBookStats";
 
 /**
  * Query Keys Factory
  * Ensures consistent cache invalidation
  */
 export const booksKeys = {
-  all: ['books'] as const,
-  lists: () => [...booksKeys.all, 'list'] as const,
+  all: ["books"] as const,
+  lists: () => [...booksKeys.all, "list"] as const,
   list: (filters?: BooksFilter, pagination?: PaginationParams) =>
     [...booksKeys.lists(), { filters, pagination }] as const,
-  details: () => [...booksKeys.all, 'detail'] as const,
+  details: () => [...booksKeys.all, "detail"] as const,
   detail: (id: number) => [...booksKeys.details(), id] as const,
 };
 
 /**
  * Build query string from filters and pagination
  */
-function buildQueryString(filters?: BooksFilter, pagination?: PaginationParams): string {
+function buildQueryString(
+  filters?: BooksFilter,
+  pagination?: PaginationParams,
+): string {
   const params = new URLSearchParams();
 
   if (filters?.status) {
-    params.append('status', filters.status);
+    params.append("status", filters.status);
   }
 
   if (filters?.authorId) {
-    params.append('authorId', filters.authorId.toString());
+    params.append("authorId", filters.authorId.toString());
   }
 
   if (filters?.countryId) {
-    params.append('countryId', filters.countryId.toString());
+    params.append("countryId", filters.countryId.toString());
   }
 
   if (filters?.titleSearch) {
-    params.append('titleSearch', filters.titleSearch);
+    params.append("titleSearch", filters.titleSearch);
   }
 
   if (filters?.minScore !== undefined) {
-    params.append('minScore', filters.minScore.toString());
+    params.append("minScore", filters.minScore.toString());
   }
 
   if (filters?.maxScore !== undefined) {
-    params.append('maxScore', filters.maxScore.toString());
+    params.append("maxScore", filters.maxScore.toString());
   }
 
   if (filters?.minPages !== undefined) {
-    params.append('minPages', filters.minPages.toString());
+    params.append("minPages", filters.minPages.toString());
   }
 
   if (filters?.maxPages !== undefined) {
-    params.append('maxPages', filters.maxPages.toString());
+    params.append("maxPages", filters.maxPages.toString());
   }
 
   if (filters?.startDate) {
     // Convert to ISO 8601 datetime format if needed
-    const startDateTime = filters.startDate.includes('T') 
-      ? filters.startDate 
+    const startDateTime = filters.startDate.includes("T")
+      ? filters.startDate
       : `${filters.startDate}T00:00:00Z`;
-    params.append('startDate', startDateTime);
+    params.append("startDate", startDateTime);
   }
 
   if (filters?.endDate) {
     // Convert to ISO 8601 datetime format if needed
-    const endDateTime = filters.endDate.includes('T') 
-      ? filters.endDate 
+    const endDateTime = filters.endDate.includes("T")
+      ? filters.endDate
       : `${filters.endDate}T23:59:59Z`;
-    params.append('endDate', endDateTime);
+    params.append("endDate", endDateTime);
   }
 
   if (pagination?.page) {
-    params.append('page', pagination.page.toString());
+    params.append("page", pagination.page.toString());
   }
 
   if (pagination?.limit) {
-    params.append('limit', pagination.limit.toString());
+    params.append("limit", pagination.limit.toString());
   }
 
   const queryString = params.toString();
-  return queryString ? `?${queryString}` : '';
+  return queryString ? `?${queryString}` : "";
 }
 
 /**
  * Hook: Fetch books with filters and pagination
  */
-export function useBooks(
-  filters?: BooksFilter,
-  pagination?: PaginationParams
-) {
+export function useBooks(filters?: BooksFilter, pagination?: PaginationParams) {
   if (__DEV__) {
-    console.log('📚 useBooks called with:', { filters, pagination });
+    console.log("📚 useBooks called with:", { filters, pagination });
   }
 
   return useQuery({
     queryKey: booksKeys.list(filters, pagination),
     queryFn: async () => {
       if (__DEV__) {
-        console.log('🔄 useBooks queryFn executing...');
+        console.log("🔄 useBooks queryFn executing...");
       }
       const queryString = buildQueryString(filters, pagination);
       const endpoint = `/api/books${queryString}`;
       if (__DEV__) {
-        console.log('🎯 Endpoint:', endpoint);
+        console.log("🎯 Endpoint:", endpoint);
       }
 
       const response = await api.get<{
@@ -129,7 +142,7 @@ export function useBooks(
       }>(endpoint);
 
       if (__DEV__) {
-        console.log('✨ useBooks response:', {
+        console.log("✨ useBooks response:", {
           booksCount: response.data?.length,
           pagination: response.pagination,
         });
@@ -145,7 +158,7 @@ export function useBooks(
  */
 export function useBookDetails(
   bookId: number,
-  options?: Omit<UseQueryOptions<BookDetails>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<BookDetails>, "queryKey" | "queryFn">,
 ) {
   return useQuery({
     queryKey: booksKeys.detail(bookId),
@@ -168,7 +181,7 @@ export function useCreateBook() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateBookInput) => api.post<Book>('/api/books', data),
+    mutationFn: (data: CreateBookInput) => api.post<Book>("/api/books", data),
     onSuccess: () => {
       // Invalidate all book lists to show new book
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
@@ -188,15 +201,15 @@ export function useUpdateBook() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateBookInput }) =>
       api.put<{ success: boolean; data: Book }>(`/api/books/${id}`, data),
-    
+
     // Optimistic update: Apply changes immediately
     onMutate: async ({ id, data }) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: booksKeys.detail(id) });
-      
+
       // Snapshot previous value
       const previousBook = queryClient.getQueryData(booksKeys.detail(id));
-      
+
       // Optimistically update book detail
       queryClient.setQueryData(booksKeys.detail(id), (old: any) => {
         if (!old) return old;
@@ -208,23 +221,30 @@ export function useUpdateBook() {
           },
         };
       });
-      
+
       // Return context for rollback
       return { previousBook };
     },
-    
+
     // Rollback on error
     onError: (err, variables, context) => {
       if (context?.previousBook) {
-        queryClient.setQueryData(booksKeys.detail(variables.id), context.previousBook);
+        queryClient.setQueryData(
+          booksKeys.detail(variables.id),
+          context.previousBook,
+        );
       }
     },
-    
+
     // Refetch after success to sync with server
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: booksKeys.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: booksKeys.detail(variables.id),
+      });
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: bookStatsKeys.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: bookStatsKeys.detail(variables.id),
+      });
     },
   });
 }
@@ -238,17 +258,21 @@ export function useReviewBook() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: ReviewBookInput }) =>
       api.request<{ success: boolean; data: Book }>(`/api/books/${id}/review`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: JSON.stringify(data),
       }),
     onSuccess: (_, variables) => {
       // Invalidate book details and lists
-      queryClient.invalidateQueries({ queryKey: booksKeys.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: booksKeys.detail(variables.id),
+      });
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
       // Invalidate KPIs (completion stats change)
       queryClient.invalidateQueries({ queryKey: kpiKeys.all });
       // Invalidate book stats
-      queryClient.invalidateQueries({ queryKey: bookStatsKeys.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: bookStatsKeys.detail(variables.id),
+      });
     },
   });
 }
@@ -263,15 +287,15 @@ export function useReopenBook() {
   return useMutation({
     mutationFn: (id: number) =>
       api.request<{ success: boolean; data: Book }>(`/api/books/${id}/reopen`, {
-        method: 'PATCH',
+        method: "PATCH",
       }),
-    
+
     // Optimistic update: Change status immediately
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: booksKeys.detail(id) });
-      
+
       const previousBook = queryClient.getQueryData(booksKeys.detail(id));
-      
+
       // Optimistically change status to READING
       queryClient.setQueryData(booksKeys.detail(id), (old: any) => {
         if (!old) return old;
@@ -279,21 +303,21 @@ export function useReopenBook() {
           ...old,
           book: {
             ...old.book,
-            status: 'READING',
+            status: "READING",
             current_reading_cycle: old.book.current_reading_cycle + 1,
           },
         };
       });
-      
+
       return { previousBook };
     },
-    
+
     onError: (err, id, context) => {
       if (context?.previousBook) {
         queryClient.setQueryData(booksKeys.detail(id), context.previousBook);
       }
     },
-    
+
     onSuccess: (_, bookId) => {
       queryClient.invalidateQueries({ queryKey: booksKeys.detail(bookId) });
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
@@ -313,16 +337,19 @@ export function useRequestReview() {
 
   return useMutation({
     mutationFn: (id: number) =>
-      api.request<{ success: boolean; data: Book }>(`/api/books/${id}/request-review`, {
-        method: 'PATCH',
-      }),
-    
+      api.request<{ success: boolean; data: Book }>(
+        `/api/books/${id}/request-review`,
+        {
+          method: "PATCH",
+        },
+      ),
+
     // Optimistic update: Change status immediately
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: booksKeys.detail(id) });
-      
+
       const previousBook = queryClient.getQueryData(booksKeys.detail(id));
-      
+
       // Optimistically change status to PENDING_SCORE
       queryClient.setQueryData(booksKeys.detail(id), (old: any) => {
         if (!old) return old;
@@ -330,20 +357,20 @@ export function useRequestReview() {
           ...old,
           book: {
             ...old.book,
-            status: 'PENDING_SCORE',
+            status: "PENDING_SCORE",
           },
         };
       });
-      
+
       return { previousBook };
     },
-    
+
     onError: (err, id, context) => {
       if (context?.previousBook) {
         queryClient.setQueryData(booksKeys.detail(id), context.previousBook);
       }
     },
-    
+
     onSuccess: (_, bookId) => {
       queryClient.invalidateQueries({ queryKey: booksKeys.detail(bookId) });
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });

@@ -47,16 +47,18 @@ The human will review, adjust, or correct when necessary.
 ### Git Workflow & Commits
 
 Follow the **Conventional Commits** standard:
-* `feat(scope): description`
-* `fix(scope): description`
-* `docs(scope): description`
-* `test(scope): description`
+
+- `feat(scope): description`
+- `fix(scope): description`
+- `docs(scope): description`
+- `test(scope): description`
 
 **Pre-Commit Checklist (MANDATORY):**
 
 Before committing any code, you MUST:
 
 1. **Verify no errors:** Check for TypeScript/compilation errors
+
    ```bash
    npm run build
    # OR for specific packages:
@@ -65,6 +67,7 @@ Before committing any code, you MUST:
    ```
 
 2. **Run formatting:** Ensure code follows style guidelines
+
    ```bash
    npm run format
    ```
@@ -99,6 +102,7 @@ Before committing any code, you MUST:
 - DTOs do not exist within the domain.
 
 **Correct example:**
+
 ```javascript
 // ✅ Book.js (Model)
 calculateTransition(currentPages, pagesRead) {
@@ -110,6 +114,7 @@ const transition = book.calculateTransition(currentPages, pagesRead);
 ```
 
 **Incorrect example:**
+
 ```javascript
 // ❌ Service exposes domain logic
 if (book.status === WISH_LIST) {
@@ -127,6 +132,7 @@ if (book.status === WISH_LIST) {
 - Services capture domain errors and propagate them.
 
 **Hierarchy:**
+
 ```
 AppError (base)
 ├── HTTP Errors (BadRequestError, NotFoundError, ConflictError...)
@@ -134,6 +140,7 @@ AppError (base)
 ```
 
 **Correct example:**
+
 ```javascript
 // ✅ Book.js (Model)
 ensureCanAcceptSession() {

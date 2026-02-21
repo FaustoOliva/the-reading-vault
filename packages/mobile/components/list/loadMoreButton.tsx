@@ -1,13 +1,13 @@
 /**
  * LoadMoreButton Component
  * Smart pagination with context for "Load More" pattern
- * 
+ *
  * Features:
  * - Always visible counter (Showing X of Y books)
  * - Contextual Load More button (Load N more - X remaining)
  * - Auto-hide when all loaded
  * - Loading state
- * 
+ *
  * Rules:
  * - Use Pressable for button
  * - Show loading indicator when fetching
@@ -16,14 +16,14 @@
  * - Use tabular numbers for counters
  */
 
-import { View, Text, Pressable, ActivityIndicator } from 'react-native';
-import { ScaleButton } from '@/components/ui/animated';
+import { View, Text, Pressable, ActivityIndicator } from "react-native";
+import { ScaleButton } from "@/components/ui/animated";
 import {
   Interactive,
   Text as TextColors,
   Border,
   Background,
-} from '@/constants/colors';
+} from "@/constants/colors";
 
 interface LoadMoreButtonProps {
   /**
@@ -68,7 +68,7 @@ export function LoadMoreButton({
       style={{
         paddingVertical: 16,
         gap: 12,
-        alignItems: 'center',
+        alignItems: "center",
       }}
     >
       {/* Always visible counter */}
@@ -76,11 +76,12 @@ export function LoadMoreButton({
         style={{
           fontSize: 14,
           color: TextColors.secondary,
-          fontVariant: ['tabular-nums'],
+          fontVariant: ["tabular-nums"],
         }}
         selectable
       >
-        Showing {displayedCount} of {totalCount} book{totalCount !== 1 ? 's' : ''}
+        Showing {displayedCount} of {totalCount} book
+        {totalCount !== 1 ? "s" : ""}
       </Text>
 
       {/* Load More button - only show if there are more items */}
@@ -95,22 +96,25 @@ export function LoadMoreButton({
             backgroundColor: isLoading
               ? Border.default
               : Interactive.primary.default,
-            alignItems: 'center',
-            justifyContent: 'center',
+            alignItems: "center",
+            justifyContent: "center",
             minWidth: 200,
             minHeight: 48,
-            borderCurve: 'continuous',
-            flexDirection: 'row',
+            borderCurve: "continuous",
+            flexDirection: "row",
             gap: 12,
           }}
         >
           {isLoading ? (
             <>
-              <ActivityIndicator size="small" color={Interactive.primary.text} />
+              <ActivityIndicator
+                size="small"
+                color={Interactive.primary.text}
+              />
               <Text
                 style={{
                   fontSize: 16,
-                  fontWeight: '600',
+                  fontWeight: "600",
                   color: TextColors.disabled,
                 }}
               >
@@ -118,11 +122,11 @@ export function LoadMoreButton({
               </Text>
             </>
           ) : (
-            <View style={{ alignItems: 'center', gap: 4 }}>
+            <View style={{ alignItems: "center", gap: 4 }}>
               <Text
                 style={{
                   fontSize: 16,
-                  fontWeight: '600',
+                  fontWeight: "600",
                   color: Interactive.primary.text,
                 }}
               >
@@ -133,7 +137,7 @@ export function LoadMoreButton({
                   fontSize: 13,
                   color: Interactive.primary.text,
                   opacity: 0.8,
-                  fontVariant: ['tabular-nums'],
+                  fontVariant: ["tabular-nums"],
                 }}
               >
                 ({remainingCount} remaining)
@@ -153,14 +157,14 @@ export function LoadMoreButton({
             backgroundColor: Background.surface,
             borderWidth: 1,
             borderColor: Border.default,
-            borderCurve: 'continuous',
+            borderCurve: "continuous",
           }}
         >
           <Text
             style={{
               fontSize: 14,
               color: TextColors.tertiary,
-              textAlign: 'center',
+              textAlign: "center",
             }}
           >
             ✓ All books loaded

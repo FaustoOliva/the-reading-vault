@@ -1,12 +1,12 @@
 /**
  * Author Routes
  * Defines HTTP routes for author-related operations
- * 
+ *
  * Responsibilities:
  * - Declare HTTP routes
  * - Bind routes to controller methods
  * - Apply route-level middlewares
- * 
+ *
  * Rules:
  * - No business logic
  * - No validation
@@ -27,7 +27,7 @@ export default function authorRoutes(getController) {
    * Query params: nameLike
    */
   router.get("/authors", (req, res, next) =>
-    getController(AuthorsController).getAuthors(req, res, next)
+    getController(AuthorsController).getAuthors(req, res, next),
   );
 
   return router;

@@ -1,19 +1,12 @@
 /**
  * ReadingSession Domain Entity
  * Represents a single reading session logged by the user
- * 
+ *
  * This entity enforces domain invariants for reading session data
  */
 
 export class ReadingSession {
-  constructor({
-    id,
-    bookId,
-    readingCycle,
-    pagesRead,
-    occurredAt,
-    createdAt
-  }) {
+  constructor({ id, bookId, readingCycle, pagesRead, occurredAt, createdAt }) {
     this.id = id;
     this.bookId = bookId;
     this.readingCycle = readingCycle;
@@ -32,7 +25,7 @@ export class ReadingSession {
       readingCycle: record.reading_cycle,
       pagesRead: record.pages_read,
       occurredAt: record.occurred_at,
-      createdAt: record.created_at
+      createdAt: record.created_at,
     });
   }
 
@@ -46,7 +39,7 @@ export class ReadingSession {
       readingCycle: this.readingCycle,
       pagesRead: this.pagesRead,
       occurredAt: this.occurredAt,
-      createdAt: this.createdAt
+      createdAt: this.createdAt,
     };
   }
 }

@@ -1,14 +1,14 @@
 /**
  * Transaction Integration Tests
  * Tests for transaction timeout and deadlock handling
- * 
+ *
  * Coverage:
  * - Transaction timeout behavior
  * - Deadlock detection and rollback
  * - Concurrent transaction conflicts
  * - Proper error propagation
  * - Rollback guarantees
- * 
+ *
  * Note: These are integration tests that simulate real transaction scenarios.
  * They test the interaction between services, transactions, and error handling.
  */
@@ -31,28 +31,28 @@ describe("Transaction Integration Tests", () => {
     vi.clearAllMocks();
 
     mockMssqlClient = {
-      getConnection: vi.fn()
+      getConnection: vi.fn(),
     };
 
     mockBookRepository = {
       getById: vi.fn(),
-      updateStatus: vi.fn()
+      updateStatus: vi.fn(),
     };
 
     mockReadingSessionRepository = {
       getTotalPagesInCycle: vi.fn(),
-      create: vi.fn()
+      create: vi.fn(),
     };
 
     mockBookStatusHistoryRepository = {
-      create: vi.fn()
+      create: vi.fn(),
     };
 
     service = new LogReadingSessionService(
       mockMssqlClient,
       mockBookRepository,
       mockReadingSessionRepository,
-      mockBookStatusHistoryRepository
+      mockBookStatusHistoryRepository,
     );
   });
 
@@ -66,7 +66,7 @@ describe("Transaction Integration Tests", () => {
       const mockTransaction = {
         begin: vi.fn().mockResolvedValue(undefined),
         commit: vi.fn().mockResolvedValue(undefined),
-        rollback: vi.fn().mockResolvedValue(undefined)
+        rollback: vi.fn().mockResolvedValue(undefined),
       };
 
       const mockPool = {};
@@ -85,21 +85,23 @@ describe("Transaction Integration Tests", () => {
         abandonedAt: null,
         startedAt: new Date(),
         finishedAt: null,
-        readingScore: null
+        readingScore: null,
       });
 
       mockBookRepository.getById.mockResolvedValue(book);
       mockReadingSessionRepository.getTotalPagesInCycle.mockResolvedValue(50);
 
       // Simulate timeout error from SQL Server
-      const timeoutError = new Error("Timeout: Request failed to complete in 30000ms");
+      const timeoutError = new Error(
+        "Timeout: Request failed to complete in 30000ms",
+      );
       timeoutError.code = "ETIMEOUT";
       mockReadingSessionRepository.create.mockRejectedValue(timeoutError);
 
       const input = {
         bookId: 1,
         pagesRead: 50,
-        occurredAt: new Date()
+        occurredAt: new Date(),
       };
 
       // Act & Assert
@@ -119,7 +121,7 @@ describe("Transaction Integration Tests", () => {
       const createMockTransaction = () => ({
         begin: vi.fn().mockResolvedValue(undefined),
         commit: vi.fn().mockResolvedValue(undefined),
-        rollback: vi.fn().mockResolvedValue(undefined)
+        rollback: vi.fn().mockResolvedValue(undefined),
       });
 
       const mockTransaction1 = createMockTransaction();
@@ -142,7 +144,7 @@ describe("Transaction Integration Tests", () => {
         abandonedAt: null,
         startedAt: new Date(),
         finishedAt: null,
-        readingScore: null
+        readingScore: null,
       });
 
       mockBookRepository.getById.mockResolvedValue(book);
@@ -158,13 +160,13 @@ describe("Transaction Integration Tests", () => {
       const input = {
         bookId: 1,
         pagesRead: 50,
-        occurredAt: new Date()
+        occurredAt: new Date(),
       };
 
       // Act - Execute two concurrent operations
       const results = await Promise.allSettled([
         service.execute(input),
-        service.execute(input)
+        service.execute(input),
       ]);
 
       // Assert
@@ -187,7 +189,7 @@ describe("Transaction Integration Tests", () => {
       const mockTransaction = {
         begin: vi.fn().mockResolvedValue(undefined),
         commit: vi.fn().mockResolvedValue(undefined),
-        rollback: vi.fn().mockResolvedValue(undefined)
+        rollback: vi.fn().mockResolvedValue(undefined),
       };
 
       const mockPool = {};
@@ -205,7 +207,7 @@ describe("Transaction Integration Tests", () => {
         abandonedAt: null,
         startedAt: new Date(),
         finishedAt: null,
-        readingScore: null
+        readingScore: null,
       });
 
       mockBookRepository.getById.mockResolvedValue(book);
@@ -220,7 +222,7 @@ describe("Transaction Integration Tests", () => {
       const input = {
         bookId: 1,
         pagesRead: 50,
-        occurredAt: new Date()
+        occurredAt: new Date(),
       };
 
       // Act & Assert
@@ -239,7 +241,7 @@ describe("Transaction Integration Tests", () => {
       const mockTransaction = {
         begin: vi.fn().mockResolvedValue(undefined),
         commit: vi.fn().mockResolvedValue(undefined),
-        rollback: vi.fn().mockResolvedValue(undefined)
+        rollback: vi.fn().mockResolvedValue(undefined),
       };
 
       const mockPool = {};
@@ -257,7 +259,7 @@ describe("Transaction Integration Tests", () => {
         abandonedAt: null,
         startedAt: new Date(),
         finishedAt: null,
-        readingScore: null
+        readingScore: null,
       });
 
       mockBookRepository.getById.mockResolvedValue(book);
@@ -269,7 +271,7 @@ describe("Transaction Integration Tests", () => {
         bookId: 1,
         pagesRead: 50,
         readingCycle: 1,
-        occurredAt: new Date()
+        occurredAt: new Date(),
       });
       mockReadingSessionRepository.create.mockResolvedValue(mockSession);
 
@@ -282,7 +284,7 @@ describe("Transaction Integration Tests", () => {
       const input = {
         bookId: 1,
         pagesRead: 50,
-        occurredAt: new Date()
+        occurredAt: new Date(),
       };
 
       // Act & Assert
@@ -304,7 +306,7 @@ describe("Transaction Integration Tests", () => {
       const mockTransaction = {
         begin: vi.fn().mockResolvedValue(undefined),
         commit: vi.fn().mockResolvedValue(undefined),
-        rollback: vi.fn().mockResolvedValue(undefined)
+        rollback: vi.fn().mockResolvedValue(undefined),
       };
 
       const mockPool = {};
@@ -322,14 +324,16 @@ describe("Transaction Integration Tests", () => {
         abandonedAt: null,
         startedAt: new Date(),
         finishedAt: null,
-        readingScore: null
+        readingScore: null,
       });
 
       mockBookRepository.getById.mockResolvedValue(book);
       mockReadingSessionRepository.getTotalPagesInCycle.mockResolvedValue(50);
 
       // Simulate lock timeout (SQL Server error 1222)
-      const lockTimeoutError = new Error("Lock request timeout period exceeded");
+      const lockTimeoutError = new Error(
+        "Lock request timeout period exceeded",
+      );
       lockTimeoutError.code = "EREQUEST";
       lockTimeoutError.number = 1222;
       mockReadingSessionRepository.create.mockRejectedValue(lockTimeoutError);
@@ -337,7 +341,7 @@ describe("Transaction Integration Tests", () => {
       const input = {
         bookId: 1,
         pagesRead: 50,
-        occurredAt: new Date()
+        occurredAt: new Date(),
       };
 
       // Act & Assert
@@ -358,7 +362,7 @@ describe("Transaction Integration Tests", () => {
       const mockTransaction = {
         begin: vi.fn().mockResolvedValue(undefined),
         commit: vi.fn().mockResolvedValue(undefined),
-        rollback: vi.fn().mockResolvedValue(undefined)
+        rollback: vi.fn().mockResolvedValue(undefined),
       };
 
       const mockPool = {};
@@ -376,7 +380,7 @@ describe("Transaction Integration Tests", () => {
         abandonedAt: null,
         startedAt: new Date(),
         finishedAt: null,
-        readingScore: null
+        readingScore: null,
       });
 
       mockBookRepository.getById.mockResolvedValue(book);
@@ -389,7 +393,7 @@ describe("Transaction Integration Tests", () => {
       const input = {
         bookId: 1,
         pagesRead: 50,
-        occurredAt: new Date()
+        occurredAt: new Date(),
       };
 
       // Act & Assert
@@ -408,7 +412,7 @@ describe("Transaction Integration Tests", () => {
       const mockTransaction = {
         begin: vi.fn().mockResolvedValue(undefined),
         commit: vi.fn().mockResolvedValue(undefined),
-        rollback: vi.fn().mockRejectedValue(new Error("Rollback failed"))
+        rollback: vi.fn().mockRejectedValue(new Error("Rollback failed")),
       };
 
       const mockPool = {};
@@ -426,7 +430,7 @@ describe("Transaction Integration Tests", () => {
         abandonedAt: null,
         startedAt: new Date(),
         finishedAt: null,
-        readingScore: null
+        readingScore: null,
       });
 
       mockBookRepository.getById.mockResolvedValue(book);
@@ -438,7 +442,7 @@ describe("Transaction Integration Tests", () => {
       const input = {
         bookId: 1,
         pagesRead: 50,
-        occurredAt: new Date()
+        occurredAt: new Date(),
       };
 
       // Act & Assert
@@ -458,7 +462,7 @@ describe("Transaction Integration Tests", () => {
       const createMockTransaction = () => ({
         begin: vi.fn().mockResolvedValue(undefined),
         commit: vi.fn().mockResolvedValue(undefined),
-        rollback: vi.fn().mockResolvedValue(undefined)
+        rollback: vi.fn().mockResolvedValue(undefined),
       });
 
       const mockTransaction1 = createMockTransaction();
@@ -481,7 +485,7 @@ describe("Transaction Integration Tests", () => {
         abandonedAt: null,
         startedAt: new Date(),
         finishedAt: null,
-        readingScore: null
+        readingScore: null,
       });
 
       mockBookRepository.getById.mockResolvedValue(book);
@@ -493,7 +497,7 @@ describe("Transaction Integration Tests", () => {
         bookId: 1,
         pagesRead: 50,
         readingCycle: 1,
-        occurredAt: new Date()
+        occurredAt: new Date(),
       });
 
       // Second transaction conflicts (simulating concurrent modification)
@@ -508,13 +512,13 @@ describe("Transaction Integration Tests", () => {
       const input = {
         bookId: 1,
         pagesRead: 50,
-        occurredAt: new Date()
+        occurredAt: new Date(),
       };
 
       // Act
       const results = await Promise.allSettled([
         service.execute(input),
-        service.execute(input)
+        service.execute(input),
       ]);
 
       // Assert

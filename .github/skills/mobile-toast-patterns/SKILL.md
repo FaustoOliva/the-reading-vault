@@ -17,6 +17,7 @@ This skill applies when:
 ## Core Principles
 
 **Toast notifications should:**
+
 - Be non-blocking (don't stop user interaction)
 - Auto-dismiss after appropriate duration
 - Be centralized (one toast system, not multiple)
@@ -24,6 +25,7 @@ This skill applies when:
 - Be accessible (ARIA live regions)
 
 **Toast notifications should NOT:**
+
 - Require user confirmation (use modal for that)
 - Show multiple toasts simultaneously (queue them)
 - Block critical user flows
@@ -48,7 +50,7 @@ npm install react-native-toast-message
 **File:** `app/_layout.tsx`
 
 ```tsx
-import Toast from 'react-native-toast-message';
+import Toast from "react-native-toast-message";
 
 export default function RootLayout() {
   return (
@@ -65,6 +67,7 @@ export default function RootLayout() {
 ```
 
 **Rules:**
+
 - MUST render `<Toast />` at root level
 - MUST be last child (z-index layering)
 - DO NOT render in individual screens
@@ -78,7 +81,7 @@ export default function RootLayout() {
 **File:** `components/ui/toast.tsx`
 
 ```tsx
-import Toast from 'react-native-toast-message';
+import Toast from "react-native-toast-message";
 
 /**
  * Typed toast helper functions
@@ -89,10 +92,10 @@ export const showToast = {
    */
   success: (message: string, subtitle?: string) => {
     Toast.show({
-      type: 'success',
+      type: "success",
       text1: message,
       text2: subtitle,
-      position: 'top',
+      position: "top",
       visibilityTime: 3000,
       autoHide: true,
     });
@@ -103,10 +106,10 @@ export const showToast = {
    */
   error: (message: string, subtitle?: string) => {
     Toast.show({
-      type: 'error',
+      type: "error",
       text1: message,
       text2: subtitle,
-      position: 'top',
+      position: "top",
       visibilityTime: 4000, // Errors stay longer
       autoHide: true,
     });
@@ -117,10 +120,10 @@ export const showToast = {
    */
   info: (message: string, subtitle?: string) => {
     Toast.show({
-      type: 'info',
+      type: "info",
       text1: message,
       text2: subtitle,
-      position: 'top',
+      position: "top",
       visibilityTime: 3000,
       autoHide: true,
     });
@@ -131,10 +134,10 @@ export const showToast = {
    */
   warning: (message: string, subtitle?: string) => {
     Toast.show({
-      type: 'warning',
+      type: "warning",
       text1: message,
       text2: subtitle,
-      position: 'top',
+      position: "top",
       visibilityTime: 3500,
       autoHide: true,
     });
@@ -144,10 +147,11 @@ export const showToast = {
 /**
  * Export Toast component for root rendering
  */
-export { default as ToastComponent } from 'react-native-toast-message';
+export { default as ToastComponent } from "react-native-toast-message";
 ```
 
 **Rules:**
+
 - MUST use typed helpers (`showToast.success()`, not `Toast.show()`)
 - MUST include JSDoc comments for each helper
 - MUST export both helpers and component
@@ -160,7 +164,7 @@ export { default as ToastComponent } from 'react-native-toast-message';
 ### Basic Success/Error
 
 ```tsx
-import { showToast } from '@/components/ui/toast';
+import { showToast } from "@/components/ui/toast";
 
 function MyComponent() {
   const createMutation = useCreateBook();
@@ -168,9 +172,9 @@ function MyComponent() {
   const handleSubmit = async () => {
     try {
       await createMutation.mutateAsync(data);
-      showToast.success('Book created', 'Added to your library');
+      showToast.success("Book created", "Added to your library");
     } catch (error) {
-      showToast.error('Failed to create book', error.message);
+      showToast.error("Failed to create book", error.message);
     }
   };
 }
@@ -180,10 +184,10 @@ function MyComponent() {
 
 ```tsx
 // ❌ BAD: Blocking alert
-Alert.alert('Success', 'Book created successfully');
+Alert.alert("Success", "Book created successfully");
 
 // ✅ GOOD: Non-blocking toast
-showToast.success('Book created successfully');
+showToast.success("Book created successfully");
 ```
 
 ---
@@ -202,20 +206,22 @@ showToast.success('Book created successfully');
 ```tsx
 // For longer messages (use sparingly)
 Toast.show({
-  type: 'info',
-  text1: 'Long important message',
-  text2: 'Additional context that takes more time to read',
+  type: "info",
+  text1: "Long important message",
+  text2: "Additional context that takes more time to read",
   visibilityTime: 5000, // Extend to 5 seconds
   autoHide: true,
 });
 ```
 
 **When to extend:**
+
 - Message is > 10 words
 - Critical error requiring user action
 - Multi-step process feedback
 
 **DO NOT:**
+
 - Make toasts persistent (`autoHide: false`)
 - Extend beyond 6 seconds
 - Use for confirmation dialogs (use modal instead)
@@ -229,6 +235,7 @@ Toast.show({
 **MUST use `position: 'top'`** for all toasts.
 
 **Why:**
+
 - Doesn't obscure content
 - Consistent with mobile patterns
 - Doesn't interfere with bottom navigation
@@ -238,7 +245,7 @@ Toast.show({
 ```tsx
 // ❌ BAD: Bottom obscures tab bar
 Toast.show({
-  position: 'bottom', // Avoid
+  position: "bottom", // Avoid
   // ...
 });
 ```
@@ -259,11 +266,13 @@ The `react-native-toast-message` library automatically handles accessibility:
 ### Content Guidelines
 
 **message (text1):**
+
 - Keep to 5-8 words
 - Be specific: "Book created" not "Success"
 - Use sentence case: "Session logged" not "SESSION LOGGED"
 
 **subtitle (text2):**
+
 - Optional additional context
 - Keep to one sentence
 - Provide actionable info if needed: "Check your library"
@@ -273,16 +282,19 @@ The `react-native-toast-message` library automatically handles accessibility:
 ## When NOT to Use Toasts
 
 ### Use Modal Instead When:
+
 - Requiring user confirmation (destructive actions)
 - Capturing additional input
 - Blocking user until decision made
 
 ### Use Inline Errors Instead When:
+
 - Form validation errors (show below field)
 - Field-specific feedback
 - Persistent error state
 
 ### Use Alert.alert() Instead When:
+
 - Critical system-level errors (rare)
 - Permission requests with explanation
 - Truly blocking operations (e.g., app update required)
@@ -295,13 +307,14 @@ The `react-native-toast-message` library automatically handles accessibility:
 
 ```tsx
 // Test all toast types
-showToast.success('Test success message');
-showToast.error('Test error message', 'With subtitle');
-showToast.info('Test info message');
-showToast.warning('Test warning message');
+showToast.success("Test success message");
+showToast.error("Test error message", "With subtitle");
+showToast.info("Test info message");
+showToast.warning("Test warning message");
 ```
 
 ### Verify:
+
 - ✅ Toast appears at top
 - ✅ Auto-dismisses after duration
 - ✅ Doesn't block interaction below

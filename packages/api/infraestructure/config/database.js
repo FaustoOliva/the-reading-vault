@@ -19,7 +19,7 @@ export class MSSQLClient {
    * @returns {Promise<void>}
    * @throws {Error} If connection fails
    */
-  async connect() { 
+  async connect() {
     try {
       this.pool = new sql.ConnectionPool(this.config);
       await this.pool.connect();
@@ -66,7 +66,9 @@ export class MSSQLClient {
    */
   getConnection() {
     if (!this.pool) {
-      throw new Error("Database connection not established. Call connect() first.");
+      throw new Error(
+        "Database connection not established. Call connect() first.",
+      );
     }
     return this.pool;
   }

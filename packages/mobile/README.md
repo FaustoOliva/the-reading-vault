@@ -9,6 +9,7 @@ This is an [Expo](https://expo.dev) React Native application that provides a pol
 ## Features
 
 ### Core Functionality
+
 - **Book Management**: Create, edit, and organize your reading collection
 - **Reading Sessions**: Log page progress and track reading time
 - **Book States**: Manage books through their lifecycle (Wish List → Reading → Reviewing → Completed/Abandoned)
@@ -16,6 +17,7 @@ This is an [Expo](https://expo.dev) React Native application that provides a pol
 - **KPI Dashboard**: Visualize reading statistics and metrics
 
 ### User Experience Enhancements
+
 - **🎨 Toast Notifications**: Non-blocking feedback using `react-native-toast-message`
 - **💀 Skeleton Loaders**: Smooth loading states that match actual content layout
 - **⚡ Optimistic Updates**: Instant UI feedback before server confirmation
@@ -26,6 +28,7 @@ This is an [Expo](https://expo.dev) React Native application that provides a pol
 ## Setup
 
 ### Prerequisites
+
 - Node.js 18+
 - npm or yarn
 - Expo CLI
@@ -34,19 +37,22 @@ This is an [Expo](https://expo.dev) React Native application that provides a pol
 ### Installation
 
 1. **Install dependencies**
+
    ```bash
    cd packages/mobile
    npm install
    ```
 
 2. **Configure API endpoint**
-   
+
    Edit [services/api.ts](services/api.ts#L8) and set your API base URL:
+
    ```typescript
-   const API_BASE_URL = 'http://YOUR_API_HOST:5001/api';
+   const API_BASE_URL = "http://YOUR_API_HOST:5001/api";
    ```
 
 3. **Start development server**
+
    ```bash
    npx expo start
    ```
@@ -59,6 +65,7 @@ This is an [Expo](https://expo.dev) React Native application that provides a pol
 ## Architecture
 
 ### Tech Stack
+
 - **Framework**: React Native + Expo SDK 52
 - **Routing**: Expo Router (file-based)
 - **Language**: TypeScript (95%+)
@@ -68,6 +75,7 @@ This is an [Expo](https://expo.dev) React Native application that provides a pol
 - **Notifications**: React Native Toast Message 2.x
 
 ### Project Structure
+
 ```
 app/
 ├── (tabs)/           # Tab-based navigation
@@ -96,6 +104,7 @@ types/
 ```
 
 ### State Management Boundaries
+
 - **Server State** (React Query): Books, KPIs, authors, countries
 - **UI State** (useState): Modal visibility, filters, search
 - **Form State** (Zod): Validation + submission state
@@ -103,11 +112,13 @@ types/
 ## Key Implementation Details
 
 ### Performance Optimizations
+
 - **React.memo**: BookListItem memoized with custom comparison (prevents re-renders)
 - **FlatList**: `removeClippedSubviews`, `maxToRenderPerBatch`, `windowSize` tuning
 - **Pull-to-Refresh**: RefreshControl on both list and detail screens
 
 ### Animations System
+
 ```typescript
 // components/ui/animated.tsx
 <FadeInView duration={200}>  {/* Respects prefers-reduced-motion */}
@@ -120,17 +131,20 @@ types/
 ```
 
 ### Toast Notifications
-```typescript
-import { showToast } from '@/components/ui/toast';
 
-showToast.success('Book created successfully');
-showToast.error('Failed to update book');
-showToast.info('Calculating statistics...');
-showToast.warning('Incomplete data detected');
+```typescript
+import { showToast } from "@/components/ui/toast";
+
+showToast.success("Book created successfully");
+showToast.error("Failed to update book");
+showToast.info("Calculating statistics...");
+showToast.warning("Incomplete data detected");
 ```
 
 ### Optimistic Updates Pattern
+
 All mutations (update, reopen, request review) implement:
+
 1. **onMutate**: Cancel refetch, snapshot previous state, optimistically update cache
 2. **onError**: Rollback to snapshot
 3. **onSuccess**: Invalidate queries to sync with server
@@ -138,6 +152,7 @@ All mutations (update, reopen, request review) implement:
 ## Development Guidelines
 
 ### Code Standards
+
 - **Language**: English (code, comments, commits)
 - **Naming**: camelCase (files/vars), PascalCase (components/types)
 - **Commits**: Conventional Commits (`feat(mobile):`, `fix(mobile):`)
@@ -145,6 +160,7 @@ All mutations (update, reopen, request review) implement:
 - **Errors**: Never throw raw strings, extend `Error` class
 
 ### Testing
+
 ```bash
 npm run test              # Run test suite
 npm run test:coverage     # Generate coverage report
@@ -153,6 +169,7 @@ npm run test:coverage     # Generate coverage report
 Target coverage: 70-80%
 
 ### Accessibility Checklist
+
 - [ ] All Pressable/TouchableOpacity have `accessibilityRole`
 - [ ] Images have `accessibilityLabel`
 - [ ] Color contrast ≥ 4.5:1 (WCAG AA)
@@ -179,12 +196,15 @@ See [backend USE_CASES.md](../api/USE_CASES.MD) for detailed API contracts.
 ## Troubleshooting
 
 ### Network Issues
+
 See [NETWORK_SETUP.md](NETWORK_SETUP.md) for Android emulator configuration.
 
 ### Debugging
+
 See [DEBUGGING.md](DEBUGGING.md) for debugging strategies and tools.
 
 ### Accessibility Testing
+
 See [ACCESSIBILITY.md](ACCESSIBILITY.md) for color contrast ratios and WCAG compliance.
 
 ## Documentation
@@ -197,6 +217,7 @@ See [ACCESSIBILITY.md](ACCESSIBILITY.md) for color contrast ratios and WCAG comp
 ## Contributing
 
 This project follows Clean Architecture principles:
+
 - No business logic in UI components
 - Validation only at form submission boundaries
 - Server state managed by React Query

@@ -20,6 +20,7 @@ This skill is **mandatory** for all domain work in `packages/api/models/`.
 ## When to Apply
 
 **Trigger this skill:**
+
 - After implementing entity behavior
 - Before finalizing pull requests touching domain
 - During code reviews of domain changes
@@ -36,10 +37,12 @@ This skill is **mandatory** for all domain work in `packages/api/models/`.
 **Rule:** Each entity has ONE reason to change.
 
 Before adding logic to an entity:
+
 1. Ask: "Is this behavior intrinsic to this entity?"
 2. If NO, extract to service or value object.
 
 Example:
+
 - ✅ `Book.isReadable()` → Belongs to Book.
 - ❌ `Book.calculateVelocity()` → Belongs to a KPI service.
 
@@ -55,6 +58,7 @@ Example:
 - Avoid over-engineering for hypothetical future cases.
 
 Example:
+
 - ✅ Add `AbandonedBookState` class.
 - ❌ Add `if (status === ABANDONED) { ... }` everywhere.
 
@@ -87,25 +91,30 @@ Example:
 **Before finalizing ANY domain-related change, you MUST explicitly evaluate:**
 
 ### 1. Single Responsibility Principle (SRP)
+
 - [ ] Does this entity have exactly ONE reason to change?
 - [ ] Is this behavior intrinsic to this entity, or does it belong elsewhere?
 - [ ] Can this logic be extracted to a service, value object, or helper?
 
 ### 2. Open/Closed Principle (OCP)
+
 - [ ] Is this change adding new behavior without modifying existing logic?
 - [ ] Am I using polymorphism or strategy patterns instead of conditionals?
 - [ ] Will future changes require modifying this entity again?
 
 ### 3. Liskov Substitution Principle (LSP)
+
 - [ ] If using inheritance, can derived types substitute base types without breaking behavior?
 - [ ] Am I violating any base class contracts?
 
 ### 4. Interface Segregation Principle (ISP)
+
 - [ ] Does this entity expose only the methods it needs?
 - [ ] Am I creating a "god entity" with too many responsibilities?
 - [ ] Can this entity be split into smaller, focused entities?
 
 ### 5. Dependency Inversion Principle (DIP)
+
 - [ ] Does this entity depend on abstractions, not concretions?
 - [ ] Am I importing repositories, services, or infrastructure? (If yes, STOP.)
 - [ ] Are dependencies injected, not hardcoded?
@@ -113,6 +122,7 @@ Example:
 ### Compliance Statement
 
 After checking all five principles, you MUST:
+
 1. Document violations (if any) in code comments.
 2. Propose refactoring if violations are detected.
 3. Justify why the change aligns with SOLID principles.
@@ -127,7 +137,7 @@ After checking all five principles, you MUST:
 
 ```javascript
 // ❌ BAD: Entity depends on infrastructure
-import { BookRepository } from '../repositories/bookRepository.js';
+import { BookRepository } from "../repositories/bookRepository.js";
 
 class Book {
   async save() {
@@ -154,9 +164,15 @@ async function createBook(data, bookRepository) {
 ```javascript
 // ❌ BAD: Book handles reading logic AND KPI calculation
 class Book {
-  logSession(pages) { /* ... */ }
-  calculateVelocity() { /* KPI logic */ }
-  generateReport() { /* Reporting logic */ }
+  logSession(pages) {
+    /* ... */
+  }
+  calculateVelocity() {
+    /* KPI logic */
+  }
+  generateReport() {
+    /* Reporting logic */
+  }
 }
 ```
 
@@ -165,17 +181,23 @@ class Book {
 ```javascript
 // ✅ GOOD: Book handles only book behavior
 class Book {
-  logSession(pages) { /* Book-specific logic */ }
+  logSession(pages) {
+    /* Book-specific logic */
+  }
 }
 
 // KPI service handles calculations
 class KPIService {
-  calculateVelocity(book, sessions) { /* ... */ }
+  calculateVelocity(book, sessions) {
+    /* ... */
+  }
 }
 
 // Report service handles formatting
 class ReportService {
-  generateBookReport(book) { /* ... */ }
+  generateBookReport(book) {
+    /* ... */
+  }
 }
 ```
 

@@ -1,7 +1,7 @@
 /**
  * ReopenBookService Tests
  * Tests for the ReopenBook use case
- * 
+ *
  * Coverage:
  * - ABANDONED → READING transition
  * - Cycle increment
@@ -55,7 +55,7 @@ describe("ReopenBookService", () => {
     service = new ReopenBookService(
       mockMssqlClient,
       mockBookRepository,
-      mockBookStatusHistoryRepository
+      mockBookStatusHistoryRepository,
     );
   });
 
@@ -93,7 +93,7 @@ describe("ReopenBookService", () => {
         1,
         BookStatus.READING,
         3, // New cycle = 2 + 1
-        mockTransaction
+        mockTransaction,
       );
       expect(mockBookStatusHistoryRepository.create).toHaveBeenCalledWith(
         {
@@ -102,7 +102,7 @@ describe("ReopenBookService", () => {
           newStatus: BookStatus.READING,
           readingCycle: 3,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(mockTransaction.commit).toHaveBeenCalled();
     });
@@ -131,7 +131,7 @@ describe("ReopenBookService", () => {
 
       // Act & Assert
       await expect(service.execute(1)).rejects.toThrow(
-        InvalidStateTransitionError
+        InvalidStateTransitionError,
       );
       expect(mockTransaction.begin).not.toHaveBeenCalled();
     });
@@ -149,7 +149,7 @@ describe("ReopenBookService", () => {
 
       // Act & Assert
       await expect(service.execute(1)).rejects.toThrow(
-        InvalidStateTransitionError
+        InvalidStateTransitionError,
       );
       expect(mockTransaction.begin).not.toHaveBeenCalled();
     });
@@ -165,7 +165,7 @@ describe("ReopenBookService", () => {
 
       mockBookRepository.getById.mockResolvedValue(abandonedBook);
       mockBookRepository.updateStatus.mockRejectedValue(
-        new Error("Database error")
+        new Error("Database error"),
       );
 
       // Act & Assert

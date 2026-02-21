@@ -1,11 +1,11 @@
 /**
  * CountryRepository
  * Handles data persistence operations for Country entity
- * 
+ *
  * Responsibilities:
  * - Query countries from database
  * - Create new countries
- * 
+ *
  * Rules:
  * - No business logic
  * - No HTTP concerns
@@ -27,14 +27,14 @@ export class CountryRepository {
   async getAll(filters = {}) {
     const pool = await this.mssqlClient.getConnection();
     const request = pool.request();
-    
+
     let whereClause = "";
-    
+
     if (filters.nameLike) {
       whereClause = "WHERE name LIKE @nameLike";
       request.input("nameLike", sql.NVarChar, `%${filters.nameLike}%`);
     }
-    
+
     const result = await request.query(`
       SELECT 
         id,
@@ -54,10 +54,8 @@ export class CountryRepository {
    */
   async findByName(name) {
     const pool = await this.mssqlClient.getConnection();
-    
-    const result = await pool
-      .request()
-      .input("name", sql.NVarChar, name)
+
+    const result = await pool.request().input("name", sql.NVarChar, name)
       .query(`
         SELECT id, name
         FROM Countries
@@ -75,12 +73,10 @@ export class CountryRepository {
    */
   async create(data, transaction) {
     const { name } = data;
-    
+
     const request = new sql.Request(transaction);
-    
-    const result = await request
-      .input("name", sql.NVarChar, name)
-      .query(`
+
+    const result = await request.input("name", sql.NVarChar, name).query(`
         INSERT INTO Countries (name)
         OUTPUT INSERTED.id, INSERTED.name
         VALUES (@name)

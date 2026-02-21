@@ -1,7 +1,7 @@
 /**
  * Create Book Screen
  * Form for adding new books to the library
- * 
+ *
  * Rules:
  * - Client-side validation before submission
  * - Uses FormInput, FormPicker, and SearchableSelect components
@@ -9,19 +9,19 @@
  * - Form state managed with useState
  * - Server state (mutation) with React Query
  * - Initial status can be selected (defaults to WISH_LIST)
- * 
+ *
  * Features:
  * - Select from existing authors or create new
  * - Nationality field only visible when creating NEW author
  * - Select from existing countries or create new
  * - Choose initial status (WISH_LIST, READING, COMPLETED, ABANDONED)
  * - API handles author/country creation automatically
- * 
+ *
  * UX Behavior:
  * - When typing a new author name: nationality field appears
  * - When selecting existing author: nationality field hides (author already has nationality)
  * - Prevents accidentally changing existing author's nationality
- * 
+ *
  * API Contract:
  * - title (required)
  * - author.name (required)
@@ -31,44 +31,58 @@
  * - status (optional, defaults to WISH_LIST)
  */
 
-import { useState, useMemo } from 'react';
-import { View, Text, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useCreateBook } from '@/hooks/useBooks';
-import { useAuthors } from '@/hooks/useAuthors';
-import { useCountries } from '@/hooks/useCountries';
-import { FormInput } from '@/components/forms/formInput';
-import { FormPicker } from '@/components/forms/formPicker';
-import { SearchableSelect } from '@/components/forms/searchableSelect';
-import { showToast } from '@/components/ui/toast';
-import { BookStatus } from '@/types/book';
-import { BOOK_STATUS_LABELS } from '@/constants/bookStatus';
-import { createBookSchema, getZodErrors } from '@/types/schemas';
-import { Interactive, Background, Text as TextColors } from '@/constants/colors';
+import { useState, useMemo } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { useCreateBook } from "@/hooks/useBooks";
+import { useAuthors } from "@/hooks/useAuthors";
+import { useCountries } from "@/hooks/useCountries";
+import { FormInput } from "@/components/forms/formInput";
+import { FormPicker } from "@/components/forms/formPicker";
+import { SearchableSelect } from "@/components/forms/searchableSelect";
+import { showToast } from "@/components/ui/toast";
+import { BookStatus } from "@/types/book";
+import { BOOK_STATUS_LABELS } from "@/constants/bookStatus";
+import { createBookSchema, getZodErrors } from "@/types/schemas";
+import {
+  Interactive,
+  Background,
+  Text as TextColors,
+} from "@/constants/colors";
 
 export default function CreateBookScreen() {
   const router = useRouter();
   const { mutate: createBook, isPending } = useCreateBook();
   const { data: authors, isLoading: isLoadingAuthors } = useAuthors();
   const { data: countries, isLoading: isLoadingCountries } = useCountries();
-  
+
   // Form state
-  const [title, setTitle] = useState('');
-  const [authorName, setAuthorName] = useState('');
-  const [countryName, setCountryName] = useState('');
-  const [isbn, setIsbn] = useState('');
-  const [totalPages, setTotalPages] = useState('');
+  const [title, setTitle] = useState("");
+  const [authorName, setAuthorName] = useState("");
+  const [countryName, setCountryName] = useState("");
+  const [isbn, setIsbn] = useState("");
+  const [totalPages, setTotalPages] = useState("");
   const [status, setStatus] = useState<BookStatus>(BookStatus.WISH_LIST);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Transform authors and countries to SearchableSelect format
-  const authorItems = authors?.map(a => ({ id: a.id, name: a.name })) || [];
-  const countryItems = countries?.map(c => ({ id: c.id, name: c.name })) || [];
+  const authorItems = authors?.map((a) => ({ id: a.id, name: a.name })) || [];
+  const countryItems =
+    countries?.map((c) => ({ id: c.id, name: c.name })) || [];
 
   // Check if the current author name matches an existing author
   const existingAuthor = useMemo(() => {
     if (!authorName.trim()) return null;
-    return authors?.find(a => a.name.toLowerCase() === authorName.trim().toLowerCase());
+    return authors?.find(
+      (a) => a.name.toLowerCase() === authorName.trim().toLowerCase(),
+    );
   }, [authors, authorName]);
 
   // Only show nationality field when creating a new author
@@ -78,7 +92,7 @@ export default function CreateBookScreen() {
   const handleAuthorSelect = (author: { id: number; name: string }) => {
     setAuthorName(author.name);
     // Clear nationality when selecting an existing author
-    setCountryName('');
+    setCountryName("");
   };
 
   /**
@@ -127,30 +141,33 @@ export default function CreateBookScreen() {
       author: {
         name: authorName.trim(),
         // Only include nationality if creating a new author
-        nationality: isCreatingNewAuthor && countryName.trim() ? countryName.trim() : undefined,
+        nationality:
+          isCreatingNewAuthor && countryName.trim()
+            ? countryName.trim()
+            : undefined,
       },
     };
 
     createBook(bookData, {
       onSuccess: () => {
-        showToast.success('Book created', 'Added to your library');
-        
+        showToast.success("Book created", "Added to your library");
+
         // Reset form
-        setTitle('');
-        setAuthorName('');
-        setCountryName('');
-        setIsbn('');
-        setTotalPages('');
+        setTitle("");
+        setAuthorName("");
+        setCountryName("");
+        setIsbn("");
+        setTotalPages("");
         setStatus(BookStatus.WISH_LIST);
         setErrors({});
-        
+
         // Navigate to books list
-        router.push('/(tabs)');
+        router.push("/(tabs)");
       },
       onError: (error) => {
         showToast.error(
-          'Failed to create book', 
-          error instanceof Error ? error.message : 'Please try again'
+          "Failed to create book",
+          error instanceof Error ? error.message : "Please try again",
         );
       },
     });
@@ -159,9 +176,18 @@ export default function CreateBookScreen() {
   // Show loading state while fetching authors/countries
   if (isLoadingAuthors || isLoadingCountries) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Background.primary }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: Background.primary,
+        }}
+      >
         <ActivityIndicator size="large" color={Interactive.primary.default} />
-        <Text style={{ marginTop: 12, color: TextColors.secondary }}>Loading form...</Text>
+        <Text style={{ marginTop: 12, color: TextColors.secondary }}>
+          Loading form...
+        </Text>
       </View>
     );
   }
@@ -169,13 +195,13 @@ export default function CreateBookScreen() {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      style={{ 
-        flex: 1, 
-        backgroundColor: Background.primary 
+      style={{
+        flex: 1,
+        backgroundColor: Background.primary,
       }}
-      contentContainerStyle={{ 
-        padding: 16, 
-        gap: 16 
+      contentContainerStyle={{
+        padding: 16,
+        gap: 16,
       }}
     >
       <FormInput
@@ -222,10 +248,22 @@ export default function CreateBookScreen() {
         value={status}
         onValueChange={setStatus}
         options={[
-          { label: BOOK_STATUS_LABELS[BookStatus.WISH_LIST], value: BookStatus.WISH_LIST },
-          { label: BOOK_STATUS_LABELS[BookStatus.READING], value: BookStatus.READING },
-          { label: BOOK_STATUS_LABELS[BookStatus.COMPLETED], value: BookStatus.COMPLETED },
-          { label: BOOK_STATUS_LABELS[BookStatus.ABANDONED], value: BookStatus.ABANDONED },
+          {
+            label: BOOK_STATUS_LABELS[BookStatus.WISH_LIST],
+            value: BookStatus.WISH_LIST,
+          },
+          {
+            label: BOOK_STATUS_LABELS[BookStatus.READING],
+            value: BookStatus.READING,
+          },
+          {
+            label: BOOK_STATUS_LABELS[BookStatus.COMPLETED],
+            value: BookStatus.COMPLETED,
+          },
+          {
+            label: BOOK_STATUS_LABELS[BookStatus.ABANDONED],
+            value: BookStatus.ABANDONED,
+          },
         ]}
         accessibilityLabel="Initial book status"
         accessibilityHint="Select the starting status for this book. Defaults to Wish List"
@@ -258,32 +296,33 @@ export default function CreateBookScreen() {
         accessibilityRole="button"
         accessibilityLabel="Create book"
         accessibilityHint="Creates a new book with the entered information"
-        accessibilityState={{ 
-          disabled: !isFormValid() || isPending, 
-          busy: isPending 
+        accessibilityState={{
+          disabled: !isFormValid() || isPending,
+          busy: isPending,
         }}
         style={({ pressed }) => ({
-          backgroundColor: !isFormValid() || isPending
-            ? Interactive.primary.disabled
-            : pressed 
-              ? Interactive.primary.pressed 
-              : Interactive.primary.default,
+          backgroundColor:
+            !isFormValid() || isPending
+              ? Interactive.primary.disabled
+              : pressed
+                ? Interactive.primary.pressed
+                : Interactive.primary.default,
           padding: 16,
           borderRadius: 12,
-          borderCurve: 'continuous',
-          alignItems: 'center',
+          borderCurve: "continuous",
+          alignItems: "center",
           marginTop: 8,
           opacity: !isFormValid() || isPending ? 0.7 : 1,
         })}
       >
-        <Text 
-          style={{ 
-            color: Interactive.primary.text, 
-            fontSize: 17, 
-            fontWeight: '600' 
+        <Text
+          style={{
+            color: Interactive.primary.text,
+            fontSize: 17,
+            fontWeight: "600",
           }}
         >
-          {isPending ? 'Creating...' : 'Create Book'}
+          {isPending ? "Creating..." : "Create Book"}
         </Text>
       </Pressable>
     </ScrollView>

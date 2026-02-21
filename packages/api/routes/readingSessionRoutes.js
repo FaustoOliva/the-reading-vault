@@ -1,12 +1,12 @@
 /**
  * Reading Session Routes
  * Defines HTTP routes for reading session operations
- * 
+ *
  * Responsibilities:
  * - Declare HTTP routes
  * - Bind routes to controller methods
  * - Apply route-level middlewares
- * 
+ *
  * Rules:
  * - No business logic
  * - No validation
@@ -27,7 +27,7 @@ export default function readingSessionRoutes(getController) {
    * Body: { bookId, pagesRead, occurredAt? }
    */
   router.post("/reading-sessions", (req, res, next) =>
-    getController(ReadingSessionsController).logSession(req, res, next)
+    getController(ReadingSessionsController).logSession(req, res, next),
   );
 
   return router;

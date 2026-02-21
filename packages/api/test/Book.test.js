@@ -1,7 +1,7 @@
 /**
  * Book Domain Entity Test Suite
  * Tests for Book domain model and FSM behavior
- * 
+ *
  * Pattern: AAA (Arrange-Act-Assert)
  * Focus: Invariants, state transitions, business logic
  */
@@ -26,7 +26,7 @@ describe("Book Domain Entity", () => {
         status_code: BookStatus.READING,
         current_reading_cycle: 1,
         score: null,
-        comment: null
+        comment: null,
       };
 
       // Act
@@ -58,7 +58,7 @@ describe("Book Domain Entity", () => {
         status_code: BookStatus.COMPLETED,
         current_reading_cycle: 1,
         score: 5,
-        comment: "Essential reading for software architects"
+        comment: "Essential reading for software architects",
       };
 
       // Act
@@ -84,7 +84,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.READING,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act
@@ -98,13 +98,13 @@ describe("Book Domain Entity", () => {
         author: {
           id: 1,
           name: "Robert C. Martin",
-          nationality: "United States"
+          nationality: "United States",
         },
         totalPages: 464,
         status: BookStatus.READING,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
     });
   });
@@ -123,7 +123,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.READING,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act
@@ -146,7 +146,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act
@@ -169,7 +169,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.COMPLETED,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act
@@ -194,7 +194,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.COMPLETED,
         currentReadingCycle: 1,
         score: 5,
-        comment: "Great book!"
+        comment: "Great book!",
       });
 
       // Act
@@ -217,7 +217,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.ABANDONED,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act
@@ -240,7 +240,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.READING,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act
@@ -263,7 +263,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act
@@ -288,7 +288,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act & Assert
@@ -308,7 +308,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.READING,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act & Assert
@@ -328,7 +328,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.COMPLETED,
         currentReadingCycle: 1,
         score: 5,
-        comment: "Done!"
+        comment: "Done!",
       });
 
       // Act & Assert
@@ -348,7 +348,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.ABANDONED,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act & Assert
@@ -371,7 +371,7 @@ describe("Book Domain Entity", () => {
           status: BookStatus.WISH_LIST,
           currentReadingCycle: 1,
           score: null,
-          comment: null
+          comment: null,
         });
 
         // Act
@@ -382,7 +382,7 @@ describe("Book Domain Entity", () => {
           oldStatus: BookStatus.WISH_LIST,
           newStatus: BookStatus.READING,
           newCycle: 1,
-          shouldTransition: true
+          shouldTransition: true,
         });
       });
 
@@ -399,7 +399,7 @@ describe("Book Domain Entity", () => {
           status: BookStatus.WISH_LIST,
           currentReadingCycle: 1,
           score: null,
-          comment: null
+          comment: null,
         });
 
         // Act
@@ -425,7 +425,7 @@ describe("Book Domain Entity", () => {
           status: BookStatus.COMPLETED,
           currentReadingCycle: 1,
           score: 5,
-          comment: "Great!"
+          comment: "Great!",
         });
 
         // Act
@@ -436,7 +436,7 @@ describe("Book Domain Entity", () => {
           oldStatus: BookStatus.COMPLETED,
           newStatus: BookStatus.READING,
           newCycle: 2,
-          shouldTransition: true
+          shouldTransition: true,
         });
       });
 
@@ -453,7 +453,7 @@ describe("Book Domain Entity", () => {
           status: BookStatus.COMPLETED,
           currentReadingCycle: 2,
           score: 5,
-          comment: "Still great!"
+          comment: "Still great!",
         });
 
         // Act
@@ -479,7 +479,7 @@ describe("Book Domain Entity", () => {
           status: BookStatus.READING,
           currentReadingCycle: 1,
           score: null,
-          comment: null
+          comment: null,
         });
 
         // Act - Reading last 50 pages (already read 150)
@@ -490,7 +490,7 @@ describe("Book Domain Entity", () => {
           oldStatus: BookStatus.READING,
           newStatus: BookStatus.PENDING_SCORE,
           newCycle: 1,
-          shouldTransition: true
+          shouldTransition: true,
         });
       });
 
@@ -507,7 +507,7 @@ describe("Book Domain Entity", () => {
           status: BookStatus.READING,
           currentReadingCycle: 1,
           score: null,
-          comment: null
+          comment: null,
         });
 
         // Act - Over-reading (edge case that shouldn't happen due to validation)
@@ -531,7 +531,7 @@ describe("Book Domain Entity", () => {
           status: BookStatus.READING,
           currentReadingCycle: 1,
           score: null,
-          comment: null
+          comment: null,
         });
 
         // Act
@@ -542,7 +542,7 @@ describe("Book Domain Entity", () => {
           oldStatus: BookStatus.READING,
           newStatus: BookStatus.READING,
           newCycle: 1,
-          shouldTransition: false
+          shouldTransition: false,
         });
       });
     });
@@ -561,7 +561,7 @@ describe("Book Domain Entity", () => {
           status: BookStatus.WISH_LIST,
           currentReadingCycle: 1,
           score: null,
-          comment: null
+          comment: null,
         });
 
         // Act - Read entire book in one session
@@ -573,7 +573,7 @@ describe("Book Domain Entity", () => {
           oldStatus: BookStatus.WISH_LIST,
           newStatus: BookStatus.READING,
           newCycle: 1,
-          shouldTransition: true
+          shouldTransition: true,
         });
       });
 
@@ -590,7 +590,7 @@ describe("Book Domain Entity", () => {
           status: BookStatus.COMPLETED,
           currentReadingCycle: 1,
           score: 5,
-          comment: "Loved it!"
+          comment: "Loved it!",
         });
 
         // Act - Re-read entire book in one session
@@ -602,7 +602,7 @@ describe("Book Domain Entity", () => {
           oldStatus: BookStatus.COMPLETED,
           newStatus: BookStatus.READING,
           newCycle: 2, // Cycle incremented
-          shouldTransition: true
+          shouldTransition: true,
         });
       });
     });
@@ -621,7 +621,7 @@ describe("Book Domain Entity", () => {
           status: BookStatus.READING,
           currentReadingCycle: 1,
           score: null,
-          comment: null
+          comment: null,
         });
 
         // Act
@@ -649,7 +649,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.READING,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act
@@ -672,7 +672,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.READING,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act
@@ -695,7 +695,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act
@@ -718,7 +718,7 @@ describe("Book Domain Entity", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Act

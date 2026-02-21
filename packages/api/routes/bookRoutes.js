@@ -1,12 +1,12 @@
 /**
  * Book Routes
  * Defines HTTP routes for book-related operations
- * 
+ *
  * Responsibilities:
  * - Declare HTTP routes
  * - Bind routes to controller methods
  * - Apply route-level middlewares
- * 
+ *
  * Rules:
  * - No business logic
  * - No validation
@@ -27,7 +27,7 @@ export default function bookRoutes(getController) {
    * Query params: status, authorId
    */
   router.get("/books", (req, res, next) =>
-    getController(BooksController).getBooks(req, res, next)
+    getController(BooksController).getBooks(req, res, next),
   );
 
   /**
@@ -36,7 +36,7 @@ export default function bookRoutes(getController) {
    * Body: { title, isbn?, totalPages?, author: { name, nationality? } }
    */
   router.post("/books", (req, res, next) =>
-    getController(BooksController).createBook(req, res, next)
+    getController(BooksController).createBook(req, res, next),
   );
 
   /**
@@ -45,7 +45,7 @@ export default function bookRoutes(getController) {
    * Params: id (number)
    */
   router.get("/books/:id", (req, res, next) =>
-    getController(BooksController).getBookById(req, res, next)
+    getController(BooksController).getBookById(req, res, next),
   );
 
   /**
@@ -55,7 +55,7 @@ export default function bookRoutes(getController) {
    * Body: { title?, totalPages?, score?, comment? }
    */
   router.put("/books/:id", (req, res, next) =>
-    getController(BooksController).updateBook(req, res, next)
+    getController(BooksController).updateBook(req, res, next),
   );
 
   /**
@@ -65,7 +65,7 @@ export default function bookRoutes(getController) {
    * Body: { targetStatus: 'COMPLETED'|'ABANDONED', score, comment? }
    */
   router.patch("/books/:id/review", (req, res, next) =>
-    getController(BooksController).reviewBook(req, res, next)
+    getController(BooksController).reviewBook(req, res, next),
   );
 
   /**
@@ -76,7 +76,7 @@ export default function bookRoutes(getController) {
    * Body: none
    */
   router.patch("/books/:id/request-review", (req, res, next) =>
-    getController(BooksController).requestReview(req, res, next)
+    getController(BooksController).requestReview(req, res, next),
   );
 
   /**
@@ -86,7 +86,7 @@ export default function bookRoutes(getController) {
    * Body: none
    */
   router.patch("/books/:id/reopen", (req, res, next) =>
-    getController(BooksController).reopenBook(req, res, next)
+    getController(BooksController).reopenBook(req, res, next),
   );
 
   /**
@@ -95,7 +95,7 @@ export default function bookRoutes(getController) {
    * Params: id (number)
    */
   router.get("/books/:id/stats", (req, res, next) =>
-    getController(BooksController).getBookStats(req, res, next)
+    getController(BooksController).getBookStats(req, res, next),
   );
 
   return router;

@@ -1,13 +1,13 @@
 /**
  * GetBookByIdService (Query Use Case)
  * Retrieves detailed information about a single book
- * 
+ *
  * Responsibilities:
  * - Implement GetBookById use case as defined in USE_CASES.md
  * - Orchestrate repository calls to gather book details and statistics
  * - Calculate derived metrics (velocity, estimated completion)
  * - Return BookDetails structure
- * 
+ *
  * Rules:
  * - Framework-agnostic
  * - No validation (handled by controller)
@@ -37,22 +37,27 @@ export class GetBookByIdService {
     }
 
     // Get current cycle statistics
-    const currentCycleStats = await this.readingSessionRepository.getCurrentCycleStats(
-      bookId,
-      book.currentReadingCycle
-    );
+    const currentCycleStats =
+      await this.readingSessionRepository.getCurrentCycleStats(
+        bookId,
+        book.currentReadingCycle,
+      );
 
     // Get reading cycle history
-    const cycleHistory = await this.readingSessionRepository.getCycleHistory(bookId);
+    const cycleHistory =
+      await this.readingSessionRepository.getCycleHistory(bookId);
 
     // Calculate derived metrics for current cycle
     const currentCycleMetrics = this._calculateCurrentCycleMetrics(
       currentCycleStats,
-      book.totalPages
+      book.totalPages,
     );
 
     // Format cycle history
-    const formattedCycleHistory = this._formatCycleHistory(cycleHistory, book.status);
+    const formattedCycleHistory = this._formatCycleHistory(
+      cycleHistory,
+      book.status,
+    );
 
     // Build complete response
     return {
@@ -63,7 +68,7 @@ export class GetBookByIdService {
         author: {
           id: book.authorId,
           name: book.authorName,
-          nationality: book.authorNationality
+          nationality: book.authorNationality,
         },
         total_pages: book.totalPages,
         status: book.status,
@@ -72,7 +77,7 @@ export class GetBookByIdService {
         pages_read_in_current_cycle: currentCycleStats.pages_read,
         score: book.score,
         comment: book.comment,
-        created_at: book.createdAt || new Date()
+        created_at: book.createdAt || new Date(),
       },
       current_cycle_stats: {
         sessions_count: currentCycleStats.sessions_count,
@@ -80,9 +85,9 @@ export class GetBookByIdService {
         last_session_date: currentCycleStats.last_session_date,
         days_elapsed: currentCycleMetrics.days_elapsed,
         velocity: currentCycleMetrics.velocity,
-        estimated_completion: currentCycleMetrics.estimated_completion
+        estimated_completion: currentCycleMetrics.estimated_completion,
       },
-      reading_cycles: formattedCycleHistory
+      reading_cycles: formattedCycleHistory,
     };
   }
 
@@ -98,7 +103,8 @@ export class GetBookByIdService {
     if (stats.first_session_date && stats.last_session_date) {
       const firstDate = new Date(stats.first_session_date);
       const lastDate = new Date(stats.last_session_date);
-      days_elapsed = Math.ceil((lastDate - firstDate) / (1000 * 60 * 60 * 24)) + 1;
+      days_elapsed =
+        Math.ceil((lastDate - firstDate) / (1000 * 60 * 60 * 24)) + 1;
 
       // Calculate velocity (pages/day)
       if (days_elapsed > 0 && stats.pages_read > 0) {
@@ -110,13 +116,18 @@ export class GetBookByIdService {
           if (remainingPages > 0) {
             const today = new Date();
             const daysToComplete = Math.ceil(remainingPages / velocity);
-            
+
             // Add penalty for inactivity: days since last session
-            const daysSinceLastSession = Math.ceil((today - lastDate) / (1000 * 60 * 60 * 24));
-            const adjustedDaysToComplete = daysToComplete + daysSinceLastSession;
-            
+            const daysSinceLastSession = Math.ceil(
+              (today - lastDate) / (1000 * 60 * 60 * 24),
+            );
+            const adjustedDaysToComplete =
+              daysToComplete + daysSinceLastSession;
+
             estimated_completion = new Date(today);
-            estimated_completion.setDate(estimated_completion.getDate() + adjustedDaysToComplete);
+            estimated_completion.setDate(
+              estimated_completion.getDate() + adjustedDaysToComplete,
+            );
           }
         }
       }
@@ -125,7 +136,7 @@ export class GetBookByIdService {
     return {
       days_elapsed,
       velocity,
-      estimated_completion
+      estimated_completion,
     };
   }
 
@@ -134,14 +145,18 @@ export class GetBookByIdService {
    * @private
    */
   _formatCycleHistory(cycleHistory, currentStatus) {
-    return cycleHistory.map(cycle => ({
+    return cycleHistory.map((cycle) => ({
       cycle_number: cycle.cycle_number,
-      status: this._getCycleStatus(cycle.cycle_number, cycleHistory.length, currentStatus),
+      status: this._getCycleStatus(
+        cycle.cycle_number,
+        cycleHistory.length,
+        currentStatus,
+      ),
       sessions_count: cycle.sessions_count,
       total_pages_read: cycle.total_pages_read,
       first_session: cycle.first_session,
       last_session: cycle.last_session,
-      duration_days: cycle.duration_days + 1 // +1 to include both first and last day
+      duration_days: cycle.duration_days + 1, // +1 to include both first and last day
     }));
   }
 
@@ -154,7 +169,7 @@ export class GetBookByIdService {
     if (cycleNumber === totalCycles) {
       return currentBookStatus;
     }
-    
+
     // Previous cycles were abandoned or restarted
     return "READING"; // Historical cycles that led to restarts
   }

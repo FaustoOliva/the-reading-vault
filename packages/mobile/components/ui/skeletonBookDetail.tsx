@@ -1,15 +1,15 @@
 /**
  * SkeletonBookDetail Component
  * Loading placeholder for book detail screen
- * 
+ *
  * Rules:
  * - Match general layout of BookDetailHero + cards
  * - Use subtle opacity for skeleton elements
  * - Simple rectangular shapes
  */
 
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { Background, Border } from '@/constants/colors';
+import { View, ScrollView, StyleSheet } from "react-native";
+import { Background, Border } from "@/constants/colors";
 
 export function SkeletonBookDetail() {
   return (
@@ -66,35 +66,35 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   titleLarge: {
-    width: '90%',
+    width: "90%",
     height: 24,
     backgroundColor: Border.default,
     borderRadius: 4,
     opacity: 0.5,
   },
   subtitle: {
-    width: '70%',
+    width: "70%",
     height: 18,
     backgroundColor: Border.default,
     borderRadius: 4,
     opacity: 0.5,
   },
   header: {
-    width: '50%',
+    width: "50%",
     height: 20,
     backgroundColor: Border.default,
     borderRadius: 4,
     opacity: 0.5,
   },
   bar: {
-    width: '100%',
+    width: "100%",
     height: 12,
     backgroundColor: Border.default,
     borderRadius: 6,
     opacity: 0.5,
   },
   actionsRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginTop: 8,
   },
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   statsGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   gridItem: {
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   cycleItem: {
-    width: '100%',
+    width: "100%",
     height: 80,
     backgroundColor: Border.default,
     borderRadius: 8,

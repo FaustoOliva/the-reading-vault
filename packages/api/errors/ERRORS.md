@@ -23,13 +23,13 @@ errors/
 
 Every `AppError` instance carries:
 
-| Property      | Type    | Purpose                                        |
-| ------------- | ------- | ---------------------------------------------- |
-| message       | string  | Descriptive error message                      |
-| statusCode    | number  | HTTP status code (400, 401, 404, etc.)         |
-| isOperational | boolean | `true` = expected; `false` = critical bug      |
-| timestamp     | string  | ISO timestamp of error creation                |
-| stack         | string  | JavaScript stack trace (auto-captured)         |
+| Property      | Type    | Purpose                                   |
+| ------------- | ------- | ----------------------------------------- |
+| message       | string  | Descriptive error message                 |
+| statusCode    | number  | HTTP status code (400, 401, 404, etc.)    |
+| isOperational | boolean | `true` = expected; `false` = critical bug |
+| timestamp     | string  | ISO timestamp of error creation           |
+| stack         | string  | JavaScript stack trace (auto-captured)    |
 
 Optional properties (per error type):
 
@@ -63,11 +63,11 @@ import {
 
 ### HTTP Status Codes by Error Type
 
-| Error Class           | Code | Use Case                                     |
-| --------------------- | ---- | -------------------------------------------- |
-| BadRequestError       | 400  | Input validation failures, invalid data      |
-| NotFoundError         | 404  | Resource does not exist                      |
-| ConflictError         | 409  | Duplicate resource or state conflict         |
+| Error Class     | Code | Use Case                                |
+| --------------- | ---- | --------------------------------------- |
+| BadRequestError | 400  | Input validation failures, invalid data |
+| NotFoundError   | 404  | Resource does not exist                 |
+| ConflictError   | 409  | Duplicate resource or state conflict    |
 
 ---
 
@@ -148,6 +148,7 @@ When `globalErrorMiddleware` catches an `AppError`:
 ```
 
 **Notes:**
+
 - `details` is included only if present in the error instance.
 - `resource` is included only if present in the error instance.
 - `stack` is included only in development environment.
@@ -179,6 +180,7 @@ When `globalErrorMiddleware` catches an `AppError`:
 ```
 
 **Notes:**
+
 - Production: generic error message.
 - Development: actual error message and stack trace.
 

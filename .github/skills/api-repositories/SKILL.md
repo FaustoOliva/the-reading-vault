@@ -6,6 +6,7 @@ description: Rules for implementing repository pattern for data persistence in t
 ## Scope
 
 This skill applies when:
+
 - Creating new repositories
 - Modifying existing repositories
 - Implementing data persistence operations
@@ -16,6 +17,7 @@ This skill applies when:
 ## Source of Truth
 
 Repository implementation rules are defined in:
+
 1. ARCHITECTURE.MD (layer responsibilities)
 2. EXECUTION_CONTRACT.md (transaction rules)
 3. This skill (implementation patterns)
@@ -25,12 +27,14 @@ Repository implementation rules are defined in:
 ## Repository Responsibilities
 
 Repositories MUST:
+
 - Handle data persistence operations
 - Translate DB records into domain entities
 - Accept transaction/session as parameter when needed
 - Return domain entities (Book, ReadingSession, etc.)
 
 Repositories MUST NOT:
+
 - Contain business logic
 - Know about HTTP status codes or errors
 - Validate input (validation is in controllers)
@@ -43,10 +47,12 @@ Repositories MUST NOT:
 **Location:** `packages/api/infraestructure/repositories/`
 
 **Naming Convention:**
+
 - File: `<entity>Repository.js` (camelCase)
 - Class: `<Entity>Repository` (PascalCase)
 
 **Example:**
+
 ```
 infraestructure/
   repositories/
@@ -73,6 +79,7 @@ export class BookRepository {
 ### Transaction Handling Patterns
 
 **Read operations (no transaction):**
+
 ```javascript
 // ✅ Read operation - always outside transaction
 async getById(bookId) {
@@ -80,7 +87,7 @@ async getById(bookId) {
   const result = await pool.request()
     .input("bookId", sql.Int, bookId)
     .query("SELECT * FROM Books WHERE id = @bookId");
-  
+
   if (result.recordset.length === 0) return null;
   return Book.fromDatabase(result.recordset[0]);
 }
@@ -91,12 +98,13 @@ async getTotalPagesInCycle(bookId, cycle) {
     .input("bookId", sql.Int, bookId)
     .input("cycle", sql.Int, cycle)
     .query("SELECT ISNULL(SUM(pages_read), 0) as total FROM ReadingSessions WHERE book_id = @bookId AND reading_cycle = @cycle");
-  
+
   return result.recordset[0].total;
 }
 ```
 
 **Write operations (transaction required):**
+
 ```javascript
 // ✅ Write operations always require transaction
 async create(data, transaction) {
@@ -104,7 +112,7 @@ async create(data, transaction) {
   const result = await request
     .input("title", sql.NVarChar, data.title)
     .query("INSERT INTO Books (...) OUTPUT INSERTED.* VALUES (...)");
-  
+
   return Book.fromDatabase(result.recordset[0]);
 }
 
@@ -131,11 +139,11 @@ async getById(bookId) {
   const result = await pool.request()
     .input("bookId", sql.Int, bookId)
     .query(query);
-    
+
   if (result.recordset.length === 0) {
     return null;
   }
-  
+
   return Book.fromDatabase(result.recordset[0]);
 }
 
@@ -162,7 +170,7 @@ async getById(bookId) {
     INNER JOIN Authors a ON b.author_id = a.id
     WHERE b.id = @bookId
   `;
-  
+
   const result = await pool.request()
     .input("bookId", sql.Int, bookId)
     .query(query);
@@ -177,21 +185,21 @@ async getById(bookId) {
 // ✅ CORRECT: Delegate to QueryBuilder
 async getAll(filters = {}, pagination = { page: 1, limit: 10 }) {
   const queryBuilder = new BookQueryBuilder();
-  
+
   if (filters.status) {
     queryBuilder.withStatus(filters.status);
   }
-  
+
   if (filters.authorId) {
     queryBuilder.withAuthorId(filters.authorId);
   }
-  
+
   queryBuilder.paginate(pagination.page, pagination.limit);
-  
+
   const selectQuery = queryBuilder.buildSelectQuery();
   const selectRequest = pool.request();
   queryBuilder.applyParameters(selectRequest);
-  
+
   const dataResult = await selectRequest.query(selectQuery);
   return dataResult.recordset.map(record => Book.fromDatabase(record));
 }
@@ -249,13 +257,13 @@ async getAll(filters, pagination) {
 
 ## Return Value Conventions
 
-| Operation | Return Type | Null Behavior |
-|-----------|-------------|---------------|
-| `getById(id)` | `Entity \| null` | null if not found |
-| `getAll(filters)` | `Entity[]` | Empty array if none |
-| `create(data, tx)` | `Entity` | Never null |
-| `update(id, data, tx)` | `void` | Throws if not found |
-| `delete(id, tx)` | `void` | Throws if not found |
+| Operation              | Return Type      | Null Behavior       |
+| ---------------------- | ---------------- | ------------------- |
+| `getById(id)`          | `Entity \| null` | null if not found   |
+| `getAll(filters)`      | `Entity[]`       | Empty array if none |
+| `create(data, tx)`     | `Entity`         | Never null          |
+| `update(id, data, tx)` | `void`           | Throws if not found |
+| `delete(id, tx)`       | `void`           | Throws if not found |
 
 ---
 
@@ -267,12 +275,12 @@ async getAll(filters, pagination) {
 /**
  * <Entity>Repository
  * Handles data persistence operations for <Entity> entity
- * 
+ *
  * Responsibilities:
  * - Query <entities> from database
  * - Translate DB records into <Entity> domain entities
  * - [Additional responsibilities]
- * 
+ *
  * Rules:
  * - No business logic
  * - No HTTP concerns
@@ -291,7 +299,7 @@ async getAll(filters, pagination) {
 ❌ Returning raw database records  
 ❌ Using global database connection  
 ❌ Mixing sync and async code  
-❌ Logging (except critical DB errors)  
+❌ Logging (except critical DB errors)
 
 ---
 
@@ -302,6 +310,7 @@ async getAll(filters, pagination) {
 ### Read Operations
 
 **Standalone reads (no transaction):**
+
 ```javascript
 async getById(id)           // Single record by ID
 async getAll(filters)       // Multiple records with filters
@@ -309,6 +318,7 @@ async findByIsbn(isbn)      // Find by unique constraint
 ```
 
 **Transactional reads (within transaction context):**
+
 ```javascript
 async getByIdInTransaction(id, transaction)
 async findByIsbnInTransaction(isbn, transaction)
@@ -316,6 +326,7 @@ async getTotalPagesInCycleInTransaction(bookId, cycle, transaction)
 ```
 
 **When to use transactional reads:**
+
 - Reading data that will be modified in the same transaction
 - Need consistent snapshot within transaction isolation level
 - Avoiding race conditions on concurrent operations
@@ -323,6 +334,7 @@ async getTotalPagesInCycleInTransaction(bookId, cycle, transaction)
 ### Write Operations
 
 **All writes require transaction (mandatory last parameter):**
+
 ```javascript
 async create(data, transaction)
 async update(id, data, transaction)

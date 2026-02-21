@@ -8,6 +8,7 @@ description: Expo runtime constraints, when to use Expo Go vs custom builds, lib
 ## When to Use
 
 Apply when:
+
 - Starting or running the Expo app
 - Choosing between Expo Go and custom builds
 - Selecting libraries or native modules
@@ -24,6 +25,7 @@ npx expo start
 Scan the QR code with Expo Go app. This provides instant reload and works for 95% of features.
 
 **Custom builds ONLY when:**
+
 - Using custom native code in `modules/`
 - Using third-party native modules not in Expo Go
 - Testing platform-specific extensions (widgets, app clips)
@@ -33,6 +35,7 @@ If unsure, try Expo Go. Custom builds (`npx expo run:ios/android`) add complexit
 ## Library Preferences
 
 **MUST use:**
+
 - `expo-image` for all images (not `react-native` Image)
 - `expo-router` for navigation (file-based routing)
 - `react-native-safe-area-context` for safe areas (not SafeAreaView)
@@ -40,12 +43,14 @@ If unsure, try Expo Go. Custom builds (`npx expo run:ios/android`) add complexit
 - `@tanstack/react-query` for server state
 
 **MUST NOT use:**
+
 - Removed RN modules: Picker, WebView, AsyncStorage, SafeAreaView
 - `expo-permissions` (legacy, use specific APIs)
 - `axios` (prefer fetch)
 - `Platform.OS` (use `process.env.EXPO_OS`)
 
 **Image sources:**
+
 - SF Symbols: `<Image source="sf:name" />`
 - Local: `require('./path/to/image.png')`
 - Remote: `{ uri: 'https://...' }`
@@ -53,11 +58,13 @@ If unsure, try Expo Go. Custom builds (`npx expo run:ios/android`) add complexit
 ## File Conventions
 
 **Naming:**
+
 - Files: kebab-case (`book-list-screen.tsx`, `use-books.ts`)
 - Components: PascalCase export from kebab-case file
 - No special characters in filenames
 
 **Structure:**
+
 - Routes only in `app/` directory
 - Components in `components/`
 - Hooks in `hooks/`
@@ -66,6 +73,7 @@ If unsure, try Expo Go. Custom builds (`npx expo run:ios/android`) add complexit
 - Never co-locate non-route code in `app/`
 
 **TypeScript:**
+
 - Use path aliases from `tsconfig.json` (prefer `@/components/...` over `../../`)
 - Always import types explicitly
 
@@ -74,7 +82,7 @@ If unsure, try Expo Go. Custom builds (`npx expo run:ios/android`) add complexit
 Access via `process.env.EXPO_PUBLIC_*`:
 
 ```typescript
-const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 ```
 
 All public env vars must be prefixed with `EXPO_PUBLIC_`.

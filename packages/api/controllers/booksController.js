@@ -115,7 +115,7 @@ export class BooksController {
     reopenBookService,
     requestReviewService,
     createBookService,
-    getBookReadingStatsService
+    getBookReadingStatsService,
   ) {
     this.getBooksService = getBooksService;
     this.getBookByIdService = getBookByIdService;

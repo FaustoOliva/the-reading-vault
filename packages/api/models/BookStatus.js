@@ -1,9 +1,9 @@
 /**
  * BookStatus Enum
  * Defines all valid book status values in the system
- * 
+ *
  * This enum must match the internal_code values in BookStatuses table
- * 
+ *
  * Lifecycle:
  * WISH_LIST → READING (first session logged)
  * READING → PENDING_SCORE (all pages completed, awaits user review)
@@ -14,11 +14,11 @@
  */
 
 export const BookStatus = Object.freeze({
-  WISH_LIST: 'WISH_LIST',
-  READING: 'READING',
-  COMPLETED: 'COMPLETED',
-  ABANDONED: 'ABANDONED',
-  PENDING_SCORE: 'PENDING_SCORE'
+  WISH_LIST: "WISH_LIST",
+  READING: "READING",
+  COMPLETED: "COMPLETED",
+  ABANDONED: "ABANDONED",
+  PENDING_SCORE: "PENDING_SCORE",
 });
 
 /**

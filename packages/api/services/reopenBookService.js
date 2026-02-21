@@ -1,12 +1,12 @@
 /**
  * ReopenBookService (Command Use Case)
  * Reopens an ABANDONED book, transitioning it back to READING status
- * 
+ *
  * Responsibilities:
  * - Validate book is ABANDONED
  * - Transition to READING and increment cycle
  * - Insert status history
- * 
+ *
  * Rules:
  * - Framework-agnostic
  * - No validation (handled by controller)
@@ -55,7 +55,7 @@ export class ReopenBookService {
         bookId,
         "READING",
         newCycle,
-        transaction
+        transaction,
       );
 
       // 3.2 Insert BookStatusHistory
@@ -64,9 +64,9 @@ export class ReopenBookService {
           bookId,
           oldStatus: book.status,
           newStatus: "READING",
-          readingCycle: newCycle
+          readingCycle: newCycle,
         },
-        transaction
+        transaction,
       );
 
       await transaction.commit();

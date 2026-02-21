@@ -2,14 +2,14 @@
  * Edit Book Modal
  * Modal for editing book metadata (title, totalPages, score, comment)
  * Does not change book status
- * 
+ *
  * Design Rules:
  * - All fields are optional (partial updates)
  * - Score range: 0-10
  * - Uses accessible colors from @/constants/colors
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Modal,
   View,
@@ -18,18 +18,18 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
-} from 'react-native';
-import { useUpdateBook } from '@/hooks/useBooks';
-import { Book } from '@/types/book';
-import { editBookSchema, getZodErrors } from '@/types/schemas';
-import { showToast } from '@/components/ui/toast';
+} from "react-native";
+import { useUpdateBook } from "@/hooks/useBooks";
+import { Book } from "@/types/book";
+import { editBookSchema, getZodErrors } from "@/types/schemas";
+import { showToast } from "@/components/ui/toast";
 import {
   Background,
   Text as TextColors,
   Border,
   Interactive,
   Feedback,
-} from '@/constants/colors';
+} from "@/constants/colors";
 
 interface EditBookModalProps {
   visible: boolean;
@@ -40,10 +40,10 @@ interface EditBookModalProps {
 export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
   const [title, setTitle] = useState<string>(book.title);
   const [totalPages, setTotalPages] = useState<string>(
-    book.totalPages?.toString() || ''
+    book.totalPages?.toString() || "",
   );
-  const [score, setScore] = useState<string>(book.score?.toString() || '');
-  const [comment, setComment] = useState<string>(book.comment || '');
+  const [score, setScore] = useState<string>(book.score?.toString() || "");
+  const [comment, setComment] = useState<string>(book.comment || "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const updateMutation = useUpdateBook();
@@ -51,9 +51,9 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
   // Reset form when book changes
   useEffect(() => {
     setTitle(book.title);
-    setTotalPages(book.totalPages?.toString() || '');
-    setScore(book.score?.toString() || '');
-    setComment(book.comment || '');
+    setTotalPages(book.totalPages?.toString() || "");
+    setScore(book.score?.toString() || "");
+    setComment(book.comment || "");
     setErrors({});
   }, [book, visible]);
 
@@ -101,13 +101,13 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
       updates.score = scoreNum || undefined;
     }
 
-    if (comment.trim() !== (book.comment || '')) {
+    if (comment.trim() !== (book.comment || "")) {
       updates.comment = comment.trim() || undefined;
     }
 
     // Check if anything changed
     if (Object.keys(updates).length === 0) {
-      showToast.info('No changes', 'No fields were modified');
+      showToast.info("No changes", "No fields were modified");
       return;
     }
 
@@ -118,16 +118,16 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
       },
       {
         onSuccess: () => {
-          showToast.success('Book updated', 'Changes saved successfully');
+          showToast.success("Book updated", "Changes saved successfully");
           onClose();
         },
         onError: (error: any) => {
           showToast.error(
-            'Update failed',
-            error?.message || 'Failed to update book'
+            "Update failed",
+            error?.message || "Failed to update book",
           );
         },
-      }
+      },
     );
   };
 
@@ -151,7 +151,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
           <Text
             style={{
               fontSize: 20,
-              fontWeight: '600',
+              fontWeight: "600",
               color: TextColors.primary,
               marginBottom: 4,
             }}
@@ -177,7 +177,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
             <Text
               style={{
                 fontSize: 15,
-                fontWeight: '600',
+                fontWeight: "600",
                 color: TextColors.primary,
               }}
             >
@@ -186,9 +186,11 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
             <TextInput
               style={{
                 borderWidth: 1,
-                borderColor: errors.title ? Feedback.error.border : Border.default,
+                borderColor: errors.title
+                  ? Feedback.error.border
+                  : Border.default,
                 borderRadius: 8,
-                borderCurve: 'continuous',
+                borderCurve: "continuous",
                 padding: 12,
                 fontSize: 16,
                 backgroundColor: Background.surface,
@@ -200,7 +202,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
               onChangeText={(text) => {
                 setTitle(text);
                 if (errors.title) {
-                  setErrors((prev) => ({ ...prev, title: '' }));
+                  setErrors((prev) => ({ ...prev, title: "" }));
                 }
               }}
             />
@@ -221,7 +223,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
             <Text
               style={{
                 fontSize: 15,
-                fontWeight: '600',
+                fontWeight: "600",
                 color: TextColors.primary,
               }}
             >
@@ -234,7 +236,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
                   ? Feedback.error.border
                   : Border.default,
                 borderRadius: 8,
-                borderCurve: 'continuous',
+                borderCurve: "continuous",
                 padding: 12,
                 fontSize: 16,
                 backgroundColor: Background.surface,
@@ -246,7 +248,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
               onChangeText={(text) => {
                 setTotalPages(text);
                 if (errors.totalPages) {
-                  setErrors((prev) => ({ ...prev, totalPages: '' }));
+                  setErrors((prev) => ({ ...prev, totalPages: "" }));
                 }
               }}
               keyboardType="number-pad"
@@ -268,7 +270,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
             <Text
               style={{
                 fontSize: 15,
-                fontWeight: '600',
+                fontWeight: "600",
                 color: TextColors.primary,
               }}
             >
@@ -277,9 +279,11 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
             <TextInput
               style={{
                 borderWidth: 1,
-                borderColor: errors.score ? Feedback.error.border : Border.default,
+                borderColor: errors.score
+                  ? Feedback.error.border
+                  : Border.default,
                 borderRadius: 8,
-                borderCurve: 'continuous',
+                borderCurve: "continuous",
                 padding: 12,
                 fontSize: 16,
                 backgroundColor: Background.surface,
@@ -291,7 +295,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
               onChangeText={(text) => {
                 setScore(text);
                 if (errors.score) {
-                  setErrors((prev) => ({ ...prev, score: '' }));
+                  setErrors((prev) => ({ ...prev, score: "" }));
                 }
               }}
               keyboardType="number-pad"
@@ -321,7 +325,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
             <Text
               style={{
                 fontSize: 15,
-                fontWeight: '600',
+                fontWeight: "600",
                 color: TextColors.primary,
               }}
             >
@@ -332,13 +336,13 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
                 borderWidth: 1,
                 borderColor: Border.default,
                 borderRadius: 8,
-                borderCurve: 'continuous',
+                borderCurve: "continuous",
                 padding: 12,
                 fontSize: 16,
                 backgroundColor: Background.surface,
                 color: TextColors.primary,
                 minHeight: 100,
-                textAlignVertical: 'top',
+                textAlignVertical: "top",
               }}
               placeholder="Add your thoughts about this book..."
               placeholderTextColor={TextColors.tertiary}
@@ -351,7 +355,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
               style={{
                 fontSize: 13,
                 color: TextColors.tertiary,
-                textAlign: 'right',
+                textAlign: "right",
               }}
             >
               {comment.length}/500
@@ -377,14 +381,14 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
               backgroundColor: updateMutation.isPending
                 ? Interactive.primary.disabled
                 : pressed
-                ? Interactive.primary.pressed
-                : Interactive.primary.default,
+                  ? Interactive.primary.pressed
+                  : Interactive.primary.default,
               padding: 16,
               borderRadius: 8,
-              borderCurve: 'continuous',
-              alignItems: 'center',
-              flexDirection: 'row',
-              justifyContent: 'center',
+              borderCurve: "continuous",
+              alignItems: "center",
+              flexDirection: "row",
+              justifyContent: "center",
               gap: 8,
             })}
           >
@@ -395,7 +399,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
               style={{
                 color: Interactive.primary.text,
                 fontSize: 16,
-                fontWeight: '600',
+                fontWeight: "600",
               }}
             >
               Save Changes
@@ -408,7 +412,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
             disabled={updateMutation.isPending}
             style={({ pressed }) => ({
               padding: 12,
-              alignItems: 'center',
+              alignItems: "center",
               opacity: pressed ? 0.6 : 1,
             })}
           >
@@ -416,7 +420,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
               style={{
                 color: TextColors.secondary,
                 fontSize: 15,
-                fontWeight: '500',
+                fontWeight: "500",
               }}
             >
               Cancel

@@ -1,7 +1,7 @@
 /**
  * GetAuthorsService Test Suite
  * Tests for GetAuthors query use case
- * 
+ *
  * Pattern: AAA (Arrange-Act-Assert)
  * Target Coverage: ≥ 80%
  */
@@ -19,7 +19,7 @@ describe("GetAuthorsService", () => {
 
     // Mock repository
     mockAuthorRepository = {
-      getAll: vi.fn()
+      getAll: vi.fn(),
     };
 
     // Instantiate service
@@ -32,7 +32,7 @@ describe("GetAuthorsService", () => {
       const mockAuthors = [
         { id: 1, name: "Robert C. Martin", nationality: "United States" },
         { id: 2, name: "Martin Fowler", nationality: "United Kingdom" },
-        { id: 3, name: "Eric Evans", nationality: "United States" }
+        { id: 3, name: "Eric Evans", nationality: "United States" },
       ];
 
       mockAuthorRepository.getAll.mockResolvedValue(mockAuthors);
@@ -50,7 +50,7 @@ describe("GetAuthorsService", () => {
       const filters = { nameLike: "Martin" };
       const mockAuthors = [
         { id: 1, name: "Robert C. Martin", nationality: "United States" },
-        { id: 2, name: "Martin Fowler", nationality: "United Kingdom" }
+        { id: 2, name: "Martin Fowler", nationality: "United Kingdom" },
       ];
 
       mockAuthorRepository.getAll.mockResolvedValue(mockAuthors);
@@ -79,7 +79,7 @@ describe("GetAuthorsService", () => {
     it("should return authors with null nationality", async () => {
       // Arrange
       const mockAuthors = [
-        { id: 1, name: "Unknown Author", nationality: null }
+        { id: 1, name: "Unknown Author", nationality: null },
       ];
 
       mockAuthorRepository.getAll.mockResolvedValue(mockAuthors);
@@ -99,7 +99,9 @@ describe("GetAuthorsService", () => {
       mockAuthorRepository.getAll.mockRejectedValue(repositoryError);
 
       // Act & Assert
-      await expect(service.execute()).rejects.toThrow("Database connection failed");
+      await expect(service.execute()).rejects.toThrow(
+        "Database connection failed",
+      );
     });
   });
 });

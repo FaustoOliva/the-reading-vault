@@ -4,7 +4,9 @@ description: Rules for creating files, folders and wiring components according t
 ---
 
 ## Scope
+
 This skill applies when:
+
 - Creating new folders or files
 - Wiring routes, controllers and services
 - Adding repositories or infrastructure dependencies
@@ -13,7 +15,9 @@ This skill applies when:
 ---
 
 ## Source of Truth
+
 Architecture rules are defined in:
+
 1. ARCHITECTURE.md
 2. AGENTS.md
 
@@ -27,6 +31,7 @@ Stop and report the inconsistency.
 The API uses a **layer-based, non-modular structure**.
 
 Allowed root folders:
+
 - config
 - controllers
 - errors
@@ -38,7 +43,7 @@ Allowed root folders:
 - test
 
 ❌ Do NOT create module-based folders  
-❌ Do NOT nest domain features under new roots  
+❌ Do NOT nest domain features under new roots
 
 ---
 
@@ -62,8 +67,8 @@ Allowed dependency flow:
 routes → controllers → services → models
 ↘ infrastructure/repositories
 
-
 Forbidden:
+
 - Controllers importing repositories
 - Models importing infrastructure
 - Routes calling services directly
@@ -79,9 +84,11 @@ Forbidden:
 - No hidden imports
 
 Services:
+
 - Receive repositories explicitly
 
 Repositories:
+
 - Receive DB/session explicitly
 
 ---
@@ -102,7 +109,7 @@ Violations must be corrected immediately.
 ❌ Creating new architectural patterns  
 ❌ Introducing framework magic  
 ❌ Mixing responsibilities in the same file  
-❌ Writing logic before structure is correct  
+❌ Writing logic before structure is correct
 
 ---
 

@@ -144,8 +144,8 @@ function getScoreColor(score: number) {  // <- This belongs in colors.ts!
 // ✅ Correct
 <Pressable
   style={({ pressed }) => ({
-    backgroundColor: pressed 
-      ? Interactive.primary.pressed 
+    backgroundColor: pressed
+      ? Interactive.primary.pressed
       : Interactive.primary.default,
   })}
 >

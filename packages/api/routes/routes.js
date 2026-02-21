@@ -11,7 +11,7 @@ const routes = [
   readingSessionRoutes,
   authorRoutes,
   countryRoutes,
-  kpiRoutes
+  kpiRoutes,
 ];
 
 export default routes;

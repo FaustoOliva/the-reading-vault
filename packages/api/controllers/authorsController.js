@@ -1,13 +1,13 @@
 /**
  * AuthorsController
  * Handles HTTP requests for author-related operations
- * 
+ *
  * Responsibilities:
  * - Validate input using Zod
  * - Call services
  * - Format HTTP responses
  * - Forward errors to global middleware
- * 
+ *
  * Rules:
  * - No business logic
  * - Validation only happens here
@@ -19,9 +19,11 @@ import { z } from "zod";
 /**
  * Validation schema for GetAuthors query parameters
  */
-const getAuthorsQuerySchema = z.object({
-  nameLike: z.string().min(1).optional()
-}).strict();
+const getAuthorsQuerySchema = z
+  .object({
+    nameLike: z.string().min(1).optional(),
+  })
+  .strict();
 
 export class AuthorsController {
   constructor(getAuthorsService) {
@@ -43,7 +45,7 @@ export class AuthorsController {
       // Return response
       res.status(200).json({
         success: true,
-        data: result.authors
+        data: result.authors,
       });
     } catch (error) {
       // Forward to global error middleware

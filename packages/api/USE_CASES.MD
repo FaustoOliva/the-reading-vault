@@ -5,6 +5,7 @@
 This document defines **all allowed use cases** of the API.
 
 Its goal is to:
+
 - Freeze the functional scope of the system
 - Prevent AI agents from inventing features or endpoints
 - Serve as the single reference for implementing services (use cases)
@@ -51,6 +52,7 @@ Both are first-class citizens and must be explicitly listed.
 Registers a new book in the system. Supports legacy books by allowing initial status specification.
 
 **Input**
+
 - title
 - author
 - totalPages
@@ -58,22 +60,27 @@ Registers a new book in the system. Supports legacy books by allowing initial st
 - **status** (optional) - Initial status for the book. Defaults to WISH_LIST if not provided. Required for legacy books with different initial states.
 
 **Output**
+
 - Book
 
 **Models Involved**
+
 - Book
 
 **Errors**
+
 - DuplicateISBNError
 - InvalidInitialStateError
 
 **Business Rules**
+
 - New books without status default to WISH_LIST
 - Legacy books can be created with any valid status (WISH_LIST, READING, COMPLETED, ABANDONED)
 - When status is provided, it must be a valid BookStatus enum value
 - Initial status COMPLETED or ABANDONED may require score (enforced at domain level)
 
 **Transactional**
+
 - Yes
 
 ---
@@ -84,36 +91,43 @@ Registers a new book in the system. Supports legacy books by allowing initial st
 Logs a reading session within an active reading cycle.
 
 **Input**
+
 - bookId
 - date
 - pagesRead
 - optional duration
 
 **Output**
+
 - ReadingSession
 
 **Models Involved**
+
 - Book
 - ReadingCycle
 - ReadingSession
 
 **Errors**
+
 - BookNotFoundError
 - BookClosedError
 - ImmutableSessionError
 - InvalidStateTransitionError
 
 **Transactional**
+
 - Yes
 
 **Note**  
 Reading cycles are automatically managed as a side effect of LogReadingSession:
+
 - Firs3 CompleteBook
 
 **Description**  
 Marks a book as completed with a required score. Books can only be completed manually if all pages have been read (when total_pages is defined), or at any time for legacy books without total_pages.
 
 **Input**
+
 ```typescript
 {
   bookId: number,
@@ -123,19 +137,23 @@ Marks a book as completed with a required score. Books can only be completed man
 ```
 
 **Output**
+
 - Book (updated entity with COMPLETED status)
 
 **Models Involved**
+
 - Book
 - BookStatusHistory
 
 **Errors**
+
 - NotFoundError (book does not exist)
 - MissingScoreError (score not provided)
 - InsufficientPagesError (total_pages defined but not all pages read)
 - InvalidStateTransitionError (book already COMPLETED or ABANDONED)
 
 **Business Rules**
+
 - Valid transitions: WISH_LIST → COMPLETED, READING → COMPLETED
 - Invalid transitions: COMPLETED → COMPLETED (cannot re-complete)
 - Invalid transitions: ABANDONED → COMPLETED (cannot complete abandoned book)
@@ -147,6 +165,7 @@ Marks a book as completed with a required score. Books can only be completed man
 Marks a book as abandoned with a required score. Once abandoned, the book is locked and cannot accept new reading sessions unless explicitly reopened.
 
 **Input**
+
 ```typescript
 {
   bookId: number,
@@ -156,42 +175,50 @@ Marks a book as abandoned with a required score. Once abandoned, the book is loc
 ```
 
 **Output**
+
 - Book (updated entity with ABANDONED status)
 
 **Models Involved**
+
 - Book
 - BookStatusHistory
 
 **Errors**
+
 - NotFoundError (book does not exist)
 - MissingScoreError (score not provided)
 - InvalidStateTransitionError (book already ABANDONED or is COMPLETED)
 
 **Business Rules**
+
 - Valid transitions: WISH_LIST → ABANDONED, READING → ABANDONED
 - Invalid transitions: ABANDONED → ABANDONED (cannot re-abandon)
 - Invalid transitions: COMPLETED → ABANDONED (cannot abandon completed book)
 - Score is mandatory (0.0-10.0)
 - Future reading sessions will be blocked (BookClosedError)
-**Output**
+  **Output**
 - Book (updated entity with ABANDONED status)
 - bookId
 - completionDate
 - score
 
 **Output**
+
 - CompletedBookSummary
 
 **Models Involved**
+
 - Book
 - ReadingCycle
 
 **Errors**
+
 - BookNotFoundError
 - MissingScoreError
 - InvalidStateTransitionError
 
 **Transactional**
+
 - Yes
 
 ---
@@ -202,23 +229,28 @@ Marks a book as abandoned with a required score. Once abandoned, the book is loc
 Marks a book as abandoned and locks further reading activity.
 
 **Input**
+
 - bookId
 - abandonmentDate
 - score
 
 **Output**
+
 - AbandonedBookSummary
 
 **Models Involved**
+
 - Book
 - ReadingCycle
 
 **Errors**
+
 - BookNotFoundError
 - MissingScoreError
 - InvalidStateTransitionError
 
 **Transactional**
+
 - Yes
 
 ---
@@ -233,16 +265,16 @@ All query use cases follow these conventions:
 
 ```typescript
 PaginationInput = {
-  page: number,      // 1-indexed, default: 1
-  limit: number      // default: 20, max: 100
-}
+  page: number, // 1-indexed, default: 1
+  limit: number, // default: 20, max: 100
+};
 
 PaginationOutput = {
-  total: number,     // Total records matching filters
-  page: number,      // Current page
-  limit: number,     // Records per page
-  totalPages: number // Calculated: ceil(total / limit)
-}
+  total: number, // Total records matching filters
+  page: number, // Current page
+  limit: number, // Records per page
+  totalPages: number, // Calculated: ceil(total / limit)
+};
 ```
 
 #### Filtering Standard
@@ -261,19 +293,19 @@ FilterInput = {
 
 ```typescript
 SortInput = {
-  field: 'field_name',
-  order: 'asc' | 'desc'  // default: 'asc'
-}
+  field: "field_name",
+  order: "asc" | "desc", // default: 'asc'
+};
 ```
 
 #### Performance Expectations
 
-| Operation | Target | Max Acceptable |
-|-----------|--------|----------------|
-| By ID lookup | < 10ms | < 50ms |
-| Filtered list (< 100 records) | < 50ms | < 200ms |
-| Filtered list (100-1000 records) | < 200ms | < 500ms |
-| Aggregations/KPIs | < 500ms | < 1000ms |
+| Operation                        | Target  | Max Acceptable |
+| -------------------------------- | ------- | -------------- |
+| By ID lookup                     | < 10ms  | < 50ms         |
+| Filtered list (< 100 records)    | < 50ms  | < 200ms        |
+| Filtered list (100-1000 records) | < 200ms | < 500ms        |
+| Aggregations/KPIs                | < 500ms | < 1000ms       |
 
 ---
 
@@ -283,6 +315,7 @@ SortInput = {
 Returns all registered books with their current status, with support for filtering, sorting, and pagination.
 
 **Input**
+
 ```typescript
 {
   // Filters (all optional)
@@ -294,13 +327,13 @@ Returns all registered books with their current status, with support for filteri
     score_gte?: number,                // Minimum score (0.0-10.0)
     score_lte?: number                 // Maximum score (0.0-10.0)
   },
-  
+
   // Sorting (optional)
   sort?: {
     field: 'title' | 'created_at' | 'status' | 'score',
     order: 'asc' | 'desc'              // default: 'asc'
   },
-  
+
   // Pagination (optional)
   pagination?: {
     page: number,                      // default: 1
@@ -310,6 +343,7 @@ Returns all registered books with their current status, with support for filteri
 ```
 
 **Output**
+
 ```typescript
 {
   books: Book[],                       // Array of book entities
@@ -342,19 +376,24 @@ Book = {
 ```
 
 **Models Involved**
+
 - Book
 - Author
 
 **Errors**
+
 - BadRequestError (invalid pagination, invalid filter values)
 
 **Transactional**
+
 - No
 
 **Performance Target**
+
 - < 200ms for up to 1000 books
 
 **Caching Strategy**
+
 - No cache (always fetch fresh data)
 
 ---
@@ -365,13 +404,15 @@ Book = {
 Returns detailed information about a single book, including reading statistics for the current cycle.
 
 **Input**
+
 ```typescript
 {
-  bookId: number
+  bookId: number;
 }
 ```
 
 **Output**
+
 ```typescript
 {
   book: BookDetails
@@ -395,7 +436,7 @@ BookDetails = {
   score: number | null,
   comment: string | null,
   created_at: Date,
-  
+
   // Current cycle statistics
   current_cycle_stats: {
     sessions_count: number,
@@ -405,7 +446,7 @@ BookDetails = {
     velocity: number | null,          // pages/day
     estimated_completion: Date | null  // null if total_pages is null
   },
-  
+
   // Reading history
   reading_cycles: ReadingCycleSummary[]
 }
@@ -422,20 +463,25 @@ ReadingCycleSummary = {
 ```
 
 **Models Involved**
+
 - Book
 - Author
 - ReadingSession
 
 **Errors**
+
 - NotFoundError (book ID does not exist)
 
 **Transactional**
+
 - No
 
 **Performance Target**
+
 - < 100ms
 
 **Caching Strategy**
+
 - No cache
 
 ---
@@ -446,6 +492,7 @@ ReadingCycleSummary = {
 Returns all registered authors in the system, sorted alphabetically, with optional text filtering.
 
 **Input**
+
 ```typescript
 {
   // Filters (optional)
@@ -456,6 +503,7 @@ Returns all registered authors in the system, sorted alphabetically, with option
 ```
 
 **Output**
+
 ```typescript
 {
   authors: Author[]
@@ -470,21 +518,27 @@ Author = {
 ```
 
 **Models Involved**
+
 - Author
 
 **Errors**
+
 - None (empty array if no results)
 
 **Transactional**
+
 - No
 
 **Performance Target**
+
 - < 50ms for up to 1000 authors
 
 **Caching Strategy**
+
 - No cache (catalog data changes infrequently)
 
 **Sorting**
+
 - Always alphabetically by name (ASC)
 
 ---
@@ -495,6 +549,7 @@ Author = {
 Returns all available countries/nationalities in the system, sorted alphabetically, with optional text filtering.
 
 **Input**
+
 ```typescript
 {
   // Filters (optional)
@@ -505,6 +560,7 @@ Returns all available countries/nationalities in the system, sorted alphabetical
 ```
 
 **Output**
+
 ```typescript
 {
   countries: Country[]
@@ -518,21 +574,27 @@ Country = {
 ```
 
 **Models Involved**
+
 - Country
 
 **Errors**
+
 - None (empty array if no results)
 
 **Transactional**
+
 - No
 
 **Performance Target**
+
 - < 50ms for up to 500 countries
 
 **Caching Strategy**
+
 - No cache (catalog data changes infrequently)
 
 **Sorting**
+
 - Always alphabetically by name (ASC)
 
 ---
@@ -543,6 +605,7 @@ Country = {
 Returns reading sessions for a given book or date range, with filtering, sorting, and pagination support.
 
 **Input**
+
 ```typescript
 {
   // Filters (at least one required)
@@ -554,13 +617,13 @@ Returns reading sessions for a given book or date range, with filtering, sorting
     pages_read_gte?: number,           // Minimum pages read
     pages_read_lte?: number            // Maximum pages read
   },
-  
+
   // Sorting (optional)
   sort?: {
     field: 'occurred_at' | 'pages_read' | 'created_at',
     order: 'asc' | 'desc'              // default: 'desc' (newest first)
   },
-  
+
   // Pagination (optional)
   pagination?: {
     page: number,                      // default: 1
@@ -570,6 +633,7 @@ Returns reading sessions for a given book or date range, with filtering, sorting
 ```
 
 **Output**
+
 ```typescript
 {
   sessions: ReadingSession[],
@@ -579,7 +643,7 @@ Returns reading sessions for a given book or date range, with filtering, sorting
     limit: number,
     totalPages: number
   },
-  
+
   // Summary statistics for filtered sessions
   summary: {
     total_pages_read: number,
@@ -605,20 +669,25 @@ ReadingSession = {
 ```
 
 **Models Involved**
+
 - ReadingSession
 - Book
 
 **Errors**
+
 - BadRequestError (no filters provided, invalid date range)
 - NotFoundError (book_id provided but does not exist)
 
 **Transactional**
+
 - No
 
 **Performance Target**
+
 - < 200ms for up to 1000 sessions
 
 **Caching Strategy**
+
 - No cache
 
 ---
@@ -635,6 +704,7 @@ KPIs are implemented as **explicit use cases** to avoid duplicated logic.
 Calculates global reading metrics across all books and cycles for a given time period.
 
 **Input**
+
 ```typescript
 {
   // Date range (optional)
@@ -646,6 +716,7 @@ Calculates global reading metrics across all books and cycles for a given time p
 ```
 
 **Output**
+
 ```typescript
 {
   kpis: GlobalReadingKPIs,
@@ -662,26 +733,26 @@ GlobalReadingKPIs = {
   books_completed: number,             // Books with status = COMPLETED
   books_in_progress: number,           // Books with status = READING
   books_abandoned: number,             // Books with status = ABANDONED
-  
+
   // Reading activity
   total_sessions: number,              // Total reading sessions
   total_pages_read: number,            // Cumulative pages across all books
-  
+
   // Averages
   average_pages_per_session: number,   // total_pages_read / total_sessions
   average_sessions_per_day: number,    // total_sessions / period.days
   average_pages_per_day: number,       // total_pages_read / period.days
-  
+
   // Velocity & consistency
   current_streak: number,              // Consecutive days with at least 1 session
   longest_streak: number,              // Max consecutive days in period
   reading_days: number,                // Days with at least 1 session
   consistency_rate: number,            // reading_days / period.days (0.0-1.0)
-  
+
   // Completion metrics
   completion_rate: number,             // books_completed / (total_books - wish_list)
   average_days_to_complete: number,    // Average cycle duration for completed books
-  
+
   // Score analytics
   average_score: number | null,        // Average score across rated books
   books_rated: number                  // Books with non-null score
@@ -689,19 +760,24 @@ GlobalReadingKPIs = {
 ```
 
 **Models Involved**
+
 - Book
 - ReadingSession
 
 **Errors**
+
 - BadRequestError (invalid date range: from > to)
 
 **Transactional**
+
 - No
 
 **Performance Target**
+
 - < 500ms for up to 10,000 sessions
 
 **Caching Strategy**
+
 - Cache for 5 minutes (sliding window)
 - Invalidate on any book or session mutation
 
@@ -713,13 +789,15 @@ GlobalReadingKPIs = {
 Calculates detailed reading statistics for a specific book, including cycle-by-cycle breakdown.
 
 **Input**
+
 ```typescript
 {
-  bookId: number
+  bookId: number;
 }
 ```
 
 **Output**
+
 ```typescript
 {
   book: {
@@ -728,7 +806,7 @@ Calculates detailed reading statistics for a specific book, including cycle-by-c
     status: BookStatus,
     current_cycle: number
   },
-  
+
   overall_stats: {
     total_pages_read: number,          // Across all cycles
     total_sessions: number,            // Across all cycles
@@ -737,7 +815,7 @@ Calculates detailed reading statistics for a specific book, including cycle-by-c
     last_session: Date | null,
     score: number | null
   },
-  
+
   current_cycle_stats: {
     cycle_number: number,
     pages_read: number,
@@ -751,7 +829,7 @@ Calculates detailed reading statistics for a specific book, including cycle-by-c
     estimated_completion: Date | null, // null if total_pages is null
     progress_percent: number | null    // pages_read / total_pages * 100
   },
-  
+
   cycle_history: ReadingCycleStats[]   // Historical cycles
 }
 
@@ -769,19 +847,24 @@ ReadingCycleStats = {
 ```
 
 **Models Involved**
+
 - Book
 - ReadingSession
 
 **Errors**
+
 - NotFoundError (book ID does not exist)
 
 **Transactional**
+
 - No
 
 **Performance Target**
+
 - < 200ms
 
 **Caching Strategy**
+
 - Cache for 5 minutes per book
 - Invalidate on session creation for this book
 
@@ -799,6 +882,7 @@ The following operations **must not exist**, even if they seem intuitive:
 - Partial completion of a book without score
 
 If a new use case is required, it must be:
+
 - Explicitly added to this document
 - Approved by a human
 
@@ -807,6 +891,7 @@ If a new use case is required, it must be:
 ## 9. Agent Rules
 
 AI agents:
+
 - Must implement only use cases listed here
 - Must not merge or split use cases without approval
 - Must not infer new behaviors from similar systems

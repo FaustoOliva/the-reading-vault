@@ -1,12 +1,12 @@
 /**
  * Book Detail Screen
  * Displays comprehensive information about a single book
- * 
+ *
  * Structure:
  * - Hero: Book metadata + action buttons inline
  * - Reading Progress: Visual charts + current cycle stats
  * - Reading Cycles: Current cycle expanded, previous collapsed
- * 
+ *
  * Rules:
  * - Use ScrollView with contentContainerStyle for padding
  * - Use contentInsetAdjustmentBehavior for safe areas
@@ -14,22 +14,22 @@
  * - Handle loading/error/empty states properly
  */
 
-import { useState } from 'react';
-import { View, Text, ScrollView, RefreshControl, Alert } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
-import { useBookDetails, useReopenBook, useRequestReview } from '@/hooks/useBooks';
-import { BookDetailHero } from '@/components/ui/bookDetailHero';
-import { ReadingProgressCard } from '@/components/cards/readingProgressCard';
-import { ReadingCyclesHistoryCard } from '@/components/cards/readingCyclesHistoryCard';
-import { ReviewBookModal } from '@/components/modals/reviewBookModal';
-import { EditBookModal } from '@/components/modals/editBookModal';
-import { SkeletonBookDetail } from '@/components/ui/skeletonBookDetail';
-import { BookStatus } from '@/types/book';
+import { useState } from "react";
+import { View, Text, ScrollView, RefreshControl, Alert } from "react-native";
+import { useLocalSearchParams, Stack } from "expo-router";
 import {
-  Background,
-  Text as TextColors,
-  Feedback,
-} from '@/constants/colors';
+  useBookDetails,
+  useReopenBook,
+  useRequestReview,
+} from "@/hooks/useBooks";
+import { BookDetailHero } from "@/components/ui/bookDetailHero";
+import { ReadingProgressCard } from "@/components/cards/readingProgressCard";
+import { ReadingCyclesHistoryCard } from "@/components/cards/readingCyclesHistoryCard";
+import { ReviewBookModal } from "@/components/modals/reviewBookModal";
+import { EditBookModal } from "@/components/modals/editBookModal";
+import { SkeletonBookDetail } from "@/components/ui/skeletonBookDetail";
+import { BookStatus } from "@/types/book";
+import { Background, Text as TextColors, Feedback } from "@/constants/colors";
 
 export default function BookDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -49,10 +49,11 @@ export default function BookDetailScreen() {
   const reopenMutation = useReopenBook();
   const requestReviewMutation = useRequestReview();
 
-  const isActionPending = reopenMutation.isPending || requestReviewMutation.isPending;
+  const isActionPending =
+    reopenMutation.isPending || requestReviewMutation.isPending;
 
   if (__DEV__) {
-    console.log('📊 Query state:', {
+    console.log("📊 Query state:", {
       isLoading,
       hasError: !!error,
       errorMessage: error?.message,
@@ -66,7 +67,7 @@ export default function BookDetailScreen() {
   if (isLoading) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Loading...' }} />
+        <Stack.Screen options={{ title: "Loading..." }} />
         <SkeletonBookDetail />
       </>
     );
@@ -81,16 +82,16 @@ export default function BookDetailScreen() {
         style={{
           flex: 1,
           backgroundColor: Background.primary,
-          justifyContent: 'center',
-          alignItems: 'center',
+          justifyContent: "center",
+          alignItems: "center",
           padding: 24,
         }}
       >
-        <Stack.Screen options={{ title: 'Error' }} />
+        <Stack.Screen options={{ title: "Error" }} />
         <Text
           style={{
             fontSize: 18,
-            fontWeight: '600',
+            fontWeight: "600",
             color: Feedback.error.text,
             marginBottom: 8,
           }}
@@ -101,7 +102,7 @@ export default function BookDetailScreen() {
           style={{
             fontSize: 14,
             color: TextColors.secondary,
-            textAlign: 'center',
+            textAlign: "center",
           }}
           selectable
         >
@@ -120,11 +121,11 @@ export default function BookDetailScreen() {
         style={{
           flex: 1,
           backgroundColor: Background.primary,
-          justifyContent: 'center',
-          alignItems: 'center',
+          justifyContent: "center",
+          alignItems: "center",
         }}
       >
-        <Stack.Screen options={{ title: 'Not Found' }} />
+        <Stack.Screen options={{ title: "Not Found" }} />
         <Text
           style={{
             fontSize: 16,
@@ -144,30 +145,30 @@ export default function BookDetailScreen() {
    */
   const handleReopen = () => {
     Alert.alert(
-      'Reopen Book',
+      "Reopen Book",
       `Do you want to reopen "${book.title}"? This will start a new reading cycle.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Reopen',
-          style: 'default',
+          text: "Reopen",
+          style: "default",
           onPress: () => {
             reopenMutation.mutate(book.id);
           },
         },
-      ]
+      ],
     );
   };
 
   const handleRequestReview = () => {
     Alert.alert(
-      'Request Review',
+      "Request Review",
       `Do you want to mark "${book.title}" for review? This will allow you to score and complete or abandon the book.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Request Review',
-          style: 'default',
+          text: "Request Review",
+          style: "default",
           onPress: () => {
             requestReviewMutation.mutate(book.id, {
               onSuccess: () => {
@@ -176,17 +177,20 @@ export default function BookDetailScreen() {
             });
           },
         },
-      ]
+      ],
     );
   };
 
   return (
     <>
-      <Stack.Screen options={{ title: book?.title ?? 'Book Details' }} />
+      <Stack.Screen options={{ title: book?.title ?? "Book Details" }} />
       <ScrollView
         style={{ flex: 1, backgroundColor: Background.primary }}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={() => refetch()}
+          />
         }
         contentContainerStyle={{ padding: 16, gap: 16 }}
         contentInsetAdjustmentBehavior="automatic"

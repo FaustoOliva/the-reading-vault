@@ -9,7 +9,7 @@ export class MissingScoreError extends BadRequestError {
   constructor(bookId, targetStatus) {
     super(
       `Score is required when marking book as ${targetStatus.toLowerCase()}.`,
-      { bookId, targetStatus }
+      { bookId, targetStatus },
     );
     this.bookId = bookId;
     this.targetStatus = targetStatus;

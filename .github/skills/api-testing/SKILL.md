@@ -6,6 +6,7 @@ description: Rules for writing correct, executable and meaningful tests using Vi
 ## Scope
 
 This skill applies when:
+
 - Writing tests
 - Updating existing tests
 - Choosing what to test
@@ -75,25 +76,25 @@ describe("Transaction Integration Tests", () => {
     const mockTransaction = {
       begin: vi.fn().mockResolvedValue(undefined),
       commit: vi.fn().mockResolvedValue(undefined),
-      rollback: vi.fn().mockResolvedValue(undefined)
+      rollback: vi.fn().mockResolvedValue(undefined),
     };
-    
+
     const originalTransaction = sql.Transaction;
     sql.Transaction = vi.fn(() => mockTransaction);
-    
+
     // Simulate timeout error
     const timeoutError = new Error("Timeout");
     timeoutError.code = "ETIMEOUT";
     mockRepository.create.mockRejectedValue(timeoutError);
-    
+
     // Act & Assert
     await expect(service.execute(input)).rejects.toThrow(timeoutError);
-    
+
     // Verify transaction lifecycle
     expect(mockTransaction.begin).toHaveBeenCalledTimes(1);
     expect(mockTransaction.rollback).toHaveBeenCalledTimes(1);
     expect(mockTransaction.commit).not.toHaveBeenCalled();
-    
+
     // Restore
     sql.Transaction = originalTransaction;
   });
@@ -101,6 +102,7 @@ describe("Transaction Integration Tests", () => {
 ```
 
 **Key assertions:**
+
 - `begin()` called exactly once
 - `rollback()` called on error
 - `commit()` never called on error
@@ -113,6 +115,7 @@ describe("Transaction Integration Tests", () => {
 ## What NOT to Test
 
 Tests must NOT:
+
 - Import database clients
 - Import HTTP servers
 - Import controllers or routes
@@ -162,6 +165,7 @@ Mixing steps is forbidden.
 - Transaction integration tests: dedicated files (e.g., `transactionIntegration.test.js`)
 
 **For transactional services:**
+
 - Create both unit test (`<service>.test.js`) AND integration test
 - Unit tests: mock transaction, test business logic
 - Integration tests: verify transaction lifecycle, timeouts, deadlocks
@@ -176,6 +180,7 @@ Mixing steps is forbidden.
 - Missing edge cases are more important than numbers.
 
 **Mandatory for transactional services:**
+
 - Unit tests covering business logic
 - Integration tests covering transaction errors (timeout, deadlock, rollback)
 
@@ -186,7 +191,7 @@ Mixing steps is forbidden.
 ❌ Snapshot testing  
 ❌ Testing private methods  
 ❌ Conditional logic inside tests  
-❌ Sharing mutable state between tests  
+❌ Sharing mutable state between tests
 
 ---
 

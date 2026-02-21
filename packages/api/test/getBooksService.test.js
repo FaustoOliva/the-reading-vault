@@ -1,7 +1,7 @@
 /**
  * GetBooksService Test Suite
  * Tests for GetBooks query use case
- * 
+ *
  * Pattern: AAA (Arrange-Act-Assert)
  * Target Coverage: ≥ 80%
  */
@@ -21,7 +21,7 @@ describe("GetBooksService", () => {
 
     // Mock repository
     mockBookRepository = {
-      getAll: vi.fn()
+      getAll: vi.fn(),
     };
 
     // Instantiate service
@@ -43,7 +43,7 @@ describe("GetBooksService", () => {
           status: BookStatus.READING,
           currentReadingCycle: 1,
           score: null,
-          comment: null
+          comment: null,
         }),
         new Book({
           id: 2,
@@ -56,8 +56,8 @@ describe("GetBooksService", () => {
           status: BookStatus.WISH_LIST,
           currentReadingCycle: 1,
           score: null,
-          comment: null
-        })
+          comment: null,
+        }),
       ];
 
       const mockResult = {
@@ -65,7 +65,7 @@ describe("GetBooksService", () => {
         total: 2,
         page: 1,
         limit: 10,
-        totalPages: 1
+        totalPages: 1,
       };
 
       mockBookRepository.getAll.mockResolvedValue(mockResult);
@@ -74,7 +74,10 @@ describe("GetBooksService", () => {
       const result = await service.execute();
 
       // Assert
-      expect(mockBookRepository.getAll).toHaveBeenCalledWith({}, { page: 1, limit: 10 });
+      expect(mockBookRepository.getAll).toHaveBeenCalledWith(
+        {},
+        { page: 1, limit: 10 },
+      );
       expect(result).toEqual(mockResult);
     });
 
@@ -82,7 +85,7 @@ describe("GetBooksService", () => {
       // Arrange
       const filters = { status: BookStatus.READING };
       const pagination = { page: 1, limit: 10 };
-      
+
       const mockBooks = [
         new Book({
           id: 1,
@@ -95,8 +98,8 @@ describe("GetBooksService", () => {
           status: BookStatus.READING,
           currentReadingCycle: 1,
           score: null,
-          comment: null
-        })
+          comment: null,
+        }),
       ];
 
       const mockResult = {
@@ -104,7 +107,7 @@ describe("GetBooksService", () => {
         total: 1,
         page: 1,
         limit: 10,
-        totalPages: 1
+        totalPages: 1,
       };
 
       mockBookRepository.getAll.mockResolvedValue(mockResult);
@@ -113,7 +116,10 @@ describe("GetBooksService", () => {
       const result = await service.execute(filters, pagination);
 
       // Assert
-      expect(mockBookRepository.getAll).toHaveBeenCalledWith(filters, pagination);
+      expect(mockBookRepository.getAll).toHaveBeenCalledWith(
+        filters,
+        pagination,
+      );
       expect(result).toEqual(mockResult);
     });
 
@@ -121,7 +127,7 @@ describe("GetBooksService", () => {
       // Arrange
       const filters = { authorId: 1 };
       const pagination = { page: 1, limit: 10 };
-      
+
       const mockBooks = [
         new Book({
           id: 1,
@@ -134,7 +140,7 @@ describe("GetBooksService", () => {
           status: BookStatus.READING,
           currentReadingCycle: 1,
           score: null,
-          comment: null
+          comment: null,
         }),
         new Book({
           id: 2,
@@ -147,8 +153,8 @@ describe("GetBooksService", () => {
           status: BookStatus.COMPLETED,
           currentReadingCycle: 1,
           score: 5,
-          comment: "Excellent book!"
-        })
+          comment: "Excellent book!",
+        }),
       ];
 
       const mockResult = {
@@ -156,7 +162,7 @@ describe("GetBooksService", () => {
         total: 2,
         page: 1,
         limit: 10,
-        totalPages: 1
+        totalPages: 1,
       };
 
       mockBookRepository.getAll.mockResolvedValue(mockResult);
@@ -165,7 +171,10 @@ describe("GetBooksService", () => {
       const result = await service.execute(filters, pagination);
 
       // Assert
-      expect(mockBookRepository.getAll).toHaveBeenCalledWith(filters, pagination);
+      expect(mockBookRepository.getAll).toHaveBeenCalledWith(
+        filters,
+        pagination,
+      );
       expect(result).toEqual(mockResult);
     });
 
@@ -173,7 +182,7 @@ describe("GetBooksService", () => {
       // Arrange
       const filters = {};
       const pagination = { page: 2, limit: 5 };
-      
+
       const mockBooks = [
         new Book({
           id: 6,
@@ -186,8 +195,8 @@ describe("GetBooksService", () => {
           status: BookStatus.WISH_LIST,
           currentReadingCycle: 1,
           score: null,
-          comment: null
-        })
+          comment: null,
+        }),
       ];
 
       const mockResult = {
@@ -195,7 +204,7 @@ describe("GetBooksService", () => {
         total: 10,
         page: 2,
         limit: 5,
-        totalPages: 2
+        totalPages: 2,
       };
 
       mockBookRepository.getAll.mockResolvedValue(mockResult);
@@ -204,7 +213,10 @@ describe("GetBooksService", () => {
       const result = await service.execute(filters, pagination);
 
       // Assert
-      expect(mockBookRepository.getAll).toHaveBeenCalledWith(filters, pagination);
+      expect(mockBookRepository.getAll).toHaveBeenCalledWith(
+        filters,
+        pagination,
+      );
       expect(result).toEqual(mockResult);
     });
 
@@ -216,7 +228,7 @@ describe("GetBooksService", () => {
         total: 0,
         page: 1,
         limit: 10,
-        totalPages: 0
+        totalPages: 0,
       };
 
       mockBookRepository.getAll.mockResolvedValue(mockResult);
@@ -225,7 +237,10 @@ describe("GetBooksService", () => {
       const result = await service.execute(filters);
 
       // Assert
-      expect(mockBookRepository.getAll).toHaveBeenCalledWith(filters, { page: 1, limit: 10 });
+      expect(mockBookRepository.getAll).toHaveBeenCalledWith(filters, {
+        page: 1,
+        limit: 10,
+      });
       expect(result).toEqual(mockResult);
     });
 
@@ -233,7 +248,7 @@ describe("GetBooksService", () => {
       // Arrange
       const filters = { status: BookStatus.READING, authorId: 1 };
       const pagination = { page: 1, limit: 10 };
-      
+
       const mockBooks = [
         new Book({
           id: 1,
@@ -246,8 +261,8 @@ describe("GetBooksService", () => {
           status: BookStatus.READING,
           currentReadingCycle: 1,
           score: null,
-          comment: null
-        })
+          comment: null,
+        }),
       ];
 
       const mockResult = {
@@ -255,7 +270,7 @@ describe("GetBooksService", () => {
         total: 1,
         page: 1,
         limit: 10,
-        totalPages: 1
+        totalPages: 1,
       };
 
       mockBookRepository.getAll.mockResolvedValue(mockResult);
@@ -264,7 +279,10 @@ describe("GetBooksService", () => {
       const result = await service.execute(filters, pagination);
 
       // Assert
-      expect(mockBookRepository.getAll).toHaveBeenCalledWith(filters, pagination);
+      expect(mockBookRepository.getAll).toHaveBeenCalledWith(
+        filters,
+        pagination,
+      );
       expect(result).toEqual(mockResult);
     });
   });
@@ -276,7 +294,9 @@ describe("GetBooksService", () => {
       mockBookRepository.getAll.mockRejectedValue(repositoryError);
 
       // Act & Assert
-      await expect(service.execute()).rejects.toThrow("Database connection failed");
+      await expect(service.execute()).rejects.toThrow(
+        "Database connection failed",
+      );
     });
   });
 });

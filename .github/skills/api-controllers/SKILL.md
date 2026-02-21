@@ -11,7 +11,7 @@ Applies when creating/modifying controllers or implementing request/response han
 
 ## Source of Truth
 
-1. ARCHITECTURE.MD  4.2 Controllers
+1. ARCHITECTURE.MD 4.2 Controllers
 2. EXECUTION_CONTRACT.md (async/await, error handling)
 3. This skill (implementation patterns)
 
@@ -20,12 +20,14 @@ Applies when creating/modifying controllers or implementing request/response han
 ## Controller Responsibilities
 
 **MUST:**
+
 - Validate input using Zod
 - Call exactly one service per endpoint
 - Format HTTP responses
 - Forward errors to middleware via 'next(error)'
 
 **MUST NOT:**
+
 - Contain business logic
 - Call repositories directly
 - Create domain errors
@@ -56,8 +58,12 @@ export class BooksController {
     this.createBookService = createBookService;
   }
 
-  async getBooks(req, res, next) { /* ... */ }
-  async createBook(req, res, next) { /* ... */ }
+  async getBooks(req, res, next) {
+    /* ... */
+  }
+  async createBook(req, res, next) {
+    /* ... */
+  }
 }
 ```
 
@@ -71,20 +77,32 @@ export class BooksController {
 import { z } from "zod";
 import { BookStatus } from "../models/BookStatus.js";
 
-const getBooksQuerySchema = z.object({
-  status: z.enum([BookStatus.WISH_LIST, BookStatus.READING, BookStatus.COMPLETED, BookStatus.ABANDONED]).optional(),
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(10)
-}).strict();
+const getBooksQuerySchema = z
+  .object({
+    status: z
+      .enum([
+        BookStatus.WISH_LIST,
+        BookStatus.READING,
+        BookStatus.COMPLETED,
+        BookStatus.ABANDONED,
+      ])
+      .optional(),
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(10),
+  })
+  .strict();
 
-const createBookBodySchema = z.object({
-  title: z.string().min(1).max(255),
-  isbn: z.string().max(20).optional(),
-  totalPages: z.number().int().positive().optional()
-}).strict();
+const createBookBodySchema = z
+  .object({
+    title: z.string().min(1).max(255),
+    isbn: z.string().max(20).optional(),
+    totalPages: z.number().int().positive().optional(),
+  })
+  .strict();
 ```
 
 **Best Practices:**
+
 - Use '.strict()' to reject unknown properties
 - Use '.coerce' for query params (converts strings)
 - Provide '.default()' values
@@ -122,7 +140,7 @@ async createBook(req, res, next) {
   try {
     const validated = createBookBodySchema.parse(req.body);
     const book = await this.createBookService.execute(validated);
-    
+
     res.status(201).json({
       success: true,
       data: book.toJSON()
@@ -141,7 +159,7 @@ async updateBook(req, res, next) {
     const bookId = z.coerce.number().int().positive().parse(req.params.id);
     const validated = updateBookBodySchema.parse(req.body);
     const book = await this.updateBookService.execute(bookId, validated);
-    
+
     res.status(200).json({ success: true, data: book.toJSON() });
   } catch (error) {
     next(error);
@@ -156,7 +174,7 @@ async deleteBook(req, res, next) {
   try {
     const bookId = z.coerce.number().int().positive().parse(req.params.id);
     await this.deleteBookService.execute(bookId);
-    
+
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -169,21 +187,25 @@ async deleteBook(req, res, next) {
 ## Response Format
 
 **Success (200/201):**
+
 ```javascript
 res.status(200).json({ success: true, data: entity.toJSON() });
 ```
 
 **Success with Pagination:**
+
 ```javascript
 res.json({ success: true, data: [...], pagination: { page, limit, total, totalPages } });
 ```
 
 **Created (201):**
+
 ```javascript
-res.status(201).json({ success:  true, data: book.toJSON() });
+res.status(201).json({ success: true, data: book.toJSON() });
 ```
 
 **No Content (204):**
+
 ```javascript
 res.status(204).send();
 ```
@@ -238,16 +260,19 @@ res.json({ success: true, data: book }); // May include methods
 ## Parameter Extraction
 
 **Path Parameters:**
+
 ```javascript
 const bookId = z.coerce.number().int().positive().parse(req.params.id);
 ```
 
 **Query Parameters:**
+
 ```javascript
 const validated = querySchema.parse(req.query);
 ```
 
 **Request Body:**
+
 ```javascript
 const validated = bodySchema.parse(req.body);
 ```
@@ -267,7 +292,7 @@ export class BooksController {
 }
 
 // WRONG: Global imports
-import { getBooksService } from '../services/getBooksService.js';
+import { getBooksService } from "../services/getBooksService.js";
 ```
 
 ---
@@ -299,12 +324,12 @@ getBooks(req, res, next) {
 
 ## Prohibited
 
-- Business logic in controllers  
-- Calling repositories directly  
-- Creating domain errors  
-- Catching/handling specific errors  
-- Data transformations beyond JSON serialization  
-- Returning errors instead of using middleware  
+- Business logic in controllers
+- Calling repositories directly
+- Creating domain errors
+- Catching/handling specific errors
+- Data transformations beyond JSON serialization
+- Returning errors instead of using middleware
 
 ---
 
@@ -316,7 +341,7 @@ getBooks(req, res, next) {
 
 ## References
 
-- ARCHITECTURE.MD  4.2 Controllers
-- EXECUTION_CONTRACT.md  Error Handling
+- ARCHITECTURE.MD 4.2 Controllers
+- EXECUTION_CONTRACT.md Error Handling
 - api-errors skill
 - Existing: 'booksController.js', 'readingSessionsController.js'

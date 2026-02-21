@@ -18,12 +18,14 @@ This skill applies when:
 ## Core Principles
 
 **Loading states should:**
+
 - Match the layout of actual content (skeleton loaders)
 - Provide immediate visual feedback (no blank screens)
 - Be dismissable when data loads
 - Respect accessibility (screen reader announcements)
 
 **Loading states should NOT:**
+
 - Block the entire screen for partial data
 - Flash briefly (< 300ms) - show content immediately if fast
 - Show generic spinners for known layouts (use skeletons instead)
@@ -35,11 +37,13 @@ This skill applies when:
 ### When to Use Skeletons
 
 **USE skeletons when:**
+
 - Loading list items (known layout structure)
 - Loading detail screens (predictable sections)
 - Initial page load (first time seeing content)
 
 **DO NOT use skeletons when:**
+
 - Reloading/refreshing data (use pull-to-refresh or subtle indicator)
 - Loading unknown/dynamic content structure
 - Sub-second loads (show content immediately)
@@ -47,6 +51,7 @@ This skill applies when:
 ### Skeleton Component Rules
 
 **MUST:**
+
 - Match dimensions of actual component
 - Use subtle opacity (0.4-0.6)
 - Use colors from `@/constants/colors` (Border.default)
@@ -74,6 +79,7 @@ export function SkeletonBookItem() {
 ```
 
 **File location:**
+
 - List skeletons: `components/list/skeleton*.tsx`
 - Screen skeletons: `components/ui/skeleton*.tsx`
 
@@ -102,6 +108,7 @@ function BooksListScreen() {
 ```
 
 **Rules:**
+
 - Show 3-7 skeleton items (not too many)
 - Keep filter/search UI visible during loading (don't hide it)
 - Replace skeletons with real content when loaded (not append)
@@ -113,12 +120,14 @@ function BooksListScreen() {
 ### When to Use ActivityIndicator
 
 **USE ActivityIndicator when:**
+
 - Loading unknown content structure
 - Submitting forms (button loading state)
 - Pull-to-refresh in progress
 - Background operations (subtle, non-blocking)
 
 **DO NOT use ActivityIndicator when:**
+
 - Loading list items (use skeletons)
 - Loading detail screens (use skeletons)
 - Full-screen initial loads (use skeletons)
@@ -136,16 +145,16 @@ function SubmitButton({ onPress, isLoading }: Props) {
         paddingVertical: 12,
         paddingHorizontal: 24,
         borderRadius: 8,
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: "row",
+        alignItems: "center",
         gap: 8,
       }}
       accessibilityRole="button"
       accessibilityState={{ disabled: isLoading, busy: isLoading }}
     >
       {isLoading && <ActivityIndicator size="small" color="#FFFFFF" />}
-      <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>
-        {isLoading ? 'Saving...' : 'Save'}
+      <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
+        {isLoading ? "Saving..." : "Save"}
       </Text>
     </Pressable>
   );
@@ -153,6 +162,7 @@ function SubmitButton({ onPress, isLoading }: Props) {
 ```
 
 **Rules:**
+
 - Show spinner inline with button text
 - Disable button during loading
 - Update button text ("Saving...", "Loading...")
@@ -163,7 +173,14 @@ function SubmitButton({ onPress, isLoading }: Props) {
 ```tsx
 function LoadingSpinner() {
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Background.primary }}>
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: Background.primary,
+      }}
+    >
       <ActivityIndicator size="large" color={Interactive.primary} />
       <Text style={{ marginTop: 16, color: Text.secondary }}>Loading...</Text>
     </View>
@@ -172,6 +189,7 @@ function LoadingSpinner() {
 ```
 
 **Only use when:**
+
 - No skeleton structure available
 - Truly full-screen blocking operation
 - Initial app bootstrap
@@ -185,7 +203,7 @@ function LoadingSpinner() {
 ```tsx
 function BookDetailScreen() {
   const { data: book, isLoading } = useBookDetails(id);
-  
+
   if (isLoading) {
     return <SkeletonBookDetail />;
   }
@@ -194,12 +212,12 @@ function BookDetailScreen() {
     <ScrollView>
       {/* Critical: Always render immediately */}
       <BookDetailHero book={book} />
-      
+
       {/* Progressive: Render if available */}
       {book.current_cycle_stats && (
         <ReadingProgressCard stats={book.current_cycle_stats} />
       )}
-      
+
       {/* Progressive: Render if available */}
       {book.reading_cycles && book.reading_cycles.length > 0 && (
         <ReadingCyclesHistoryCard cycles={book.reading_cycles} />
@@ -210,6 +228,7 @@ function BookDetailScreen() {
 ```
 
 **Rules:**
+
 - Render critical content first (hero/header)
 - Conditionally render secondary content
 - Don't block entire screen for missing optional data
@@ -254,6 +273,7 @@ function MyScreen() {
 ```
 
 **Rules:**
+
 - Use `isLoading` for initial load (show skeleton)
 - Use `isRefetching` for pull-to-refresh (don't hide content)
 - Don't show full-screen spinner for refetch
@@ -287,6 +307,7 @@ function MyList() {
 ```
 
 **Rules:**
+
 - MUST use `RefreshControl` (not custom implementation)
 - MUST use `isRefetching` (not `isLoading`)
 - MUST NOT hide content during refresh
@@ -337,6 +358,7 @@ function MyDetail() {
 ```
 
 **Rules:**
+
 - Use `accessibilityRole="progressbar"` for loaders
 - Use `accessibilityLiveRegion="polite"` for status updates
 - Announce when loading completes

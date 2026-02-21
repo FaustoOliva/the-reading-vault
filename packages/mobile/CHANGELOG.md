@@ -88,9 +88,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical Details
 
 #### Dependencies Updated
+
 - `react-native-toast-message`: ^2.2.1 (new)
 
 #### File Changes
+
 - `components/ui/toast.tsx` (new, 86 lines)
 - `components/list/skeletonBookItem.tsx` (new, 74 lines)
 - `components/ui/skeletonBookDetail.tsx` (new, 106 lines)
@@ -104,6 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `types/schemas.ts` (Zod v3 compatibility, 239 lines)
 
 #### Commits
+
 1. `57a2eff` - fix: repair corrupted api.ts file structure
 2. `56e49a4` - fix: correct Zod v3 API usage and type annotations
 3. `7df0609` - feat: add 3-char minimum for search and fix page flashing
@@ -119,6 +122,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-02-07
 
 ### Added
+
 - Initial mobile app implementation
 - Core screens: Books list, Create book, KPI dashboard, Book detail
 - Tab-based navigation with Expo Router
@@ -132,6 +136,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Book lifecycle management (WISH_LIST → READING → REVIEWING → COMPLETED/ABANDONED)
 
 ### Documentation
+
 - ACCESSIBILITY.md - WCAG compliance guidelines
 - DEBUGGING.md - Debugging strategies
 - NETWORK_SETUP.md - Android emulator network configuration

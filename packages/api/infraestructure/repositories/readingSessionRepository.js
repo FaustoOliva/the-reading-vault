@@ -1,12 +1,12 @@
 /**
  * ReadingSessionRepository
  * Handles data persistence operations for ReadingSession entity
- * 
+ *
  * Responsibilities:
  * - Insert reading sessions into database
  * - Query reading sessions
  * - Translate DB records into ReadingSession domain entities
- * 
+ *
  * Rules:
  * - No business logic
  * - No HTTP concerns
@@ -52,7 +52,7 @@ export class ReadingSessionRepository {
    */
   async getByBookId(bookId) {
     const pool = await this.mssqlClient.getConnection();
-    
+
     const query = `
       SELECT 
         id,
@@ -71,7 +71,9 @@ export class ReadingSessionRepository {
       .input("bookId", sql.Int, bookId)
       .query(query);
 
-    return result.recordset.map(record => ReadingSession.fromDatabase(record));
+    return result.recordset.map((record) =>
+      ReadingSession.fromDatabase(record),
+    );
   }
 
   /**
@@ -82,7 +84,7 @@ export class ReadingSessionRepository {
    */
   async getTotalPagesInCycle(bookId, currentCycle) {
     const pool = await this.mssqlClient.getConnection();
-    
+
     const query = `
       SELECT ISNULL(SUM(pages_read), 0) as total
       FROM ReadingSessions
@@ -106,7 +108,7 @@ export class ReadingSessionRepository {
    */
   async getCurrentCycleStats(bookId, currentCycle) {
     const pool = await this.mssqlClient.getConnection();
-    
+
     const query = `
       SELECT 
         COUNT(*) as sessions_count,
@@ -129,7 +131,7 @@ export class ReadingSessionRepository {
       sessions_count: record.sessions_count,
       first_session_date: record.first_session_date,
       last_session_date: record.last_session_date,
-      pages_read: record.pages_read
+      pages_read: record.pages_read,
     };
   }
 
@@ -140,7 +142,7 @@ export class ReadingSessionRepository {
    */
   async getCycleHistory(bookId) {
     const pool = await this.mssqlClient.getConnection();
-    
+
     const query = `
       SELECT 
         reading_cycle as cycle_number,
@@ -170,7 +172,7 @@ export class ReadingSessionRepository {
    */
   async calculateGlobalMetrics() {
     const pool = await this.mssqlClient.getConnection();
-    
+
     const query = `
       SELECT 
         COUNT(*) as totalSessions,
@@ -181,7 +183,7 @@ export class ReadingSessionRepository {
         COUNT(DISTINCT CAST(occurred_at AS DATE)) as readingDays
       FROM ReadingSessions
     `;
-    
+
     const result = await pool.request().query(query);
     return result.recordset[0];
   }
@@ -192,15 +194,15 @@ export class ReadingSessionRepository {
    */
   async getAllSessionDates() {
     const pool = await this.mssqlClient.getConnection();
-    
+
     const query = `
       SELECT DISTINCT CAST(occurred_at AS DATE) as session_date
       FROM ReadingSessions
       ORDER BY session_date DESC
     `;
-    
+
     const result = await pool.request().query(query);
-    return result.recordset.map(r => r.session_date);
+    return result.recordset.map((r) => r.session_date);
   }
 
   /**
@@ -210,7 +212,7 @@ export class ReadingSessionRepository {
    */
   async getStatsByBook(bookId) {
     const pool = await this.mssqlClient.getConnection();
-    
+
     const query = `
       SELECT 
         reading_cycle as cycleNumber,
@@ -224,12 +226,12 @@ export class ReadingSessionRepository {
       GROUP BY reading_cycle
       ORDER BY reading_cycle ASC
     `;
-    
+
     const result = await pool
       .request()
       .input("bookId", sql.Int, bookId)
       .query(query);
-    
+
     return result.recordset;
   }
 
@@ -240,7 +242,7 @@ export class ReadingSessionRepository {
    */
   async getOverallStatsByBook(bookId) {
     const pool = await this.mssqlClient.getConnection();
-    
+
     const query = `
       SELECT 
         ISNULL(SUM(pages_read), 0) as totalPagesRead,
@@ -251,12 +253,12 @@ export class ReadingSessionRepository {
       FROM ReadingSessions
       WHERE book_id = @bookId
     `;
-    
+
     const result = await pool
       .request()
       .input("bookId", sql.Int, bookId)
       .query(query);
-    
+
     return result.recordset[0];
   }
 }

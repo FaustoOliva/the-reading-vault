@@ -9,6 +9,7 @@ license: MIT
 ## When to Use
 
 Apply when:
+
 - Creating components or screens
 - Styling views, text, or lists
 - Working with platform-specific UI elements
@@ -19,11 +20,13 @@ Apply when:
 ## Component Rules
 
 **MUST use:**
+
 - `<Pressable>` for touchables (not TouchableOpacity)
 - `<Text selectable />` for data/error messages
 - `<Switch />` from react-native (has built-in haptics)
 
 **MUST NOT use:**
+
 - Intrinsic elements (`img`, `div`) unless in webview
 - Custom text on pages (use Stack screen title instead)
 - `measure()` API (use `onLayout` instead)
@@ -31,21 +34,25 @@ Apply when:
 ## Styling Rules
 
 **Layout:**
+
 - MUST use flex gap over margin/padding when possible
 - MUST prefer padding over margin
 - MUST use flexbox (not fixed dimensions)
 - MUST use `useWindowDimensions()` (never `Dimensions.get()`)
 
 **Safe Areas:**
+
 - MUST account for top and bottom safe areas
 - MUST use `contentInsetAdjustmentBehavior="automatic"` on ScrollView/FlatList
 - MUST NOT wrap roots in SafeAreaView (use contentInsetAdjustmentBehavior instead)
 
 **Rounded Corners:**
+
 - MUST use `{ borderCurve: 'continuous' }` (not default circular)
 - Exception: Capsule shapes can use circular
 
 **Shadows:**
+
 - MUST use `boxShadow` CSS property
 - MUST NOT use legacy `shadowOpacity`, `shadowRadius`, or `elevation`
 
@@ -58,6 +65,7 @@ Apply when:
 ```
 
 **ScrollView Padding:**
+
 - MUST use `contentContainerStyle` for padding/gap (not style prop)
 - Prevents clipping issues
 
@@ -65,34 +73,40 @@ Apply when:
 // ✅ Correct
 <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
 
-// ❌ Wrong  
+// ❌ Wrong
 <ScrollView style={{ padding: 16 }}>
 ```
 
 **Text:**
+
 - MUST add `selectable` prop to Text elements with important data
 - MUST use `{ fontVariant: 'tabular-nums' }` for counters (alignment)
 
 **Colors & Accessibility:**
+
 - See [mobile-accessibility](../mobile-accessibility/SKILL.md) skill for all color system rules (MANDATORY)
 
 **Styling Method:**
+
 - MUST use inline styles or StyleSheet.create
 - MUST NOT use CSS or Tailwind (not supported)
 
 ## Visual Feedback
 
 **Haptics:**
+
 - SHOULD use `expo-haptics` on iOS for delightful interactions
 - Built-in haptics: `<Switch />`, `DateTimePicker`
 
 **Animations:**
+
 - SHOULD add entering/exiting animations for state changes
 - Use Reanimated for smooth transitions
 
 ## Stack Headers
 
 **Title:**
+
 - MUST set title via Stack.Screen options (not custom Text component)
 
 ```tsx
@@ -100,11 +114,13 @@ Apply when:
 ```
 
 **Search:**
+
 - SHOULD use `headerSearchBarOptions` for search bars (not custom component)
 
 ## Link Enhancements
 
 **Context Menus:**
+
 - SHOULD add context menus to links for iOS conventions
 
 ```tsx
@@ -120,11 +136,14 @@ Apply when:
 ```
 
 **Previews:**
+
 - SHOULD add `<Link.Preview />` for long-press previews
 
 ```tsx
 <Link href="/book/123">
-  <Link.Trigger><Pressable>...</Pressable></Link.Trigger>
+  <Link.Trigger>
+    <Pressable>...</Pressable>
+  </Link.Trigger>
   <Link.Preview />
 </Link>
 ```
@@ -132,11 +151,13 @@ Apply when:
 ## Modals & Sheets
 
 **Modal:**
+
 ```tsx
 <Stack.Screen name="modal" options={{ presentation: "modal" }} />
 ```
 
 **Form Sheet:**
+
 ```tsx
 <Stack.Screen
   name="sheet"

@@ -1,13 +1,13 @@
 /**
  * BookQueryBuilder
  * Builds SQL queries for book retrieval with dynamic filters
- * 
+ *
  * Responsibilities:
  * - Construct SELECT and COUNT queries dynamically
  * - Apply filters (status, author, etc.)
  * - Handle pagination (OFFSET/FETCH)
  * - Manage SQL parameters
- * 
+ *
  * Benefits:
  * - Open/Closed Principle: extend with new filters without modifying existing code
  * - Single Responsibility: only query construction
@@ -31,7 +31,7 @@ export class BookQueryBuilder {
   withStatus(status) {
     this.filters.push({
       condition: ` AND bs.internal_code = @status`,
-      param: { name: 'status', type: sql.NVarChar, value: status }
+      param: { name: "status", type: sql.NVarChar, value: status },
     });
     return this;
   }
@@ -44,7 +44,7 @@ export class BookQueryBuilder {
   withAuthorId(authorId) {
     this.filters.push({
       condition: ` AND b.author_id = @authorId`,
-      param: { name: 'authorId', type: sql.Int, value: authorId }
+      param: { name: "authorId", type: sql.Int, value: authorId },
     });
     return this;
   }
@@ -56,10 +56,10 @@ export class BookQueryBuilder {
    */
   withCountryId(countryId) {
     if (!countryId) return this;
-    
+
     this.filters.push({
       condition: ` AND c.id = @countryId`,
-      param: { name: 'countryId', type: sql.Int, value: countryId }
+      param: { name: "countryId", type: sql.Int, value: countryId },
     });
     return this;
   }
@@ -70,11 +70,15 @@ export class BookQueryBuilder {
    * @returns {BookQueryBuilder} this for chaining
    */
   withTitleSearch(keyword) {
-    if (!keyword || keyword.trim() === '') return this;
-    
+    if (!keyword || keyword.trim() === "") return this;
+
     this.filters.push({
       condition: ` AND b.title LIKE @titleSearch`,
-      param: { name: 'titleSearch', type: sql.NVarChar, value: `%${keyword.trim()}%` }
+      param: {
+        name: "titleSearch",
+        type: sql.NVarChar,
+        value: `%${keyword.trim()}%`,
+      },
     });
     return this;
   }
@@ -89,17 +93,17 @@ export class BookQueryBuilder {
     if (minScore !== null && minScore !== undefined) {
       this.filters.push({
         condition: ` AND b.score >= @minScore`,
-        param: { name: 'minScore', type: sql.Decimal(3, 1), value: minScore }
+        param: { name: "minScore", type: sql.Decimal(3, 1), value: minScore },
       });
     }
-    
+
     if (maxScore !== null && maxScore !== undefined) {
       this.filters.push({
         condition: ` AND b.score <= @maxScore`,
-        param: { name: 'maxScore', type: sql.Decimal(3, 1), value: maxScore }
+        param: { name: "maxScore", type: sql.Decimal(3, 1), value: maxScore },
       });
     }
-    
+
     return this;
   }
 
@@ -113,17 +117,17 @@ export class BookQueryBuilder {
     if (minPages !== null && minPages !== undefined) {
       this.filters.push({
         condition: ` AND b.total_pages >= @minPages`,
-        param: { name: 'minPages', type: sql.Int, value: minPages }
+        param: { name: "minPages", type: sql.Int, value: minPages },
       });
     }
-    
+
     if (maxPages !== null && maxPages !== undefined) {
       this.filters.push({
         condition: ` AND b.total_pages <= @maxPages`,
-        param: { name: 'maxPages', type: sql.Int, value: maxPages }
+        param: { name: "maxPages", type: sql.Int, value: maxPages },
       });
     }
-    
+
     return this;
   }
 
@@ -142,10 +146,14 @@ export class BookQueryBuilder {
           WHERE bsh.book_id = b.id
           AND bsh.created_at >= @startDate
         )`,
-        param: { name: 'startDate', type: sql.DateTime, value: new Date(startDate) }
+        param: {
+          name: "startDate",
+          type: sql.DateTime,
+          value: new Date(startDate),
+        },
       });
     }
-    
+
     if (endDate) {
       this.filters.push({
         condition: ` AND EXISTS (
@@ -153,10 +161,14 @@ export class BookQueryBuilder {
           WHERE bsh.book_id = b.id
           AND bsh.created_at <= @endDate
         )`,
-        param: { name: 'endDate', type: sql.DateTime, value: new Date(endDate) }
+        param: {
+          name: "endDate",
+          type: sql.DateTime,
+          value: new Date(endDate),
+        },
       });
     }
-    
+
     return this;
   }
 
@@ -209,16 +221,16 @@ export class BookQueryBuilder {
       const { page, limit } = this.paginationConfig;
       const offset = (page - 1) * limit;
       query += ` OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`;
-      
-      this.params.set('offset', { type: sql.Int, value: offset });
-      this.params.set('limit', { type: sql.Int, value: limit });
+
+      this.params.set("offset", { type: sql.Int, value: offset });
+      this.params.set("limit", { type: sql.Int, value: limit });
     }
 
     // Store filter parameters
     for (const filter of this.filters) {
       this.params.set(filter.param.name, {
         type: filter.param.type,
-        value: filter.param.value
+        value: filter.param.value,
       });
     }
 

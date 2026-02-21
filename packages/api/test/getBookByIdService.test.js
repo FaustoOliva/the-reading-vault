@@ -1,7 +1,7 @@
 /**
  * GetBookByIdService Test Suite
  * Tests for GetBookById query use case
- * 
+ *
  * Pattern: AAA (Arrange-Act-Assert)
  * Target Coverage: ≥ 80%
  */
@@ -23,16 +23,19 @@ describe("GetBookByIdService", () => {
 
     // Mock repositories
     mockBookRepository = {
-      getById: vi.fn()
+      getById: vi.fn(),
     };
 
     mockReadingSessionRepository = {
       getCurrentCycleStats: vi.fn(),
-      getCycleHistory: vi.fn()
+      getCycleHistory: vi.fn(),
     };
 
     // Instantiate service
-    service = new GetBookByIdService(mockBookRepository, mockReadingSessionRepository);
+    service = new GetBookByIdService(
+      mockBookRepository,
+      mockReadingSessionRepository,
+    );
   });
 
   describe("✅ Happy Paths", () => {
@@ -50,14 +53,14 @@ describe("GetBookByIdService", () => {
         status: BookStatus.READING,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       const mockCurrentCycleStats = {
         sessions_count: 5,
         pages_read: 200,
         first_session_date: new Date("2026-01-01"),
-        last_session_date: new Date("2026-01-10")
+        last_session_date: new Date("2026-01-10"),
       };
 
       const mockCycleHistory = [
@@ -67,21 +70,29 @@ describe("GetBookByIdService", () => {
           total_pages_read: 200,
           first_session: new Date("2026-01-01"),
           last_session: new Date("2026-01-10"),
-          duration_days: 9
-        }
+          duration_days: 9,
+        },
       ];
 
       mockBookRepository.getById.mockResolvedValue(mockBook);
-      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(mockCurrentCycleStats);
-      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(mockCycleHistory);
+      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(
+        mockCurrentCycleStats,
+      );
+      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(
+        mockCycleHistory,
+      );
 
       // Act
       const result = await service.execute(bookId);
 
       // Assert
       expect(mockBookRepository.getById).toHaveBeenCalledWith(bookId);
-      expect(mockReadingSessionRepository.getCurrentCycleStats).toHaveBeenCalledWith(bookId, 1);
-      expect(mockReadingSessionRepository.getCycleHistory).toHaveBeenCalledWith(bookId);
+      expect(
+        mockReadingSessionRepository.getCurrentCycleStats,
+      ).toHaveBeenCalledWith(bookId, 1);
+      expect(mockReadingSessionRepository.getCycleHistory).toHaveBeenCalledWith(
+        bookId,
+      );
 
       expect(result).toMatchObject({
         book: {
@@ -91,13 +102,13 @@ describe("GetBookByIdService", () => {
           author: {
             id: 1,
             name: "Robert C. Martin",
-            nationality: "United States"
+            nationality: "United States",
           },
           total_pages: 432,
           status: BookStatus.READING,
           current_reading_cycle: 1,
           pages_read_total: 200,
-          pages_read_in_current_cycle: 200
+          pages_read_in_current_cycle: 200,
         },
         current_cycle_stats: {
           sessions_count: 5,
@@ -105,7 +116,7 @@ describe("GetBookByIdService", () => {
           last_session_date: mockCurrentCycleStats.last_session_date,
           days_elapsed: 10,
           velocity: 20,
-          estimated_completion: expect.any(Date)
+          estimated_completion: expect.any(Date),
         },
         reading_cycles: [
           {
@@ -115,9 +126,9 @@ describe("GetBookByIdService", () => {
             total_pages_read: 200,
             first_session: mockCycleHistory[0].first_session,
             last_session: mockCycleHistory[0].last_session,
-            duration_days: 10
-          }
-        ]
+            duration_days: 10,
+          },
+        ],
       });
     });
 
@@ -135,21 +146,25 @@ describe("GetBookByIdService", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       const mockCurrentCycleStats = {
         sessions_count: 0,
         pages_read: 0,
         first_session_date: null,
-        last_session_date: null
+        last_session_date: null,
       };
 
       const mockCycleHistory = [];
 
       mockBookRepository.getById.mockResolvedValue(mockBook);
-      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(mockCurrentCycleStats);
-      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(mockCycleHistory);
+      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(
+        mockCurrentCycleStats,
+      );
+      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(
+        mockCycleHistory,
+      );
 
       // Act
       const result = await service.execute(bookId);
@@ -160,7 +175,7 @@ describe("GetBookByIdService", () => {
           id: 1,
           status: BookStatus.WISH_LIST,
           pages_read_total: 0,
-          pages_read_in_current_cycle: 0
+          pages_read_in_current_cycle: 0,
         },
         current_cycle_stats: {
           sessions_count: 0,
@@ -168,9 +183,9 @@ describe("GetBookByIdService", () => {
           last_session_date: null,
           days_elapsed: 0,
           velocity: null,
-          estimated_completion: null
+          estimated_completion: null,
         },
-        reading_cycles: []
+        reading_cycles: [],
       });
     });
 
@@ -188,14 +203,14 @@ describe("GetBookByIdService", () => {
         status: BookStatus.READING,
         currentReadingCycle: 2,
         score: null,
-        comment: null
+        comment: null,
       });
 
       const mockCurrentCycleStats = {
         sessions_count: 3,
         pages_read: 150,
         first_session_date: new Date("2026-02-01"),
-        last_session_date: new Date("2026-02-05")
+        last_session_date: new Date("2026-02-05"),
       };
 
       const mockCycleHistory = [
@@ -205,7 +220,7 @@ describe("GetBookByIdService", () => {
           total_pages_read: 448,
           first_session: new Date("2025-12-01"),
           last_session: new Date("2025-12-31"),
-          duration_days: 30
+          duration_days: 30,
         },
         {
           cycle_number: 2,
@@ -213,13 +228,17 @@ describe("GetBookByIdService", () => {
           total_pages_read: 150,
           first_session: new Date("2026-02-01"),
           last_session: new Date("2026-02-05"),
-          duration_days: 4
-        }
+          duration_days: 4,
+        },
       ];
 
       mockBookRepository.getById.mockResolvedValue(mockBook);
-      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(mockCurrentCycleStats);
-      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(mockCycleHistory);
+      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(
+        mockCurrentCycleStats,
+      );
+      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(
+        mockCycleHistory,
+      );
 
       // Act
       const result = await service.execute(bookId);
@@ -246,7 +265,7 @@ describe("GetBookByIdService", () => {
         status: BookStatus.READING,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       // Read 100 pages in 10 days = 10 pages/day
@@ -254,7 +273,7 @@ describe("GetBookByIdService", () => {
         sessions_count: 10,
         pages_read: 100,
         first_session_date: new Date("2026-01-01"),
-        last_session_date: new Date("2026-01-10")
+        last_session_date: new Date("2026-01-10"),
       };
 
       const mockCycleHistory = [
@@ -264,13 +283,17 @@ describe("GetBookByIdService", () => {
           total_pages_read: 100,
           first_session: new Date("2026-01-01"),
           last_session: new Date("2026-01-10"),
-          duration_days: 9
-        }
+          duration_days: 9,
+        },
       ];
 
       mockBookRepository.getById.mockResolvedValue(mockBook);
-      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(mockCurrentCycleStats);
-      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(mockCycleHistory);
+      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(
+        mockCurrentCycleStats,
+      );
+      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(
+        mockCycleHistory,
+      );
 
       // Act
       const result = await service.execute(bookId);
@@ -278,20 +301,24 @@ describe("GetBookByIdService", () => {
       // Assert
       expect(result.current_cycle_stats.days_elapsed).toBe(10);
       expect(result.current_cycle_stats.velocity).toBe(10); // 100 pages / 10 days
-      
+
       // Remaining pages: 464 - 100 = 364
       // Days to complete: ceil(364 / 10) = 37
       // Days since last session: from 2026-01-10 to today (test runs ~2026-02-21) ≈ 42 days
       // Expected completion: TODAY + 42 (inactivity penalty) + 37 (days to complete) ≈ 79 days from today
       // This means estimated date should be in late April/early May
-      const estimatedDate = new Date(result.current_cycle_stats.estimated_completion);
+      const estimatedDate = new Date(
+        result.current_cycle_stats.estimated_completion,
+      );
       const today = new Date();
-      
+
       // Verify estimated completion is in the future
       expect(estimatedDate.getTime()).toBeGreaterThan(today.getTime());
-      
+
       // Verify it's roughly 79 days from today (allow some tolerance)
-      const daysDifference = Math.ceil((estimatedDate - today) / (1000 * 60 * 60 * 24));
+      const daysDifference = Math.ceil(
+        (estimatedDate - today) / (1000 * 60 * 60 * 24),
+      );
       expect(daysDifference).toBeGreaterThanOrEqual(75);
       expect(daysDifference).toBeLessThanOrEqual(85);
     });
@@ -310,14 +337,14 @@ describe("GetBookByIdService", () => {
         status: BookStatus.COMPLETED,
         currentReadingCycle: 1,
         score: 5,
-        comment: "Excellent book for developers!"
+        comment: "Excellent book for developers!",
       });
 
       const mockCurrentCycleStats = {
         sessions_count: 8,
         pages_read: 352,
         first_session_date: new Date("2026-01-01"),
-        last_session_date: new Date("2026-01-15")
+        last_session_date: new Date("2026-01-15"),
       };
 
       const mockCycleHistory = [
@@ -327,13 +354,17 @@ describe("GetBookByIdService", () => {
           total_pages_read: 352,
           first_session: new Date("2026-01-01"),
           last_session: new Date("2026-01-15"),
-          duration_days: 14
-        }
+          duration_days: 14,
+        },
       ];
 
       mockBookRepository.getById.mockResolvedValue(mockBook);
-      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(mockCurrentCycleStats);
-      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(mockCycleHistory);
+      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(
+        mockCurrentCycleStats,
+      );
+      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(
+        mockCycleHistory,
+      );
 
       // Act
       const result = await service.execute(bookId);
@@ -359,21 +390,25 @@ describe("GetBookByIdService", () => {
         status: BookStatus.WISH_LIST,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       const mockCurrentCycleStats = {
         sessions_count: 0,
         pages_read: 0,
         first_session_date: null,
-        last_session_date: null
+        last_session_date: null,
       };
 
       const mockCycleHistory = [];
 
       mockBookRepository.getById.mockResolvedValue(mockBook);
-      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(mockCurrentCycleStats);
-      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(mockCycleHistory);
+      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(
+        mockCurrentCycleStats,
+      );
+      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(
+        mockCycleHistory,
+      );
 
       // Act
       const result = await service.execute(bookId);
@@ -400,7 +435,9 @@ describe("GetBookByIdService", () => {
       mockBookRepository.getById.mockRejectedValue(repositoryError);
 
       // Act & Assert
-      await expect(service.execute(bookId)).rejects.toThrow("Database connection failed");
+      await expect(service.execute(bookId)).rejects.toThrow(
+        "Database connection failed",
+      );
     });
 
     it("should propagate repository errors from readingSessionRepository", async () => {
@@ -417,16 +454,20 @@ describe("GetBookByIdService", () => {
         status: BookStatus.READING,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       mockBookRepository.getById.mockResolvedValue(mockBook);
-      
+
       const repositoryError = new Error("Failed to fetch reading sessions");
-      mockReadingSessionRepository.getCurrentCycleStats.mockRejectedValue(repositoryError);
+      mockReadingSessionRepository.getCurrentCycleStats.mockRejectedValue(
+        repositoryError,
+      );
 
       // Act & Assert
-      await expect(service.execute(bookId)).rejects.toThrow("Failed to fetch reading sessions");
+      await expect(service.execute(bookId)).rejects.toThrow(
+        "Failed to fetch reading sessions",
+      );
     });
   });
 
@@ -445,7 +486,7 @@ describe("GetBookByIdService", () => {
         status: BookStatus.READING,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       const sameDate = new Date("2026-01-15");
@@ -453,7 +494,7 @@ describe("GetBookByIdService", () => {
         sessions_count: 1,
         pages_read: 50,
         first_session_date: sameDate,
-        last_session_date: sameDate
+        last_session_date: sameDate,
       };
 
       const mockCycleHistory = [
@@ -463,13 +504,17 @@ describe("GetBookByIdService", () => {
           total_pages_read: 50,
           first_session: sameDate,
           last_session: sameDate,
-          duration_days: 0
-        }
+          duration_days: 0,
+        },
       ];
 
       mockBookRepository.getById.mockResolvedValue(mockBook);
-      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(mockCurrentCycleStats);
-      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(mockCycleHistory);
+      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(
+        mockCurrentCycleStats,
+      );
+      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(
+        mockCycleHistory,
+      );
 
       // Act
       const result = await service.execute(bookId);
@@ -493,14 +538,14 @@ describe("GetBookByIdService", () => {
         status: BookStatus.READING,
         currentReadingCycle: 1,
         score: null,
-        comment: null
+        comment: null,
       });
 
       const mockCurrentCycleStats = {
         sessions_count: 5,
         pages_read: 200, // All pages read
         first_session_date: new Date("2026-01-01"),
-        last_session_date: new Date("2026-01-10")
+        last_session_date: new Date("2026-01-10"),
       };
 
       const mockCycleHistory = [
@@ -510,13 +555,17 @@ describe("GetBookByIdService", () => {
           total_pages_read: 200,
           first_session: new Date("2026-01-01"),
           last_session: new Date("2026-01-10"),
-          duration_days: 9
-        }
+          duration_days: 9,
+        },
       ];
 
       mockBookRepository.getById.mockResolvedValue(mockBook);
-      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(mockCurrentCycleStats);
-      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(mockCycleHistory);
+      mockReadingSessionRepository.getCurrentCycleStats.mockResolvedValue(
+        mockCurrentCycleStats,
+      );
+      mockReadingSessionRepository.getCycleHistory.mockResolvedValue(
+        mockCycleHistory,
+      );
 
       // Act
       const result = await service.execute(bookId);

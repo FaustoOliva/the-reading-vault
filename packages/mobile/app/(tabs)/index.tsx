@@ -1,13 +1,13 @@
 /**
  * Books List Screen
  * Main screen displaying all books with filtering and pagination
- * 
+ *
  * Features:
  * - Status filter (dropdown)
  * - Pagination (prev/next buttons)
  * - Pull-to-refresh
  * - Loading/error/empty states
- * 
+ *
  * Rules:
  * - Use FlatList for performance
  * - Use contentContainerStyle for padding (not style)
@@ -15,24 +15,31 @@
  * - Use RefreshControl for pull-to-refresh
  */
 
-import { useState, useEffect, useMemo } from 'react';
-import { View, Text, FlatList, ActivityIndicator, RefreshControl, Pressable } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { useBooks } from '@/hooks/useBooks';
-import { BookListItem } from '@/components/list/bookListItem';
-import { LoadMoreButton } from '@/components/list/loadMoreButton';
-import { SkeletonBookItem } from '@/components/list/skeletonBookItem';
-import { SearchBar } from '@/components/forms/searchBar';
-import { AdvancedFiltersModal } from '@/components/modals/advancedFiltersModal';
-import { BookStatus, BooksFilter, Book } from '@/types/book';
-import { BOOK_STATUS_OPTIONS } from '@/constants/bookStatus';
+import { useState, useEffect, useMemo } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+  Pressable,
+} from "react-native";
+import { Picker } from "@react-native-picker/picker";
+import { useBooks } from "@/hooks/useBooks";
+import { BookListItem } from "@/components/list/bookListItem";
+import { LoadMoreButton } from "@/components/list/loadMoreButton";
+import { SkeletonBookItem } from "@/components/list/skeletonBookItem";
+import { SearchBar } from "@/components/forms/searchBar";
+import { AdvancedFiltersModal } from "@/components/modals/advancedFiltersModal";
+import { BookStatus, BooksFilter, Book } from "@/types/book";
+import { BOOK_STATUS_OPTIONS } from "@/constants/bookStatus";
 import {
   Background,
   Text as TextColors,
   Border,
   Interactive,
   Feedback,
-} from '@/constants/colors';
+} from "@/constants/colors";
 
 const ITEMS_PER_PAGE = 100;
 const AUTO_LOAD_THRESHOLD = 50;
@@ -44,7 +51,11 @@ export default function BooksListScreen() {
   const [accumulatedBooks, setAccumulatedBooks] = useState<Book[]>([]);
 
   if (__DEV__) {
-    console.log('🏠 BooksListScreen render:', { filters, page, accumulatedBooksCount: accumulatedBooks.length });
+    console.log("🏠 BooksListScreen render:", {
+      filters,
+      page,
+      accumulatedBooksCount: accumulatedBooks.length,
+    });
   }
 
   const {
@@ -56,7 +67,7 @@ export default function BooksListScreen() {
   } = useBooks(filters, { page, limit: ITEMS_PER_PAGE });
 
   if (__DEV__) {
-    console.log('📊 Query state:', {
+    console.log("📊 Query state:", {
       isLoading,
       isRefetching,
       hasError: !!error,
@@ -76,7 +87,7 @@ export default function BooksListScreen() {
   useEffect(() => {
     if (page === 1 && currentPageBooks.length > 0) {
       if (__DEV__) {
-        console.log('🔄 Resetting accumulated books (page 1)');
+        console.log("🔄 Resetting accumulated books (page 1)");
       }
       setAccumulatedBooks(currentPageBooks);
     }
@@ -88,12 +99,13 @@ export default function BooksListScreen() {
   useEffect(() => {
     if (page > 1 && currentPageBooks.length > 0) {
       if (__DEV__) {
-        console.log('➕ Adding books to accumulated list (page', page, ')');
+        console.log("➕ Adding books to accumulated list (page", page, ")");
       }
       setAccumulatedBooks((prev) => {
         // Avoid duplicates
         const newBooks = currentPageBooks.filter(
-          (newBook: Book) => !prev.some((existingBook) => existingBook.id === newBook.id)
+          (newBook: Book) =>
+            !prev.some((existingBook) => existingBook.id === newBook.id),
         );
         return [...prev, ...newBooks];
       });
@@ -112,7 +124,7 @@ export default function BooksListScreen() {
       !isRefetching
     ) {
       if (__DEV__) {
-        console.log('🚀 Auto-loading all books (total:', pagination.total, ')');
+        console.log("🚀 Auto-loading all books (total:", pagination.total, ")");
       }
       // Load all remaining pages
       const totalPages = pagination.totalPages;
@@ -120,7 +132,14 @@ export default function BooksListScreen() {
         setPage(page + 1);
       }
     }
-  }, [pagination?.total, pagination?.totalPages, accumulatedBooks.length, isLoading, isRefetching, page]);
+  }, [
+    pagination?.total,
+    pagination?.totalPages,
+    accumulatedBooks.length,
+    isLoading,
+    isRefetching,
+    page,
+  ]);
 
   /**
    * Determine which books to display
@@ -153,7 +172,7 @@ export default function BooksListScreen() {
   const handleSearchChange = (searchText: string) => {
     // Only apply search if 3+ characters or empty (to clear)
     const shouldSearch = searchText.length === 0 || searchText.length >= 3;
-    
+
     if (shouldSearch) {
       setFilters((prev) => ({
         ...prev,
@@ -197,7 +216,7 @@ export default function BooksListScreen() {
   const handleLoadMore = () => {
     if (pagination && page < pagination.totalPages) {
       if (__DEV__) {
-        console.log('📄 Loading next page:', page + 1);
+        console.log("📄 Loading next page:", page + 1);
       }
       setPage(page + 1);
     }
@@ -208,7 +227,7 @@ export default function BooksListScreen() {
    */
   const handleRefresh = () => {
     if (__DEV__) {
-      console.log('🔄 Refreshing books list');
+      console.log("🔄 Refreshing books list");
     }
     setPage(1);
     setAccumulatedBooks([]);
@@ -231,13 +250,19 @@ export default function BooksListScreen() {
         ListHeaderComponent={
           <>
             <SearchBar
-              value={filters.titleSearch || ''}
+              value={filters.titleSearch || ""}
               onChange={handleSearchChange}
               placeholder="Search books by title..."
             />
             <View style={{ gap: 12 }}>
               <View style={{ gap: 6 }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: TextColors.primary }}>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: "600",
+                    color: TextColors.primary,
+                  }}
+                >
                   Filter by Status
                 </Text>
                 <View
@@ -246,12 +271,12 @@ export default function BooksListScreen() {
                     borderColor: Border.default,
                     borderRadius: 8,
                     backgroundColor: Background.surface,
-                    overflow: 'hidden',
-                    borderCurve: 'continuous',
+                    overflow: "hidden",
+                    borderCurve: "continuous",
                   }}
                 >
                   <Picker
-                    selectedValue={filters.status || ''}
+                    selectedValue={filters.status || ""}
                     onValueChange={handleStatusChange}
                   >
                     {BOOK_STATUS_OPTIONS.map((option) => (
@@ -267,9 +292,9 @@ export default function BooksListScreen() {
               <Pressable
                 onPress={() => setShowAdvancedFilters(true)}
                 style={({ pressed }) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
                   backgroundColor: pressed
                     ? Interactive.secondary.pressed
                     : Interactive.secondary.default,
@@ -282,7 +307,13 @@ export default function BooksListScreen() {
                 })}
               >
                 <Text style={{ fontSize: 20 }}>⚙️</Text>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: TextColors.primary }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "600",
+                    color: TextColors.primary,
+                  }}
+                >
                   Advanced Filters
                   {activeFiltersCount > 0 && ` (${activeFiltersCount})`}
                 </Text>
@@ -318,37 +349,37 @@ export default function BooksListScreen() {
                 borderWidth: 1,
                 borderColor: Feedback.error.border,
                 gap: 8,
-                borderCurve: 'continuous',
+                borderCurve: "continuous",
               }}
             >
-            <Text
-              style={{
-                fontSize: 17,
-                fontWeight: '600',
-                color: Feedback.error.text,
-              }}
-            >
-              Error Loading Books
-            </Text>
-            <Text
-              style={{
-                fontSize: 15,
-                color: Feedback.error.text,
-              }}
-              selectable
-            >
-              {error.message || 'An unexpected error occurred'}
-            </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                color: Feedback.error.text,
-                marginTop: 4,
-              }}
-            >
-              Pull down to retry
-            </Text>
-          </View>
+              <Text
+                style={{
+                  fontSize: 17,
+                  fontWeight: "600",
+                  color: Feedback.error.text,
+                }}
+              >
+                Error Loading Books
+              </Text>
+              <Text
+                style={{
+                  fontSize: 15,
+                  color: Feedback.error.text,
+                }}
+                selectable
+              >
+                {error.message || "An unexpected error occurred"}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: Feedback.error.text,
+                  marginTop: 4,
+                }}
+              >
+                Pull down to retry
+              </Text>
+            </View>
           </>
         }
       />
@@ -368,13 +399,16 @@ export default function BooksListScreen() {
           style={{ backgroundColor: Background.primary }}
           contentContainerStyle={{ padding: 16, gap: 16 }}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} />
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={handleRefresh}
+            />
           }
           ListHeaderComponent={
             <>
               {/* Search Bar */}
               <SearchBar
-                value={filters.titleSearch || ''}
+                value={filters.titleSearch || ""}
                 onChange={handleSearchChange}
                 placeholder="Search books by title..."
               />
@@ -386,7 +420,7 @@ export default function BooksListScreen() {
                   <Text
                     style={{
                       fontSize: 15,
-                      fontWeight: '600',
+                      fontWeight: "600",
                       color: TextColors.primary,
                     }}
                   >
@@ -398,12 +432,12 @@ export default function BooksListScreen() {
                       borderColor: Border.default,
                       borderRadius: 8,
                       backgroundColor: Background.surface,
-                      overflow: 'hidden',
-                      borderCurve: 'continuous',
+                      overflow: "hidden",
+                      borderCurve: "continuous",
                     }}
                   >
                     <Picker
-                      selectedValue={filters.status || ''}
+                      selectedValue={filters.status || ""}
                       onValueChange={handleStatusChange}
                     >
                       {BOOK_STATUS_OPTIONS.map((option) => (
@@ -421,9 +455,9 @@ export default function BooksListScreen() {
                 <Pressable
                   onPress={() => setShowAdvancedFilters(true)}
                   style={({ pressed }) => ({
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
                     backgroundColor: pressed
                       ? Interactive.secondary.pressed
                       : Interactive.secondary.default,
@@ -439,7 +473,7 @@ export default function BooksListScreen() {
                   <Text
                     style={{
                       fontSize: 16,
-                      fontWeight: '600',
+                      fontWeight: "600",
                       color: TextColors.primary,
                     }}
                   >
@@ -453,7 +487,7 @@ export default function BooksListScreen() {
               <View
                 style={{
                   padding: 32,
-                  alignItems: 'center',
+                  alignItems: "center",
                   gap: 12,
                 }}
               >
@@ -468,9 +502,9 @@ export default function BooksListScreen() {
                 <Text
                   style={{
                     fontSize: 18,
-                    fontWeight: '600',
+                    fontWeight: "600",
                     color: TextColors.primary,
-                    textAlign: 'center',
+                    textAlign: "center",
                   }}
                 >
                   No books found
@@ -479,13 +513,15 @@ export default function BooksListScreen() {
                   style={{
                     fontSize: 15,
                     color: TextColors.secondary,
-                    textAlign: 'center',
+                    textAlign: "center",
                     lineHeight: 22,
                   }}
                 >
-                  {filters.status || filters.titleSearch || activeFiltersCount > 0
-                    ? 'Try changing the filters or add a new book'
-                    : 'Add your first book to get started'}
+                  {filters.status ||
+                  filters.titleSearch ||
+                  activeFiltersCount > 0
+                    ? "Try changing the filters or add a new book"
+                    : "Add your first book to get started"}
                 </Text>
               </View>
             </>
@@ -516,7 +552,10 @@ export default function BooksListScreen() {
         style={{ backgroundColor: Background.primary }}
         contentContainerStyle={{ padding: 16, gap: 12 }}
         refreshControl={
-          <RefreshControl refreshing={isRefetching && page === 1} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={isRefetching && page === 1}
+            onRefresh={handleRefresh}
+          />
         }
         // Performance optimizations
         removeClippedSubviews={true} // Unmount items outside viewport
@@ -528,7 +567,7 @@ export default function BooksListScreen() {
           <>
             {/* Search Bar */}
             <SearchBar
-              value={filters.titleSearch || ''}
+              value={filters.titleSearch || ""}
               onChange={handleSearchChange}
               placeholder="Search books by title..."
             />
@@ -540,7 +579,7 @@ export default function BooksListScreen() {
                 <Text
                   style={{
                     fontSize: 15,
-                    fontWeight: '600',
+                    fontWeight: "600",
                     color: TextColors.primary,
                   }}
                 >
@@ -552,12 +591,12 @@ export default function BooksListScreen() {
                     borderColor: Border.default,
                     borderRadius: 8,
                     backgroundColor: Background.surface,
-                    overflow: 'hidden',
-                    borderCurve: 'continuous',
+                    overflow: "hidden",
+                    borderCurve: "continuous",
                   }}
                 >
                   <Picker
-                    selectedValue={filters.status || ''}
+                    selectedValue={filters.status || ""}
                     onValueChange={handleStatusChange}
                   >
                     {BOOK_STATUS_OPTIONS.map((option) => (
@@ -575,9 +614,9 @@ export default function BooksListScreen() {
               <Pressable
                 onPress={() => setShowAdvancedFilters(true)}
                 style={({ pressed }) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
                   backgroundColor: pressed
                     ? Interactive.secondary.pressed
                     : Interactive.secondary.default,
@@ -593,7 +632,7 @@ export default function BooksListScreen() {
                 <Text
                   style={{
                     fontSize: 16,
-                    fontWeight: '600',
+                    fontWeight: "600",
                     color: TextColors.primary,
                   }}
                 >

@@ -6,7 +6,6 @@ import { globalErrorMiddleware } from "./middlewares/globalErrorMiddleware.js";
 import { validateEnv, config } from "./config/env.js";
 import { DIContainer } from "./config/container.js";
 
-
 async function bootstrap() {
   let database = null;
 

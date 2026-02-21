@@ -1,7 +1,7 @@
 /**
  * RequestReviewService Tests
  * Tests for the RequestReview use case (manual READING → PENDING_SCORE)
- * 
+ *
  * Coverage:
  * - READING → PENDING_SCORE transition
  * - Invalid state transition errors
@@ -54,7 +54,7 @@ describe("RequestReviewService", () => {
     service = new RequestReviewService(
       mockMssqlClient,
       mockBookRepository,
-      mockBookStatusHistoryRepository
+      mockBookStatusHistoryRepository,
     );
   });
 
@@ -94,7 +94,7 @@ describe("RequestReviewService", () => {
         1,
         BookStatus.PENDING_SCORE,
         1, // Same cycle
-        mockTransaction
+        mockTransaction,
       );
       expect(mockBookStatusHistoryRepository.create).toHaveBeenCalledWith(
         {
@@ -103,7 +103,7 @@ describe("RequestReviewService", () => {
           newStatus: BookStatus.PENDING_SCORE,
           readingCycle: 1,
         },
-        mockTransaction
+        mockTransaction,
       );
       expect(mockTransaction.begin).toHaveBeenCalledTimes(1);
       expect(mockTransaction.commit).toHaveBeenCalledTimes(1);
@@ -144,7 +144,7 @@ describe("RequestReviewService", () => {
         2,
         BookStatus.PENDING_SCORE,
         3, // Same cycle as before
-        mockTransaction
+        mockTransaction,
       );
     });
   });
@@ -175,7 +175,7 @@ describe("RequestReviewService", () => {
 
       // Act & Assert
       await expect(service.execute(1)).rejects.toThrow(
-        InvalidStateTransitionError
+        InvalidStateTransitionError,
       );
       expect(mockTransaction.begin).not.toHaveBeenCalled();
     });
@@ -195,7 +195,7 @@ describe("RequestReviewService", () => {
 
       // Act & Assert
       await expect(service.execute(1)).rejects.toThrow(
-        InvalidStateTransitionError
+        InvalidStateTransitionError,
       );
       expect(mockTransaction.begin).not.toHaveBeenCalled();
     });
@@ -216,7 +216,7 @@ describe("RequestReviewService", () => {
 
       // Act & Assert
       await expect(service.execute(1)).rejects.toThrow(
-        InvalidStateTransitionError
+        InvalidStateTransitionError,
       );
       expect(mockTransaction.begin).not.toHaveBeenCalled();
     });
@@ -236,7 +236,7 @@ describe("RequestReviewService", () => {
 
       // Act & Assert
       await expect(service.execute(1)).rejects.toThrow(
-        InvalidStateTransitionError
+        InvalidStateTransitionError,
       );
       expect(mockTransaction.begin).not.toHaveBeenCalled();
     });
@@ -255,7 +255,7 @@ describe("RequestReviewService", () => {
       mockBookRepository.getById.mockResolvedValue(readingBook);
       const errorMessage = "Database connection lost";
       mockBookRepository.updateStatus.mockRejectedValue(
-        new Error(errorMessage)
+        new Error(errorMessage),
       );
 
       // Act & Assert
@@ -303,7 +303,7 @@ describe("RequestReviewService", () => {
           oldStatus: BookStatus.READING,
           newStatus: BookStatus.PENDING_SCORE,
         }),
-        mockTransaction
+        mockTransaction,
       );
     });
   });

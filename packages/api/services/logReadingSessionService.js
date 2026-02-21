@@ -1,12 +1,12 @@
 /**
  * LogReadingSessionService (Command Use Case)
  * Logs a reading session for a book with automatic state transitions
- * 
+ *
  * Responsibilities:
  * - Implement LogReadingSession use case as defined in USE_CASES.md
  * - Orchestrate repositories within a transaction
  * - Delegate domain decisions to Book entity
- * 
+ *
  * Rules:
  * - Framework-agnostic
  * - No validation (handled by controller)
@@ -23,7 +23,7 @@ export class LogReadingSessionService {
     mssqlClient,
     bookRepository,
     readingSessionRepository,
-    bookStatusHistoryRepository
+    bookStatusHistoryRepository,
   ) {
     this.mssqlClient = mssqlClient;
     this.bookRepository = bookRepository;
@@ -50,16 +50,17 @@ export class LogReadingSessionService {
     book.ensureCanAcceptSession();
 
     // Step 3: Get current pages in cycle (outside transaction)
-    const currentPagesInCycle = await this.readingSessionRepository.getTotalPagesInCycle(
-      bookId,
-      book.currentReadingCycle
-    );
+    const currentPagesInCycle =
+      await this.readingSessionRepository.getTotalPagesInCycle(
+        bookId,
+        book.currentReadingCycle,
+      );
 
     // Step 4: Validate pages constraint - Delegate to Book entity
     if (!book.canAcceptPages(currentPagesInCycle, pagesRead)) {
       throw new BadRequestError(
         `Pages read (${pagesRead}) would exceed total pages. Current: ${currentPagesInCycle}, Total: ${book.totalPages}`,
-        "PagesValidation"
+        "PagesValidation",
       );
     }
 
@@ -79,9 +80,9 @@ export class LogReadingSessionService {
           bookId,
           pagesRead,
           readingCycle: transition.newCycle,
-          occurredAt: occurredAt || new Date()
+          occurredAt: occurredAt || new Date(),
         },
-        transaction
+        transaction,
       );
 
       // 6.2 Update Book if status changed
@@ -90,7 +91,7 @@ export class LogReadingSessionService {
           bookId,
           transition.newStatus,
           transition.newCycle,
-          transaction
+          transaction,
         );
 
         // 6.3 Insert BookStatusHistory
@@ -99,9 +100,9 @@ export class LogReadingSessionService {
             bookId,
             oldStatus: transition.oldStatus,
             newStatus: transition.newStatus,
-            readingCycle: transition.newCycle
+            readingCycle: transition.newCycle,
           },
-          transaction
+          transaction,
         );
       }
 
