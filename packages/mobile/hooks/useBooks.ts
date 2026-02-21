@@ -180,6 +180,7 @@ export function useCreateBook() {
 
 /**
  * Hook: Update book metadata
+ * Includes optimistic updates for instant UI feedback
  */
 export function useUpdateBook() {
   const queryClient = useQueryClient();
@@ -187,11 +188,42 @@ export function useUpdateBook() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateBookInput }) =>
       api.put<{ success: boolean; data: Book }>(`/api/books/${id}`, data),
+    
+    // Optimistic update: Apply changes immediately
+    onMutate: async ({ id, data }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: booksKeys.detail(id) });
+      
+      // Snapshot previous value
+      const previousBook = queryClient.getQueryData(booksKeys.detail(id));
+      
+      // Optimistically update book detail
+      queryClient.setQueryData(booksKeys.detail(id), (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          book: {
+            ...old.book,
+            ...data,
+          },
+        };
+      });
+      
+      // Return context for rollback
+      return { previousBook };
+    },
+    
+    // Rollback on error
+    onError: (err, variables, context) => {
+      if (context?.previousBook) {
+        queryClient.setQueryData(booksKeys.detail(variables.id), context.previousBook);
+      }
+    },
+    
+    // Refetch after success to sync with server
     onSuccess: (_, variables) => {
-      // Invalidate book details and lists
       queryClient.invalidateQueries({ queryKey: booksKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
-      // Invalidate book stats
       queryClient.invalidateQueries({ queryKey: bookStatsKeys.detail(variables.id) });
     },
   });
@@ -223,6 +255,7 @@ export function useReviewBook() {
 
 /**
  * Hook: Reopen an ABANDONED book
+ * Includes optimistic status update
  */
 export function useReopenBook() {
   const queryClient = useQueryClient();
@@ -232,13 +265,39 @@ export function useReopenBook() {
       api.request<{ success: boolean; data: Book }>(`/api/books/${id}/reopen`, {
         method: 'PATCH',
       }),
+    
+    // Optimistic update: Change status immediately
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: booksKeys.detail(id) });
+      
+      const previousBook = queryClient.getQueryData(booksKeys.detail(id));
+      
+      // Optimistically change status to READING
+      queryClient.setQueryData(booksKeys.detail(id), (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          book: {
+            ...old.book,
+            status: 'READING',
+            current_reading_cycle: old.book.current_reading_cycle + 1,
+          },
+        };
+      });
+      
+      return { previousBook };
+    },
+    
+    onError: (err, id, context) => {
+      if (context?.previousBook) {
+        queryClient.setQueryData(booksKeys.detail(id), context.previousBook);
+      }
+    },
+    
     onSuccess: (_, bookId) => {
-      // Invalidate book details and lists
       queryClient.invalidateQueries({ queryKey: booksKeys.detail(bookId) });
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
-      // Invalidate KPIs (status changes)
       queryClient.invalidateQueries({ queryKey: kpiKeys.all });
-      // Invalidate book stats
       queryClient.invalidateQueries({ queryKey: bookStatsKeys.detail(bookId) });
     },
   });
@@ -247,6 +306,7 @@ export function useReopenBook() {
 /**
  * Hook: Request review (manual transition from READING to PENDING_SCORE)
  * Use case: User wants to abandon book without completing all pages
+ * Includes optimistic status update
  */
 export function useRequestReview() {
   const queryClient = useQueryClient();
@@ -256,13 +316,38 @@ export function useRequestReview() {
       api.request<{ success: boolean; data: Book }>(`/api/books/${id}/request-review`, {
         method: 'PATCH',
       }),
+    
+    // Optimistic update: Change status immediately
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: booksKeys.detail(id) });
+      
+      const previousBook = queryClient.getQueryData(booksKeys.detail(id));
+      
+      // Optimistically change status to PENDING_SCORE
+      queryClient.setQueryData(booksKeys.detail(id), (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          book: {
+            ...old.book,
+            status: 'PENDING_SCORE',
+          },
+        };
+      });
+      
+      return { previousBook };
+    },
+    
+    onError: (err, id, context) => {
+      if (context?.previousBook) {
+        queryClient.setQueryData(booksKeys.detail(id), context.previousBook);
+      }
+    },
+    
     onSuccess: (_, bookId) => {
-      // Invalidate book details and lists
       queryClient.invalidateQueries({ queryKey: booksKeys.detail(bookId) });
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
-      // Invalidate KPIs (status changes)
       queryClient.invalidateQueries({ queryKey: kpiKeys.all });
-      // Invalidate book stats
       queryClient.invalidateQueries({ queryKey: bookStatsKeys.detail(bookId) });
     },
   });
