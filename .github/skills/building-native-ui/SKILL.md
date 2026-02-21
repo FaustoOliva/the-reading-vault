@@ -74,9 +74,7 @@ Apply when:
 - MUST use `{ fontVariant: 'tabular-nums' }` for counters (alignment)
 
 **Colors & Accessibility:**
-- MUST import all colors from `@/constants/colors` (see `mobile-accessibility` skill)
-- MUST NEVER hardcode hex/rgb/named colors
-- MUST meet WCAG AA contrast standards (4.5:1 for text)
+- See [mobile-accessibility](../mobile-accessibility/SKILL.md) skill for all color system rules (MANDATORY)
 
 **Styling Method:**
 - MUST use inline styles or StyleSheet.create

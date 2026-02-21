@@ -134,86 +134,61 @@ Keep skills together when:
 
 ## Audit Rules (Mandatory)
 
-When auditing documentation, the agent MUST:
+When auditing documentation, apply these three audit categories:
 
-### 1. Responsibility Audit
-- Verify that each document has a single responsibility
-- Detect responsibility leaks between documents
-- Report overlaps explicitly
+### 1. Structure Audit
 
----
+**Checks:**
+- Each document has a single, explicit responsibility
+- No responsibility leaks or overlaps between documents
+- Size is appropriate for the role (skills: target < 250 lines, hard limit 450 lines)
+- Documents are split when they cover multiple concerns
 
-### 2. Size & Density Audit
-- Flag documents that grow excessively without added clarity
-- Question documents that exceed reasonable size for their role
-- Recommend simplification or splitting when needed
-
----
-
-### 3. Reference Audit
-- Validate all relative paths and references
-- Detect broken, ambiguous, or circular references
-- Ensure references point to the correct source of truth
+**Questions:**
+- Does this document do ONE thing well?
+- Are there rules in this document that belong elsewhere?
+- Is the size justified by the responsibility?
 
 ---
 
-### 4. Consistency Audit
-- Cross-check documents for contradictions
-- Ensure terminology is consistent (names, enums, concepts)
-- Detect duplicated rules expressed differently
+### 2. Quality Audit
+
+**Checks:**
+- All relative paths and references are valid
+- No broken, ambiguous, or circular references
+- Terminology is consistent across documents
+- No contradictions between documents
+- References point to the correct source of truth
+
+**Questions:**
+- Can I navigate all links successfully?
+- Are the same concepts called the same thing everywhere?
+- Do documents agree on rules and constraints?
 
 ---
 
-### 5. Prompt Readiness Audit
-- Evaluate whether the current documentation allows:
-  - Short, declarative prompts
-  - Minimal repetition of rules
-- If long prompts are required, documentation is considered insufficient
+### 3. Enforceability Audit
 
----
+**Checks:**
+- Rules use MUST/MUST NOT (not SHOULD/CONSIDER)
+- Prohibitions are explicit and unambiguous
+- Rules are enforceable today (not aspirational)
+- No vague or interpretative language
+- Code examples are minimal and justified
+- No tutorial content (only rules)
 
-### 6. Agent Usability Audit
-- Verify that rules are enforceable, not aspirational
-- Ensure prohibitions are explicit
-- Detect vague or interpretative language
-
----
-
-### 7. Skill Quality Audit (For .github/skills/)
-
-When auditing skills specifically:
-
-**Size Check:**
-- Measure line count for each SKILL.md
-- Flag skills > 450 lines for refactoring
-- Report size distribution across all skills
-
-**Responsibility Check:**
-- Verify single responsibility per skill
-- Detect overlapping rules between skills
-- Identify skills that cover multiple concerns
-
-**Format Check:**
-- Ensure MUST/MUST NOT structure (not SHOULD/CONSIDER)
-- Remove tutorial-style content
-- Verify code examples are minimal (only when rules unclear)
-
-**Necessity Check:**
-- Validate all rules are needed NOW (not speculative)
-- Identify "future feature" content for removal
-- Confirm skill enables safe coding TODAY
-
-**Completeness Check:**
-- Ensure skill covers its responsibility fully
-- No gaps that force agent interpretation
-- Critical constraints are explicit
+**For Skills Specifically:**
+- Single responsibility per skill
+- Size: target < 250 lines, hard limit < 450 lines
+- All rules are needed NOW (no speculative features)
+- Skill enables safe coding immediately
 
 **Output Format:**
 ```
 Skill: <name>
 Lines: <count>
-Status: [Ideal/Good/Acceptable/Refactor]
-Responsibility: <one-sentence description>
+Status: [Under 250 ✅ | 250-400 ⚠️ | 400+ 🔴]
+Responsibility: <one-sentence>
 Issues: [list] or None
 ```
 
@@ -257,61 +232,42 @@ When proposing documentation changes:
 
 ---
 
-## Skill Refactoring Examples
+## Skill Refactoring Patterns
 
-### Example: Reducing Overlap
+### When to Split Skills
 
-**Before (building-native-ui - 321 lines):**
-- ✗ Library preferences (belongs in expo-runtime)
-- ✗ Navigation patterns (belongs in expo-router-navigation)
-- ✗ Running the app (belongs in expo-runtime)
-- ✓ UI component patterns
-- ✓ Styling rules
+**Split when:**
+- Skill exceeds 400 lines
+- Skill covers multiple distinct responsibilities
+- Rules have different trigger conditions
+- Overlap detected with another skill
 
-**After (building-native-ui - 116 lines):**
-- ✓ UI component patterns only
-- ✓ Styling rules only
-- Result: -64% reduction, clear responsibility
+**Examples:**
+- Split `building-native-ui` (321 lines) → Extract visual feedback patterns if needed
+- Split `api-domain` (465 lines) → Extract SOLID principles to separate skill ✅ Done
+- Split `documentation` (391 lines) → Consolidate audit types, simplify examples ✅ Done
 
-### Example: Extracting State Management
+### When to Merge/Consolidate
 
-**Before (native-data-fetching - 492 lines):**
-- ✗ React Query setup/patterns (state management concern)
-- ✗ Offline support (speculative feature)
-- ✗ Environment variables (runtime concern)
-- ✓ Fetch API patterns
-- ✓ Error handling
-- ✓ Authentication
+**Merge when:**
+- Two skills have overlapping responsibilities
+- Combined size stays < 250 lines
+- Rules are tightly coupled in practice
 
-**After:**
-- native-data-fetching (177 lines) → HTTP patterns only
-- mobile-state-management (223 lines) → React Query, useState, forms
-- Result: Clear separation, both skills < 450 lines
+**Examples:**
+- Consolidate color rules: building-native-ui → Defer to mobile-accessibility
+- Consolidate safe area: expo-runtime → Keep only in building-native-ui
 
-### Example: Creating Minimal New Skills
+### When to Extract
 
-**Identified need:** Navigation rules for Expo Router
+**Extract when:**
+- A section within a skill is independently reusable
+- Extraction creates clearer boundaries
+- Extracted content is 80-150 lines
 
-**Wrong approach:**
-```markdown
-# Expo Complete Guide (500+ lines)
-- Running the app
-- File conventions
-- Navigation
-- State management
-- API calls
-```
-
-**Correct approach:**
-```markdown
-# expo-router-navigation (168 lines)
-- File-based routing ONLY
-- Navigation API (Link, router)
-- Dynamic routes
-- Query params
-```
-
-Result: Single responsibility, minimal, enforceable.
+**Examples:**
+- Extract form component patterns → Add to mobile-state-management (if < 250 lines)
+- Extract animation patterns → Create mobile-visual-feedback if building-native-ui exceeds 300
 
 ---
 
@@ -319,39 +275,21 @@ Result: Single responsibility, minimal, enforceable.
 
 ### Create NEW skill when:
 ✓ Responsibility is clearly distinct from all existing skills  
-✓ Combining would exceed 450 lines  
+✓ Combining would exceed 250 lines (target) or 400 lines (hard limit)  
 ✓ Rules have different trigger conditions  
 ✓ Separation creates clearer boundaries  
 
 ### Extend EXISTING skill when:
 ✓ Responsibility is subset of existing skill  
-✓ Total size would stay < 450 lines  
+✓ Total size would stay < 250 lines  
 ✓ Rules are tightly coupled in practice  
 ✓ Separation would create artificial boundaries  
 
 ### Refactor EXISTING skills when:
-✓ Any skill exceeds 450 lines  
+✓ Any skill exceeds 400 lines  
 ✓ Overlap detected between skills  
 ✓ Skill covers multiple distinct concerns  
 ✓ Tutorial content found instead of rules  
-
-### Example Decisions:
-
-**Scenario:** Need to add form validation rules  
-**Decision:** Extend `mobile-state-management` (form state already covered)  
-**Rationale:** Forms and validation are same concern, size OK
-
-**Scenario:** Need animation performance rules  
-**Decision:** Keep in `vercel-react-native-skills` (already exists)  
-**Rationale:** External skill already handles this
-
-**Scenario:** Need offline sync patterns  
-**Decision:** DO NOT ADD (speculative, not needed now)  
-**Rationale:** No current requirement, future feature
-
-**Scenario:** Skill reaches 500 lines  
-**Decision:** REFACTOR into 2+ skills with clear separation  
-**Rationale:** Exceeds size limit, likely has multiple concerns  
 
 ---
 
@@ -366,8 +304,8 @@ Result: Single responsibility, minimal, enforceable.
 ### For Skills Specifically:
 
 **Quality Metrics:**
-- Average skill size: < 200 lines (ideal)
-- No skill > 450 lines
+- Target skill size: < 250 lines
+- Hard limit: < 450 lines
 - Zero responsibility overlaps between skills
 - 100% MUST/MUST NOT coverage (no vague language)
 

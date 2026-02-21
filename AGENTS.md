@@ -52,6 +52,30 @@ Follow the **Conventional Commits** standard:
 * `docs(scope): description`
 * `test(scope): description`
 
+**Pre-Commit Checklist (MANDATORY):**
+
+Before committing any code, you MUST:
+
+1. **Verify no errors:** Check for TypeScript/compilation errors
+   ```bash
+   npm run build
+   # OR for specific packages:
+   cd packages/api && npm run build
+   cd packages/mobile && npx tsc --noEmit
+   ```
+
+2. **Run formatting:** Ensure code follows style guidelines
+   ```bash
+   npm run format
+   ```
+
+3. **Run linting:** Fix all linting issues
+   ```bash
+   npm run lint
+   ```
+
+**If any of these steps fail, DO NOT commit.** Fix the issues first.
+
 ---
 
 ## Non-Negotiable Rules

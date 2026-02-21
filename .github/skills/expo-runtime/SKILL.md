@@ -1,8 +1,6 @@
 ---
 name: expo-runtime
 description: Expo runtime constraints, when to use Expo Go vs custom builds, library preferences, and file conventions.
-version: 1.0.0
-license: MIT
 ---
 
 # Expo Runtime Constraints
@@ -83,25 +81,7 @@ All public env vars must be prefixed with `EXPO_PUBLIC_`.
 
 ## Safe Areas
 
-**For scrollable content:**
-
-```tsx
-<ScrollView contentInsetAdjustmentBehavior="automatic">
-  {/* content */}
-</ScrollView>
-```
-
-**For lists:**
-
-```tsx
-<FlatList
-  contentInsetAdjustmentBehavior="automatic"
-  data={items}
-  renderItem={...}
-/>
-```
-
-**Never wrap root in SafeAreaView**—use `contentInsetAdjustmentBehavior` instead for better automatic handling of notches, keyboards, and toolbars.
+See [building-native-ui](../building-native-ui/SKILL.md) skill for safe area handling rules (`contentInsetAdjustmentBehavior` pattern).
 
 ## Responsiveness
 

@@ -253,56 +253,17 @@ If an invariant spans multiple entities:
 
 ---
 
-## SOLID Principles in Domain
+## SOLID Principles
 
-### Single Responsibility Principle (SRP)
+**All domain changes MUST comply with SOLID principles.**
 
-**Rule:** Each entity has ONE reason to change.
+See the [api-solid-principles](../api-solid-principles/SKILL.md) skill for:
+- Detailed SOLID rules for domain entities
+- Self-check checklist (mandatory before committing)
+- Common violations and fixes
+- Compliance verification
 
-Before adding logic to an entity:
-1. Ask: "Is this behavior intrinsic to this entity?"
-2. If NO, extract to service or value object.
-
-Example:
-- ✅ `Book.isReadable()` → Belongs to Book.
-- ❌ `Book.calculateVelocity()` → Belongs to a KPI service.
-
-### Open/Closed Principle (OCP)
-
-**Rule:** Entities are open for extension, closed for modification.
-
-- Use polymorphism or strategy pattern for variable behavior.
-- Avoid conditional branching explosion.
-- Prefer adding new classes over modifying existing ones.
-- Prefer simple transition maps for small FSMs.
-- Do NOT introduce polymorphism unless complexity justifies it.
-- Avoid over-engineering for hypothetical future cases.
-
-Example:
-- ✅ Add `AbandonedBookState` class.
-- ❌ Add `if (status === ABANDONED) { ... }` everywhere.
-
-### Liskov Substitution Principle (LSP)
-
-**Rule:** Derived types must be substitutable for base types.
-
-- If using inheritance, subclasses MUST NOT violate base class contracts.
-- Prefer composition over inheritance unless LSP holds.
-
-### Interface Segregation Principle (ISP)
-
-**Rule:** No entity should depend on methods it doesn't use.
-
-- Avoid "god entities" with dozens of methods.
-- Split large entities into smaller, focused ones.
-- Use interfaces (via duck typing in JS) to define contracts.
-
-### Dependency Inversion Principle (DIP)
-
-**Rule:** Entities depend on abstractions, not concretions.
-
-- Entities MUST NOT import repositories, services, or infrastructure.
-- Use dependency injection if external dependencies are needed.
+**This is not optional.** Run the SOLID self-check before finalizing any domain work.
 
 ---
 
@@ -357,45 +318,6 @@ test("should transition from WISH_LIST to READING when logging session", () => {
 
 - Domain entities are pure logic.
 - No mocks required unless entity uses external dependencies (which it shouldn't).
-
----
-
-## SOLID Self-Check
-
-**Before finalizing ANY domain-related change, you MUST explicitly evaluate:**
-
-### 1. Single Responsibility Principle (SRP)
-- [ ] Does this entity have exactly ONE reason to change?
-- [ ] Is this behavior intrinsic to this entity, or does it belong elsewhere?
-- [ ] Can this logic be extracted to a service, value object, or helper?
-
-### 2. Open/Closed Principle (OCP)
-- [ ] Is this change adding new behavior without modifying existing logic?
-- [ ] Am I using polymorphism or strategy patterns instead of conditionals?
-- [ ] Will future changes require modifying this entity again?
-
-### 3. Liskov Substitution Principle (LSP)
-- [ ] If using inheritance, can derived types substitute base types without breaking behavior?
-- [ ] Am I violating any base class contracts?
-
-### 4. Interface Segregation Principle (ISP)
-- [ ] Does this entity expose only the methods it needs?
-- [ ] Am I creating a "god entity" with too many responsibilities?
-- [ ] Can this entity be split into smaller, focused entities?
-
-### 5. Dependency Inversion Principle (DIP)
-- [ ] Does this entity depend on abstractions, not concretions?
-- [ ] Am I importing repositories, services, or infrastructure? (If yes, STOP.)
-- [ ] Are dependencies injected, not hardcoded?
-
-### Compliance Statement
-
-After checking all five principles, you MUST:
-1. Document violations (if any) in code comments.
-2. Propose refactoring if violations are detected.
-3. Justify why the change aligns with SOLID principles.
-
-**If you cannot justify SOLID compliance, DO NOT proceed.**
 
 ---
 
