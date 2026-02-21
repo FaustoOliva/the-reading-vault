@@ -40,14 +40,14 @@ export interface BookDetails {
     };
     total_pages: number | null;
     status: BookStatus;
-    currentReadingCycle: number;
+    current_reading_cycle: number;  // backend uses snake_case
     pages_read_total: number;
     pages_read_in_current_cycle: number;
     score: number | null;
     comment: string | null;
     created_at: Date;
   };
-  currentReadingCycle: {
+  current_cycle_stats: {  // backend uses snake_case
     sessions_count: number;
     first_session_date: Date | null;
     last_session_date: Date | null;
@@ -59,13 +59,13 @@ export interface BookDetails {
 }
 
 export interface ReadingCycle {
-  reading_cycle: number;
+  cycle_number: number;  // backend uses cycle_number, not reading_cycle
   status: BookStatus;
   sessions_count: number;
-  pages_read: number;
-  first_session_date: Date | null;
-  last_session_date: Date | null;
-  is_current: boolean;
+  total_pages_read: number;  // backend uses total_pages_read, not pages_read
+  first_session: Date | null;  // backend uses first_session, not first_session_date
+  last_session: Date | null;  // backend uses last_session, not last_session_date
+  duration_days: number;  // additional field from backend
 }
 
 export interface CreateBookInput {
