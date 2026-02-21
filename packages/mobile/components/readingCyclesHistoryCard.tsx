@@ -10,6 +10,11 @@
  * - Date range (first to last session)
  * - Current cycle indicator
  * 
+ * Features:
+ * - Current cycle always expanded
+ * - Previous cycles collapsed by default
+ * - Tap to expand/collapse previous cycles
+ * 
  * Rules:
  * - Use flex gap for spacing
  * - Use borderCurve: 'continuous' for rounded corners
@@ -18,7 +23,8 @@
  * - Sort cycles in reverse order (most recent first)
  */
 
-import { View, Text } from 'react-native';
+import { useState } from 'react';
+import { View, Text, Pressable } from 'react-native';
 import { ReadingCycle } from '@/types/book';
 import { BookStatusBadge } from './bookStatusBadge';
 import {
@@ -26,6 +32,7 @@ import {
   Text as TextColors,
   Border,
   Feedback,
+  Interactive,
 } from '@/constants/colors';
 
 interface ReadingCyclesHistoryCardProps {
@@ -49,15 +56,15 @@ function formatShortDate(date: Date | null): string {
 /**
  * Single cycle item component
  */
-function CycleItem({ cycle }: { cycle: ReadingCycle }) {
+function CycleItem({ cycle, isCurrent }: { cycle: ReadingCycle; isCurrent: boolean }) {
   return (
     <View
       style={{
         padding: 12,
         borderRadius: 10,
-        backgroundColor: cycle.is_current ? Feedback.info.background : Background.primary,
+        backgroundColor: isCurrent ? Feedback.info.background : Background.primary,
         borderWidth: 1,
-        borderColor: cycle.is_current ? Feedback.info.border : Border.default,
+        borderColor: isCurrent ? Feedback.info.border : Border.default,
         gap: 10,
         borderCurve: 'continuous',
       }}
@@ -72,12 +79,12 @@ function CycleItem({ cycle }: { cycle: ReadingCycle }) {
             color: TextColors.primary,
           }}
         >
-          Cycle #{cycle?.reading_cycle ?? 0}
+          Cycle #{cycle?.cycle_number ?? 0}
         </Text>
         
         <BookStatusBadge status={cycle?.status ?? 'WISH_LIST'} />
 
-        {(cycle?.is_current ?? false) && (
+        {isCurrent && (
           <View
             style={{
               paddingHorizontal: 8,
@@ -122,19 +129,19 @@ function CycleItem({ cycle }: { cycle: ReadingCycle }) {
           <Text
             style={{ fontSize: 15, fontWeight: '600', fontVariant: ['tabular-nums'], color: TextColors.primary }}
           >
-            {(cycle?.pages_read ?? 0).toLocaleString()}
+            {(cycle?.total_pages_read ?? 0).toLocaleString()}
           </Text>
         </View>
       </View>
 
       {/* Date Range */}
-      {cycle?.first_session_date && cycle?.last_session_date && (
+      {cycle?.first_session && cycle?.last_session && (
         <View style={{ gap: 2 }}>
           <Text style={{ fontSize: 11, fontWeight: '600', color: TextColors.tertiary }}>
             Period
           </Text>
           <Text style={{ fontSize: 13, color: TextColors.secondary }}>
-            {formatShortDate(cycle?.first_session_date ?? null)} → {formatShortDate(cycle?.last_session_date ?? null)}
+            {formatShortDate(cycle?.first_session ?? null)} → {formatShortDate(cycle?.last_session ?? null)}
           </Text>
         </View>
       )}
@@ -144,7 +151,14 @@ function CycleItem({ cycle }: { cycle: ReadingCycle }) {
 
 export function ReadingCyclesHistoryCard({ cycles }: ReadingCyclesHistoryCardProps) {
   // Sort cycles in reverse order (most recent first)
-  const sortedCycles = [...(cycles ?? [])].sort((a, b) => (b?.reading_cycle ?? 0) - (a?.reading_cycle ?? 0));
+  const sortedCycles = [...(cycles ?? [])].sort((a, b) => (b?.cycle_number ?? 0) - (a?.cycle_number ?? 0));
+
+  // Separate current cycle (last in the array) from previous cycles
+  const currentCycle = sortedCycles.length > 0 ? sortedCycles[0] : null;
+  const previousCycles = sortedCycles.slice(1);
+
+  // State for collapsing previous cycles
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <View
@@ -160,7 +174,7 @@ export function ReadingCyclesHistoryCard({ cycles }: ReadingCyclesHistoryCardPro
     >
       {/* Section Title */}
       <Text style={{ fontSize: 16, fontWeight: '700', color: TextColors.primary }}>
-        📖 Reading Cycles History
+        📖 Reading Cycles
       </Text>
 
       {/* Total Cycles Count */}
@@ -188,9 +202,44 @@ export function ReadingCyclesHistoryCard({ cycles }: ReadingCyclesHistoryCardPro
         </Text>
       ) : (
         <View style={{ gap: 12 }}>
-          {sortedCycles.map((cycle) => (
-            <CycleItem key={`cycle-${cycle.reading_cycle}`} cycle={cycle} />
-          ))}
+          {/* Current Cycle - Always Visible */}
+          {currentCycle && <CycleItem cycle={currentCycle} isCurrent={true} />}
+
+          {/* Previous Cycles - Collapsible */}
+          {previousCycles.length > 0 && (
+            <>
+              {/* Toggle Button */}
+              <Pressable
+                onPress={() => setIsExpanded(!isExpanded)}
+                style={({ pressed }) => ({
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  backgroundColor: pressed 
+                    ? Interactive.secondary.pressed 
+                    : Interactive.secondary.default,
+                  borderWidth: 1,
+                  borderColor: Interactive.secondary.border,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderCurve: 'continuous',
+                })}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '600', color: Interactive.secondary.text }}>
+                  Previous Cycles ({previousCycles.length})
+                </Text>
+                <Text style={{ fontSize: 16, color: Interactive.secondary.text }}>
+                  {isExpanded ? '▼' : '▶'}
+                </Text>
+              </Pressable>
+
+              {/* Previous Cycles List */}
+              {isExpanded && previousCycles.map((cycle) => (
+                <CycleItem key={`cycle-${cycle.cycle_number}`} cycle={cycle} isCurrent={false} />
+              ))}
+            </>
+          )}
         </View>
       )}
     </View>

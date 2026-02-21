@@ -2,10 +2,10 @@
  * Book Detail Screen
  * Displays comprehensive information about a single book
  * 
- * Sections:
- * - Basic book info (title, author, ISBN, pages, status, score, comment)
- * - Current cycle statistics (sessions, velocity, estimated completion)
- * - Reading cycles history
+ * Structure:
+ * - Hero: Book metadata + action buttons inline
+ * - Reading Progress: Visual charts + current cycle stats
+ * - Reading Cycles: Current cycle expanded, previous collapsed
  * 
  * Rules:
  * - Use ScrollView with contentContainerStyle for padding
@@ -15,12 +15,11 @@
  */
 
 import { useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useBookDetails, useReopenBook, useRequestReview } from '@/hooks/useBooks';
-import { useBookStats } from '@/hooks/useBookStats';
-import { BookInfoCard } from '@/components/bookInfoCard';
-import { CurrentCycleStatsCard } from '@/components/currentCycleStatsCard';
+import { BookDetailHero } from '@/components/bookDetailHero';
+import { ReadingProgressCard } from '@/components/readingProgressCard';
 import { ReadingCyclesHistoryCard } from '@/components/readingCyclesHistoryCard';
 import { ReviewBookModal } from '@/components/reviewBookModal';
 import { EditBookModal } from '@/components/editBookModal';
@@ -29,8 +28,6 @@ import {
   Background,
   Text as TextColors,
   Feedback,
-  Interactive,
-  Border,
 } from '@/constants/colors';
 
 export default function BookDetailScreen() {
@@ -40,21 +37,16 @@ export default function BookDetailScreen() {
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
 
-  console.log('📖 BookDetailScreen render:', { id, bookId });
-
   const {
     data: bookDetails,
     isLoading,
     error,
   } = useBookDetails(bookId);
 
-  const {
-    data: bookStats,
-    isLoading: statsLoading,
-  } = useBookStats(bookId);
-
   const reopenMutation = useReopenBook();
   const requestReviewMutation = useRequestReview();
+
+  const isActionPending = reopenMutation.isPending || requestReviewMutation.isPending;
 
   console.log('📊 Query state:', {
     isLoading,
@@ -158,6 +150,9 @@ export default function BookDetailScreen() {
 
   const { book, current_cycle_stats, reading_cycles } = bookDetails;
 
+  /**
+   * Action Handlers
+   */
   const handleReopen = () => {
     Alert.alert(
       'Reopen Book',
@@ -187,7 +182,6 @@ export default function BookDetailScreen() {
           onPress: () => {
             requestReviewMutation.mutate(book.id, {
               onSuccess: () => {
-                // Automatically open review modal after transition
                 setReviewModalVisible(true);
               },
             });
@@ -205,268 +199,28 @@ export default function BookDetailScreen() {
         contentContainerStyle={{ padding: 16, gap: 16 }}
         contentInsetAdjustmentBehavior="automatic"
       >
-        {/* Book Information */}
-        <BookInfoCard book={book} />
+        {/* Hero Section: Book metadata + action buttons */}
+        <BookDetailHero
+          book={book}
+          onEdit={() => setEditModalVisible(true)}
+          onReview={() => setReviewModalVisible(true)}
+          onRequestReview={handleRequestReview}
+          onReopen={handleReopen}
+          isActionPending={isActionPending}
+        />
 
-        {/* Action Buttons */}
-        <View style={{ gap: 12 }}>
-          {/* Review Button - Only for PENDING_SCORE */}
-          {book.status === BookStatus.PENDING_SCORE && (
-            <Pressable
-              onPress={() => setReviewModalVisible(true)}
-              style={({ pressed }) => ({
-                backgroundColor: pressed
-                  ? Interactive.primary.pressed
-                  : Interactive.primary.default,
-                padding: 16,
-                borderRadius: 8,
-                borderCurve: 'continuous',
-                alignItems: 'center',
-              })}
-            >
-              <Text
-                style={{
-                  color: Interactive.primary.text,
-                  fontSize: 16,
-                  fontWeight: '600',
-                }}
-              >
-                📝 Review Book (Score Required)
-              </Text>
-            </Pressable>
-          )}
-
-          {/* Request Review Button - Only for READING */}
-          {book.status === BookStatus.READING && (
-            <Pressable
-              onPress={handleRequestReview}
-              disabled={requestReviewMutation.isPending}
-              style={({ pressed }) => ({
-                backgroundColor: pressed
-                  ? Interactive.secondary.pressed
-                  : Interactive.secondary.default,
-                padding: 16,
-                borderRadius: 8,
-                borderCurve: 'continuous',
-                alignItems: 'center',
-                borderWidth: 1,
-                borderColor: Interactive.secondary.border,
-                opacity: requestReviewMutation.isPending ? 0.5 : 1,
-              })}
-            >
-              <Text
-                style={{
-                  color: Interactive.secondary.text,
-                  fontSize: 16,
-                  fontWeight: '600',
-                }}
-              >
-                🏁 Finish & Review Book
-              </Text>
-            </Pressable>
-          )}
-
-          {/* Edit Button - All statuses except ABANDONED */}
-          {book.status !== BookStatus.ABANDONED && (
-            <Pressable
-              onPress={() => setEditModalVisible(true)}
-              style={({ pressed }) => ({
-                backgroundColor: pressed
-                  ? Interactive.secondary.pressed
-                  : Interactive.secondary.default,
-                padding: 16,
-                borderRadius: 8,
-                borderCurve: 'continuous',
-                alignItems: 'center',
-                borderWidth: 1,
-                borderColor: Interactive.secondary.border,
-              })}
-            >
-              <Text
-                style={{
-                  color: Interactive.secondary.text,
-                  fontSize: 16,
-                  fontWeight: '600',
-                }}
-              >
-                ✏️ Edit Book Metadata
-              </Text>
-            </Pressable>
-          )}
-
-          {/* Reopen Button - Only for ABANDONED */}
-          {book.status === BookStatus.ABANDONED && (
-            <Pressable
-              onPress={handleReopen}
-              disabled={reopenMutation.isPending}
-              style={({ pressed }) => ({
-                backgroundColor: pressed
-                  ? Interactive.primary.pressed
-                  : Interactive.primary.default,
-                padding: 16,
-                borderRadius: 8,
-                borderCurve: 'continuous',
-                alignItems: 'center',
-                opacity: reopenMutation.isPending ? 0.5 : 1,
-              })}
-            >
-              <Text
-                style={{
-                  color: Interactive.primary.text,
-                  fontSize: 16,
-                  fontWeight: '600',
-                }}
-              >
-                🔄 Reopen Book (New Cycle)
-              </Text>
-            </Pressable>
-          )}
-        </View>
-
-        {/* Current Cycle Statistics */}
-        <CurrentCycleStatsCard stats={current_cycle_stats} />
-
-        {/* Reading Cycles History */}
-        <ReadingCyclesHistoryCard cycles={reading_cycles ?? []} />
-
-        {/* Detailed Book Statistics */}
+        {/* Reading Progress: Visual charts + current cycle stats */}
         {book.status !== BookStatus.WISH_LIST && (
-          <View
-            style={{
-              backgroundColor: Background.surface,
-              padding: 16,
-              borderRadius: 12,
-              gap: 16,
-              borderWidth: 1,
-              borderColor: Border.default,
-              borderCurve: 'continuous',
-            }}
-          >
-            <Text style={{ fontSize: 16, fontWeight: '700', color: TextColors.primary }}>
-              📊 Reading Statistics
-            </Text>
-
-            {statsLoading ? (
-              <View style={{ padding: 16, alignItems: 'center' }}>
-                <ActivityIndicator size="small" color={Interactive.primary.default} />
-                <Text style={{ marginTop: 8, fontSize: 13, color: TextColors.secondary }}>
-                  Loading statistics...
-                </Text>
-              </View>
-            ) : bookStats ? (
-              <View style={{ gap: 16 }}>
-                {/* Overall Stats */}
-                <View style={{ gap: 8 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: TextColors.secondary }}>
-                    Overall Statistics
-                  </Text>
-                  <View style={{ gap: 6 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
-                        Total Pages Read
-                      </Text>
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary, fontVariant: ['tabular-nums'] }}>
-                        {bookStats.overall_stats.total_pages_read.toLocaleString()}
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
-                        Total Sessions
-                      </Text>
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary, fontVariant: ['tabular-nums'] }}>
-                        {bookStats.overall_stats.total_sessions}
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
-                        Total Cycles
-                      </Text>
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary, fontVariant: ['tabular-nums'] }}>
-                        {bookStats.overall_stats.total_cycles}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Current Cycle Detailed Stats */}
-                {bookStats.current_cycle_stats.sessions_count > 0 && (
-                  <View style={{ gap: 8 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: TextColors.secondary }}>
-                      Current Cycle (#{bookStats.current_cycle_stats.cycle_number})
-                    </Text>
-                    <View style={{ gap: 6 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
-                          Days Elapsed
-                        </Text>
-                        <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary, fontVariant: ['tabular-nums'] }}>
-                          {bookStats.current_cycle_stats.days_elapsed}
-                        </Text>
-                      </View>
-                      {bookStats.current_cycle_stats.velocity && (
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                          <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
-                            Velocity
-                          </Text>
-                          <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary, fontVariant: ['tabular-nums'] }}>
-                            {bookStats.current_cycle_stats.velocity} pages/day
-                          </Text>
-                        </View>
-                      )}
-                      {bookStats.current_cycle_stats.progress_percent !== null && (
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                          <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
-                            Progress
-                          </Text>
-                          <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary, fontVariant: ['tabular-nums'] }}>
-                            {bookStats.current_cycle_stats.progress_percent}%
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                )}
-
-                {/* Cycle History Summary */}
-                {bookStats.cycle_history.length > 0 && (
-                  <View style={{ gap: 8 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: TextColors.secondary }}>
-                      Previous Cycles
-                    </Text>
-                    {bookStats.cycle_history.map((cycle) => (
-                      <View
-                        key={cycle.cycle_number}
-                        style={{
-                          padding: 12,
-                          backgroundColor: Background.primary,
-                          borderRadius: 8,
-                          gap: 6,
-                          borderCurve: 'continuous',
-                        }}
-                      >
-                        <Text style={{ fontSize: 13, fontWeight: '600', color: TextColors.primary }}>
-                          Cycle #{cycle.cycle_number}
-                        </Text>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                          <Text style={{ fontSize: 12, color: TextColors.tertiary }}>
-                            {cycle.pages_read} pages • {cycle.sessions_count} sessions
-                          </Text>
-                          <Text style={{ fontSize: 12, color: TextColors.tertiary, fontVariant: ['tabular-nums'] }}>
-                            {cycle.average_velocity} p/day
-                          </Text>
-                        </View>
-                        <Text style={{ fontSize: 11, color: TextColors.tertiary }}>
-                          {cycle.duration_days} days
-                          {cycle.completed && ' • ✅ Completed'}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            ) : null}
-          </View>
+          <ReadingProgressCard
+            stats={current_cycle_stats}
+            totalPages={book.total_pages}
+            pagesReadInCycle={book.pages_read_in_current_cycle}
+            bookStatus={book.status}
+          />
         )}
+
+        {/* Reading Cycles: Current expanded, previous collapsed */}
+        <ReadingCyclesHistoryCard cycles={reading_cycles ?? []} />
       </ScrollView>
 
       {/* Review Modal */}
