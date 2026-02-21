@@ -147,14 +147,20 @@ export default function BooksListScreen() {
 
   /**
    * Handle search query change
+   * Requires minimum 3 characters to trigger search
    */
   const handleSearchChange = (searchText: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      titleSearch: searchText || undefined,
-    }));
-    setPage(1); // Reset to first page when search changes
-    setAccumulatedBooks([]); // Clear accumulated books
+    // Only apply search if 3+ characters or empty (to clear)
+    const shouldSearch = searchText.length === 0 || searchText.length >= 3;
+    
+    if (shouldSearch) {
+      setFilters((prev) => ({
+        ...prev,
+        titleSearch: searchText || undefined,
+      }));
+      setPage(1); // Reset to first page when search changes
+      setAccumulatedBooks([]); // Clear accumulated books
+    }
   };
 
   /**
@@ -209,9 +215,10 @@ export default function BooksListScreen() {
   };
 
   /**
-   * Render loading state
+   * Render loading state (only on initial load)
+   * Don't show full-screen spinner when refetching with existing data
    */
-  if (isLoading) {
+  if (isLoading && displayedBooks.length === 0) {
     return (
       <View style={{ flex: 1, backgroundColor: Background.primary, padding: 16 }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
