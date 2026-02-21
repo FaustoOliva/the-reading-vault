@@ -25,7 +25,7 @@ export class BookRepository {
 
   /**
    * Get all books with optional filters and pagination
-   * @param {Object} filters - Optional filters { status, authorId }
+   * @param {Object} filters - Optional filters { status, authorId, countryId, titleSearch, minScore, maxScore, minPages, maxPages, startDate, endDate }
    * @param {Object} pagination - Pagination params { page, limit }
    * @returns {Promise<{books: Book[], total: number, page: number, limit: number, totalPages: number}>}
    */
@@ -42,6 +42,26 @@ export class BookRepository {
 
     if (filters.authorId) {
       queryBuilder.withAuthorId(filters.authorId);
+    }
+
+    if (filters.countryId) {
+      queryBuilder.withCountryId(filters.countryId);
+    }
+
+    if (filters.titleSearch) {
+      queryBuilder.withTitleSearch(filters.titleSearch);
+    }
+
+    if (filters.minScore !== undefined || filters.maxScore !== undefined) {
+      queryBuilder.withScoreRange(filters.minScore, filters.maxScore);
+    }
+
+    if (filters.minPages !== undefined || filters.maxPages !== undefined) {
+      queryBuilder.withPageRange(filters.minPages, filters.maxPages);
+    }
+
+    if (filters.startDate || filters.endDate) {
+      queryBuilder.withDateRange(filters.startDate, filters.endDate);
     }
 
     // Configure pagination

@@ -21,7 +21,7 @@ export class GetBooksService {
 
   /**
    * Execute GetBooks use case
-   * @param {Object} filters - Optional filters { status, authorId }
+   * @param {Object} filters - Optional filters { status, authorId, countryId, titleSearch, minScore, maxScore, minPages, maxPages, startDate, endDate }
    * @param {Object} pagination - Pagination params { page, limit }
    * @returns {Promise<{books: Book[], total: number, page: number, limit: number, totalPages: number}>}
    */

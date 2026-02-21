@@ -32,6 +32,14 @@ const getBooksQuerySchema = z
       ])
       .optional(),
     authorId: z.coerce.number().int().positive().optional(),
+    countryId: z.coerce.number().int().positive().optional(),
+    titleSearch: z.string().trim().min(1).max(100).optional(),
+    minScore: z.coerce.number().min(0).max(10).optional(),
+    maxScore: z.coerce.number().min(0).max(10).optional(),
+    minPages: z.coerce.number().int().positive().optional(),
+    maxPages: z.coerce.number().int().positive().optional(),
+    startDate: z.string().datetime().optional(),
+    endDate: z.string().datetime().optional(),
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(10),
   })
