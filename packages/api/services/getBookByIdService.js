@@ -108,9 +108,15 @@ export class GetBookByIdService {
         if (totalPages && velocity > 0) {
           const remainingPages = totalPages - stats.pages_read;
           if (remainingPages > 0) {
+            const today = new Date();
             const daysToComplete = Math.ceil(remainingPages / velocity);
-            estimated_completion = new Date(lastDate);
-            estimated_completion.setDate(estimated_completion.getDate() + daysToComplete);
+            
+            // Add penalty for inactivity: days since last session
+            const daysSinceLastSession = Math.ceil((today - lastDate) / (1000 * 60 * 60 * 24));
+            const adjustedDaysToComplete = daysToComplete + daysSinceLastSession;
+            
+            estimated_completion = new Date(today);
+            estimated_completion.setDate(estimated_completion.getDate() + adjustedDaysToComplete);
           }
         }
       }

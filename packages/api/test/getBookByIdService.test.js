@@ -281,12 +281,19 @@ describe("GetBookByIdService", () => {
       
       // Remaining pages: 464 - 100 = 364
       // Days to complete: ceil(364 / 10) = 37
-      // Expected completion: 2026-01-10 + 37 days = 2026-02-16 (but could be 15 due to date arithmetic)
+      // Days since last session: from 2026-01-10 to today (test runs ~2026-02-21) ≈ 42 days
+      // Expected completion: TODAY + 42 (inactivity penalty) + 37 (days to complete) ≈ 79 days from today
+      // This means estimated date should be in late April/early May
       const estimatedDate = new Date(result.current_cycle_stats.estimated_completion);
-      // Check that it's in mid-February (allow for off-by-one due to date manipulation)
-      expect(estimatedDate.getMonth()).toBe(1); // February (0-indexed)
-      expect(estimatedDate.getDate()).toBeGreaterThanOrEqual(15);
-      expect(estimatedDate.getDate()).toBeLessThanOrEqual(17);
+      const today = new Date();
+      
+      // Verify estimated completion is in the future
+      expect(estimatedDate.getTime()).toBeGreaterThan(today.getTime());
+      
+      // Verify it's roughly 79 days from today (allow some tolerance)
+      const daysDifference = Math.ceil((estimatedDate - today) / (1000 * 60 * 60 * 24));
+      expect(daysDifference).toBeGreaterThanOrEqual(75);
+      expect(daysDifference).toBeLessThanOrEqual(85);
     });
 
     it("should handle completed book with score and comment", async () => {
