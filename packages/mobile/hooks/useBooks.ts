@@ -42,6 +42,46 @@ function buildQueryString(filters?: BooksFilter, pagination?: PaginationParams):
     params.append('authorId', filters.authorId.toString());
   }
 
+  if (filters?.countryId) {
+    params.append('countryId', filters.countryId.toString());
+  }
+
+  if (filters?.titleSearch) {
+    params.append('titleSearch', filters.titleSearch);
+  }
+
+  if (filters?.minScore !== undefined) {
+    params.append('minScore', filters.minScore.toString());
+  }
+
+  if (filters?.maxScore !== undefined) {
+    params.append('maxScore', filters.maxScore.toString());
+  }
+
+  if (filters?.minPages !== undefined) {
+    params.append('minPages', filters.minPages.toString());
+  }
+
+  if (filters?.maxPages !== undefined) {
+    params.append('maxPages', filters.maxPages.toString());
+  }
+
+  if (filters?.startDate) {
+    // Convert to ISO 8601 datetime format if needed
+    const startDateTime = filters.startDate.includes('T') 
+      ? filters.startDate 
+      : `${filters.startDate}T00:00:00Z`;
+    params.append('startDate', startDateTime);
+  }
+
+  if (filters?.endDate) {
+    // Convert to ISO 8601 datetime format if needed
+    const endDateTime = filters.endDate.includes('T') 
+      ? filters.endDate 
+      : `${filters.endDate}T23:59:59Z`;
+    params.append('endDate', endDateTime);
+  }
+
   if (pagination?.page) {
     params.append('page', pagination.page.toString());
   }

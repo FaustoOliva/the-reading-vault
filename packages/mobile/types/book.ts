@@ -97,6 +97,14 @@ export interface ReviewBookInput {
 export interface BooksFilter {
   status?: BookStatus;
   authorId?: number;
+  countryId?: number;
+  titleSearch?: string;
+  minScore?: number;
+  maxScore?: number;
+  minPages?: number;
+  maxPages?: number;
+  startDate?: string; // ISO 8601 date string
+  endDate?: string;   // ISO 8601 date string
 }
 
 export interface PaginationParams {
