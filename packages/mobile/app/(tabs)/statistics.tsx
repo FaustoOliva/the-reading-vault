@@ -17,7 +17,7 @@
 
 import { ScrollView, View, Text, ActivityIndicator, RefreshControl } from 'react-native';
 import { useGlobalKPIs } from '@/hooks/useKPIs';
-import { KPICard } from '@/components/kpiCard';
+import { KPICard } from '@/components/cards/kpiCard';
 import {
   Background,
   Text as TextColors,

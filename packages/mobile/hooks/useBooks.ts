@@ -101,15 +101,21 @@ export function useBooks(
   filters?: BooksFilter,
   pagination?: PaginationParams
 ) {
-  console.log('📚 useBooks called with:', { filters, pagination });
+  if (__DEV__) {
+    console.log('📚 useBooks called with:', { filters, pagination });
+  }
 
   return useQuery({
     queryKey: booksKeys.list(filters, pagination),
     queryFn: async () => {
-      console.log('🔄 useBooks queryFn executing...');
+      if (__DEV__) {
+        console.log('🔄 useBooks queryFn executing...');
+      }
       const queryString = buildQueryString(filters, pagination);
       const endpoint = `/api/books${queryString}`;
-      console.log('🎯 Endpoint:', endpoint);
+      if (__DEV__) {
+        console.log('🎯 Endpoint:', endpoint);
+      }
 
       const response = await api.get<{
         success: boolean;
@@ -122,10 +128,12 @@ export function useBooks(
         };
       }>(endpoint);
 
-      console.log('✨ useBooks response:', {
-        booksCount: response.data?.length,
-        pagination: response.pagination,
-      });
+      if (__DEV__) {
+        console.log('✨ useBooks response:', {
+          booksCount: response.data?.length,
+          pagination: response.pagination,
+        });
+      }
 
       return response;
     },

@@ -19,13 +19,12 @@ import { useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, RefreshControl, Pressable } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useBooks } from '@/hooks/useBooks';
-import { BookListItem } from '@/components/bookListItem';
-import { PaginationControls } from '@/components/paginationControls';
-import { SearchBar } from '@/components/searchBar';
-import { AdvancedFiltersModal } from '@/components/advancedFiltersModal';
+import { BookListItem } from '@/components/list/bookListItem';
+import { PaginationControls } from '@/components/list/paginationControls';
+import { SearchBar } from '@/components/forms/searchBar';
+import { AdvancedFiltersModal } from '@/components/modals/advancedFiltersModal';
 import { BookStatus, BooksFilter } from '@/types/book';
 import { BOOK_STATUS_OPTIONS } from '@/constants/bookStatus';
-import { api } from '@/services/api';
 import {
   Background,
   Text as TextColors,
@@ -41,7 +40,9 @@ export default function BooksListScreen() {
   const [page, setPage] = useState(1);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  console.log('🏠 BooksListScreen render:', { filters, page });
+  if (__DEV__) {
+    console.log('🏠 BooksListScreen render:', { filters, page });
+  }
 
   const {
     data: response,
@@ -51,53 +52,19 @@ export default function BooksListScreen() {
     isRefetching,
   } = useBooks(filters, { page, limit: ITEMS_PER_PAGE });
 
-  console.log('📊 Query state:', {
-    isLoading,
-    isRefetching,
-    hasError: !!error,
-    errorMessage: error?.message,
-    hasData: !!response,
-    booksCount: response?.data?.length,
-  });
+  if (__DEV__) {
+    console.log('📊 Query state:', {
+      isLoading,
+      isRefetching,
+      hasError: !!error,
+      errorMessage: error?.message,
+      hasData: !!response,
+      booksCount: response?.data?.length,
+    });
+  }
 
   const books = response?.data || [];
   const pagination = response?.pagination;
-
-  /**
-   * Render debug info
-   */
-  const DebugInfo = () => (
-    <View
-      style={{
-        padding: 12,
-        backgroundColor: Feedback.warning.background,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: Feedback.warning.border,
-        gap: 4,
-        marginBottom: 12,
-        borderCurve: 'continuous',
-      }}
-    >
-      <Text style={{ fontSize: 13, fontWeight: '600', color: Feedback.warning.text }}>
-        🐛 Debug Info
-      </Text>
-      <Text style={{ fontSize: 11, color: Feedback.warning.text, fontFamily: 'monospace' }} selectable>
-        API URL: {api.baseUrl}
-      </Text>
-      <Text style={{ fontSize: 11, color: Feedback.warning.text, fontFamily: 'monospace' }} selectable>
-        Endpoint: /api/books?page={page}&limit={ITEMS_PER_PAGE}
-      </Text>
-      <Text style={{ fontSize: 11, color: Feedback.warning.text }}>
-        Status: {isLoading ? '⏳ Loading...' : error ? '❌ Error' : '✅ Success'}
-      </Text>
-      {error && (
-        <Text style={{ fontSize: 11, color: Feedback.error.text }} selectable>
-          Error: {error.message}
-        </Text>
-      )}
-    </View>
-  );
 
   /**
    * Handle status filter change
@@ -167,7 +134,6 @@ export default function BooksListScreen() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: Background.primary, padding: 16 }}>
-        <DebugInfo />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={Interactive.primary.default} />
           <Text style={{ marginTop: 12, fontSize: 15, color: TextColors.secondary }}>
@@ -194,7 +160,6 @@ export default function BooksListScreen() {
         }
         ListHeaderComponent={
           <>
-            <DebugInfo />
             <View
               style={{
                 padding: 16,
@@ -257,8 +222,6 @@ export default function BooksListScreen() {
           }
           ListHeaderComponent={
             <>
-              <DebugInfo />
-
               {/* Search Bar */}
               <SearchBar
                 value={filters.titleSearch || ''}
@@ -407,8 +370,6 @@ export default function BooksListScreen() {
         }
         ListHeaderComponent={
           <>
-            <DebugInfo />
-
             {/* Search Bar */}
             <SearchBar
               value={filters.titleSearch || ''}

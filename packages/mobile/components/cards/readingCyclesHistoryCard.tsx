@@ -26,7 +26,7 @@
 import { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { ReadingCycle } from '@/types/book';
-import { BookStatusBadge } from './bookStatusBadge';
+import { BookStatusBadge } from '@/components/ui/bookStatusBadge';
 import {
   Background,
   Text as TextColors,

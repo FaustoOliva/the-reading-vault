@@ -18,7 +18,7 @@
 import { View, Text, Pressable } from 'react-native';
 import { Link } from 'expo-router';
 import { Book } from '@/types/book';
-import { BookStatusBadge } from './bookStatusBadge';
+import { BookStatusBadge } from '@/components/ui/bookStatusBadge';
 import { 
   Background, 
   Text as TextColors, 

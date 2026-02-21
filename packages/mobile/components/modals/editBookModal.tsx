@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import { useUpdateBook } from '@/hooks/useBooks';
 import { Book } from '@/types/book';
+import { editBookSchema, getZodErrors } from '@/types/schemas';
 import {
   Background,
   Text as TextColors,
@@ -57,26 +58,20 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
   }, [book, visible]);
 
   const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
+    const result = editBookSchema.safeParse({
+      title,
+      totalPages,
+      score,
+      comment,
+    });
 
-    if (title.trim() === '') {
-      newErrors.title = 'Title is required';
+    if (!result.success) {
+      setErrors(getZodErrors(result.error));
+      return false;
     }
 
-    if (totalPages && isNaN(Number(totalPages))) {
-      newErrors.totalPages = 'Must be a valid number';
-    } else if (totalPages && Number(totalPages) <= 0) {
-      newErrors.totalPages = 'Must be greater than 0';
-    }
-
-    if (score && isNaN(Number(score))) {
-      newErrors.score = 'Must be a valid number';
-    } else if (score && (Number(score) < 0 || Number(score) > 10)) {
-      newErrors.score = 'Must be between 0 and 10';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
   const handleSave = () => {

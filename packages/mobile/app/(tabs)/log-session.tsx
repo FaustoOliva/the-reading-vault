@@ -20,6 +20,7 @@ import * as Haptics from 'expo-haptics';
 import { useBooks, useBookDetails } from '@/hooks/useBooks';
 import { useCreateReadingSession } from '@/hooks/useReadingSessions';
 import { BookStatus } from '@/types/book';
+import { logSessionSchema, validatePagesAgainstRemaining, getZodErrors } from '@/types/schemas';
 import { 
   Interactive, 
   Background, 
@@ -38,6 +39,7 @@ export default function LogSessionScreen() {
   const [duration, setDuration] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Fetch all books - will filter on client side
   const { data: booksResponse, isLoading: booksLoading } = useBooks();
@@ -70,51 +72,45 @@ export default function LogSessionScreen() {
     return bookDetails.book.total_pages - pagesReadInCycle;
   };
 
-  // Validation
-  const validatePagesRead = (): string | null => {
-    const pages = parseInt(pagesRead, 10);
-
-    if (!pagesRead || isNaN(pages)) {
-      return 'Pages read is required';
+  // Validation using Zod schema
+  const validateForm = (): boolean => {
+    if (selectedBookId === null) {
+      setValidationErrors({ bookId: 'Please select a book' });
+      return false;
     }
 
-    if (pages <= 0) {
-      return 'Pages must be greater than zero';
+    const result = logSessionSchema.safeParse({
+      bookId: selectedBookId,
+      pagesRead,
+      sessionDate,
+      duration,
+    });
+
+    if (!result.success) {
+      setValidationErrors(getZodErrors(result.error));
+      return false;
     }
 
+    // Additional validation: pages against remaining
+    const pagesNumeric = Number(pagesRead);
     const remaining = getRemainingPages();
-    if (remaining !== null && pages > remaining) {
-      return `Cannot exceed ${remaining} remaining pages`;
+    const pagesError = validatePagesAgainstRemaining(pagesNumeric, remaining);
+    
+    if (pagesError) {
+      setValidationErrors({ pagesRead: pagesError });
+      return false;
     }
 
-    return null;
-  };
-
-  const validateDuration = (): string | null => {
-    if (!duration) return null; // Optional field
-
-    const mins = parseInt(duration, 10);
-    if (isNaN(mins) || mins < 0) {
-      return 'Duration must be a positive number';
-    }
-
-    return null;
-  };
-
-  const validateSessionDate = (): string | null => {
-    const now = new Date();
-    if (sessionDate > now) {
-      return 'Session date cannot be in the future';
-    }
-    return null;
+    setValidationErrors({});
+    return true;
   };
 
   const isFormValid = (): boolean => {
     return (
       selectedBookId !== null &&
-      !validatePagesRead() &&
-      !validateDuration() &&
-      !validateSessionDate()
+      pagesRead.trim().length > 0 &&
+      !isNaN(Number(pagesRead)) &&
+      Number(pagesRead) > 0
     );
   };
 
@@ -126,7 +122,7 @@ export default function LogSessionScreen() {
     setSuccessMessage('');
 
     try {
-      await createSession.mutateAsync({
+      awavalidateFormssion.mutateAsync({
         bookId: selectedBookId,
         pagesRead: parseInt(pagesRead, 10),
         occurredAt: sessionDate.toISOString(),
@@ -145,6 +141,7 @@ export default function LogSessionScreen() {
       setPagesRead('');
       setDuration('');
       setSessionDate(new Date());
+      setValidationErrors({});
 
       // Clear success message after 3 seconds
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -168,10 +165,6 @@ export default function LogSessionScreen() {
       }
     }
   };
-
-  const pagesError = pagesRead ? validatePagesRead() : null;
-  const durationError = duration ? validateDuration() : null;
-  const dateError = validateSessionDate();
 
   const remaining = getRemainingPages();
 
@@ -237,7 +230,7 @@ export default function LogSessionScreen() {
           <TextInput
             style={[
               styles.input,
-              pagesError && styles.inputError,
+              validationErrors.pagesRead && styles.inputError,
             ]}
             value={pagesRead}
             onChangeText={setPagesRead}
@@ -248,13 +241,13 @@ export default function LogSessionScreen() {
             accessibilityHint="Enter the number of pages you read in this session"
             accessibilityRole="spinbutton"
           />
-          {pagesError && (
+          {validationErrors.pagesRead && (
             <Text
               style={styles.error}
               selectable
               accessibilityRole="alert"
               accessibilityLiveRegion="polite">
-              {pagesError}
+              {validationErrors.pagesRead}
             </Text>
           )}
         </View>
@@ -266,7 +259,7 @@ export default function LogSessionScreen() {
             onPress={() => setShowDatePicker(true)}
             style={[
               styles.dateButton,
-              dateError && styles.dateButtonError,
+              validationErrors.sessionDate && styles.dateButtonError,
             ]}
             accessibilityRole="button"
             accessibilityLabel={`Session date: ${sessionDate.toLocaleDateString()}`}
@@ -287,13 +280,13 @@ export default function LogSessionScreen() {
               maximumDate={new Date()}
             />
           )}
-          {dateError && (
+          {validationErrors.sessionDate && (
             <Text
               style={styles.error}
               selectable
               accessibilityRole="alert"
               accessibilityLiveRegion="polite">
-              {dateError}
+              {validationErrors.sessionDate}
             </Text>
           )}
         </View>
@@ -304,7 +297,7 @@ export default function LogSessionScreen() {
           <TextInput
             style={[
               styles.input,
-              durationError && styles.inputError,
+              validationErrors.duration && styles.inputError,
             ]}
             value={duration}
             onChangeText={setDuration}
@@ -320,13 +313,13 @@ export default function LogSessionScreen() {
             selectable>
             Leave empty if not tracked
           </Text>
-          {durationError && (
+          {validationErrors.duration && (
             <Text
               style={styles.error}
               selectable
               accessibilityRole="alert"
               accessibilityLiveRegion="polite">
-              {durationError}
+              {validationErrors.duration}
             </Text>
           )}
         </View>

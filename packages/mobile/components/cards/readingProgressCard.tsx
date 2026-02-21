@@ -17,8 +17,8 @@
 
 import { View, Text } from 'react-native';
 import { BookDetails } from '@/types/book';
-import { ProgressBar } from './progressBar';
-import { VelocityChart } from './velocityChart';
+import { ProgressBar } from '@/components/ui/progressBar';
+import { VelocityChart } from '@/components/ui/velocityChart';
 import {
   Background,
   Text as TextColors,

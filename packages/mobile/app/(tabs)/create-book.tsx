@@ -37,11 +37,12 @@ import { useRouter } from 'expo-router';
 import { useCreateBook } from '@/hooks/useBooks';
 import { useAuthors } from '@/hooks/useAuthors';
 import { useCountries } from '@/hooks/useCountries';
-import { FormInput } from '@/components/formInput';
-import { FormPicker } from '@/components/formPicker';
-import { SearchableSelect } from '@/components/searchableSelect';
+import { FormInput } from '@/components/forms/formInput';
+import { FormPicker } from '@/components/forms/formPicker';
+import { SearchableSelect } from '@/components/forms/searchableSelect';
 import { BookStatus } from '@/types/book';
 import { BOOK_STATUS_LABELS } from '@/constants/bookStatus';
+import { createBookSchema, getZodErrors } from '@/types/schemas';
 import { Interactive, Background, Text as TextColors } from '@/constants/colors';
 
 export default function CreateBookScreen() {
@@ -80,27 +81,26 @@ export default function CreateBookScreen() {
   };
 
   /**
-   * Validate form before submission
+   * Validate form before submission using Zod schema
    * Returns true if valid, false otherwise
    */
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
+    const result = createBookSchema.safeParse({
+      title,
+      authorName,
+      countryName,
+      isbn,
+      totalPages,
+      status,
+    });
 
-    if (!title.trim()) {
-      newErrors.title = 'Title is required';
+    if (!result.success) {
+      setErrors(getZodErrors(result.error));
+      return false;
     }
 
-    // Validate author
-    if (!authorName.trim()) {
-      newErrors.authorName = 'Author name is required';
-    }
-
-    if (totalPages && (isNaN(Number(totalPages)) || Number(totalPages) <= 0)) {
-      newErrors.totalPages = 'Must be a positive number';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
   /**

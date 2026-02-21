@@ -18,11 +18,11 @@ import { useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useBookDetails, useReopenBook, useRequestReview } from '@/hooks/useBooks';
-import { BookDetailHero } from '@/components/bookDetailHero';
-import { ReadingProgressCard } from '@/components/readingProgressCard';
-import { ReadingCyclesHistoryCard } from '@/components/readingCyclesHistoryCard';
-import { ReviewBookModal } from '@/components/reviewBookModal';
-import { EditBookModal } from '@/components/editBookModal';
+import { BookDetailHero } from '@/components/ui/bookDetailHero';
+import { ReadingProgressCard } from '@/components/cards/readingProgressCard';
+import { ReadingCyclesHistoryCard } from '@/components/cards/readingCyclesHistoryCard';
+import { ReviewBookModal } from '@/components/modals/reviewBookModal';
+import { EditBookModal } from '@/components/modals/editBookModal';
 import { BookStatus } from '@/types/book';
 import {
   Background,
@@ -48,12 +48,14 @@ export default function BookDetailScreen() {
 
   const isActionPending = reopenMutation.isPending || requestReviewMutation.isPending;
 
-  console.log('📊 Query state:', {
-    isLoading,
-    hasError: !!error,
-    errorMessage: error?.message,
-    hasData: !!bookDetails,
-  });
+  if (__DEV__) {
+    console.log('📊 Query state:', {
+      isLoading,
+      hasError: !!error,
+      errorMessage: error?.message,
+      hasData: !!bookDetails,
+    });
+  }
 
   /**
    * Loading State

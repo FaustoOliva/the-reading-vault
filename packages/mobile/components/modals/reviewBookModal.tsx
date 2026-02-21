@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import { useReviewBook } from '@/hooks/useBooks';
 import { BookStatus } from '@/types/book';
+import { reviewBookSchema, getZodErrors } from '@/types/schemas';
 import {
   Background,
   Text as TextColors,
@@ -48,6 +49,7 @@ export function ReviewBookModal({
 }: ReviewBookModalProps) {
   const [score, setScore] = useState<number>(7);
   const [comment, setComment] = useState<string>('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const reviewMutation = useReviewBook();
 
   // Determine if book is fully read
@@ -57,6 +59,20 @@ export function ReviewBookModal({
   const targetStatus = isFullyRead ? BookStatus.COMPLETED : BookStatus.ABANDONED;
 
   const handleReview = () => {
+    // Validate using Zod schema
+    const result = reviewBookSchema.safeParse({
+      targetStatus,
+      score: score.toString(),
+      comment,
+    });
+
+    if (!result.success) {
+      setErrors(getZodErrors(result.error));
+      return;
+    }
+
+    setErrors({});
+
     reviewMutation.mutate(
       {
         id: bookId,
@@ -71,6 +87,7 @@ export function ReviewBookModal({
           // Reset form and close
           setScore(7);
           setComment('');
+          setErrors({});
           onClose();
         },
       }

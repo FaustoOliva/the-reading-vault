@@ -21,7 +21,7 @@
 
 import { View, Text } from 'react-native';
 import { BookDetails } from '@/types/book';
-import { BookStatusBadge } from './bookStatusBadge';
+import { BookStatusBadge } from '@/components/ui/bookStatusBadge';
 import {
   Background,
   Text as TextColors,

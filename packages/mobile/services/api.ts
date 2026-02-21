@@ -10,13 +10,15 @@
  */
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+const REQUEST_TIMEOUT = 30000; // 30 seconds
 
-// Debug: Log API configuration on module load
-console.log('🔧 API Configuration:', {
-  EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
-  API_BASE_URL,
-  allEnvVars: Object.keys(process.env).filter(key => key.startsWith('EXPO_PUBLIC')),
-});
+if (__DEV__) {
+  console.log('🔧 API Configuration:', {
+    EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
+    API_BASE_URL,
+    allEnvVars: Object.keys(process.env).filter(key => key.startsWith('EXPO_PUBLIC')),
+  });
+}
 
 /**
  * Typed API Error
@@ -33,23 +35,28 @@ export class ApiError extends Error {
 }
 
 /**
- * API Client
+ * Create AbortController with timeout
+ * Returns controller and cleanup function
  */
-export const api = {
-  baseUrl: API_BASE_URL,
-
-  /**
-   * Generic request handler
+const createTimeoutController = (timeoutMs: number) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+   with timeout and abort support
    */
   async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const fullUrl = `${this.baseUrl}${endpoint}`;
     
-    console.log('🌐 API Request:', {
-      url: fullUrl,
-      method: options?.method || 'GET',
-      baseUrl: this.baseUrl,
-      endpoint,
-    });
+    if (__DEV__) {
+      console.log('🌐 API Request:', {
+        url: fullUrl,
+        method: options?.method || 'GET',
+        baseUrl: this.baseUrl,
+        endpoint,
+      });
+    }
+
+    // Create timeout controller
+    const { controller, cleanup } = createTimeoutController(REQUEST_TIMEOUT);
 
     try {
       const response = await fetch(fullUrl, {
@@ -58,21 +65,26 @@ export const api = {
           ...options?.headers,
         },
         ...options,
+        signal: controller.signal,
       });
 
-      console.log('✅ API Response:', {
-        url: fullUrl,
-        status: response.status,
-        ok: response.ok,
-      });
+      if (__DEV__) {
+        console.log('✅ API Response:', {
+          url: fullUrl,
+          status: response.status,
+          ok: response.ok,
+        });
+      }
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Request failed' }));
-        console.error('❌ API Error Response:', {
-          url: fullUrl,
-          status: response.status,
-          error,
-        });
+        if (__DEV__) {
+          console.error('❌ API Error Response:', {
+            url: fullUrl,
+            status: response.status,
+            error,
+          });
+        }
         throw new ApiError(
           error.message || `HTTP ${response.status}`,
           response.status,
@@ -81,18 +93,43 @@ export const api = {
       }
 
       const data = await response.json();
-      console.log('📦 API Data:', {
-        url: fullUrl,
-        dataKeys: Object.keys(data),
-      });
+      if (__DEV__) {
+        console.log('📦 API Data:', {
+          url: fullUrl,
+          dataKeys: Object.keys(data),
+        });
+      }
 
       return data;
     } catch (error) {
-      console.error('💥 API Request Failed:', {
-        url: fullUrl,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        type: error instanceof ApiError ? 'ApiError' : error?.constructor?.name || 'Unknown',
-      });
+      if (__DEV__) {
+        console.error('💥 API Request Failed:', {
+          url: fullUrl,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          type: error instanceof ApiError ? 'ApiError' : error?.constructor?.name || 'Unknown',
+        });
+      }
+
+      if (error instanceof ApiError) throw error;
+      
+      // Check if request was aborted (timeout)
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new ApiError('Request timeout - please check your connection', 0, 'TIMEOUT');
+      }
+      
+      // Network error (offline, timeout)
+      throw new ApiError('Network error - please check your connection', 0, 'NETWORK_ERROR');
+    } finally {
+      cleanup(
+      return data;
+    } catch (error) {
+      if (__DEV__) {
+        console.error('💥 API Request Failed:', {
+          url: fullUrl,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          type: error instanceof ApiError ? 'ApiError' : error?.constructor?.name || 'Unknown',
+        });
+      }
 
       if (error instanceof ApiError) throw error;
       // Network error (offline, timeout)
