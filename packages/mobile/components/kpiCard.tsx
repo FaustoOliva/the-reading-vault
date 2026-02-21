@@ -44,6 +44,31 @@ export function KPICard({ title, value, icon, subtitle }: KPICardProps) {
       {/* Icon */}
       {icon && <Text style={{ fontSize: 32, marginBottom: 4 }}>{icon}</Text>}
 
+      {/* Value */}
+      <Text
+        style={{
+          fontSize: 28,
+          fontWeight: "700",
+          color: TextColors.primary,
+          fontVariant: ["tabular-nums"],
+        }}
+      >
+        {value}{" "}
+        {subtitle ? (
+          <Text
+            style={{
+              fontSize: 12,
+              color: TextColors.secondary,
+              textAlign: "center",
+            }}
+          >
+            {subtitle}
+          </Text>
+        ) : (
+          ""
+        )}
+      </Text>
+
       {/* Title */}
       <Text
         style={{
@@ -54,18 +79,6 @@ export function KPICard({ title, value, icon, subtitle }: KPICardProps) {
         }}
       >
         {title}
-      </Text>
-
-      {/* Value */}
-      <Text
-        style={{
-          fontSize: 28,
-          fontWeight: "700",
-          color: TextColors.primary,
-          fontVariant: ["tabular-nums"],
-        }}
-      >
-        {value} {subtitle ? <Text style={{ fontSize: 12, color: TextColors.secondary, textAlign: "center" }}>{subtitle}</Text> : ""}
       </Text>
     </View>
   );
