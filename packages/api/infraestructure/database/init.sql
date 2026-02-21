@@ -1,4 +1,4 @@
--- V. 1.2.0
+-- V. 1.3.0 - Added filter indexes for Phase 3 (Advanced Filtering & Search)
 -- Create Database if not exists
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'TheReadingVault')
 BEGIN
@@ -82,6 +82,11 @@ CREATE INDEX IX_StatusHistory_BookDate ON BookStatusHistory (book_id, created_at
 
 -- Index to optimize KPI calculations
 CREATE INDEX IX_ReadingSessions_BookDate ON ReadingSessions (book_id, occurred_at) INCLUDE (pages_read, reading_cycle);
+
+-- Indexes for advanced filtering and search (Phase 3)
+CREATE NONCLUSTERED INDEX IX_Books_Title ON Books(title);
+CREATE NONCLUSTERED INDEX IX_Books_Score ON Books(score) WHERE score IS NOT NULL;
+CREATE NONCLUSTERED INDEX IX_Books_TotalPages ON Books(total_pages) WHERE total_pages IS NOT NULL;
 GO
 
 -- Insert Initial Statuses

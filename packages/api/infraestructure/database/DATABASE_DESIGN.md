@@ -73,6 +73,10 @@
 ### Indexes
 
 - `IX_ReadingSessions_BookDate` on `ReadingSessions(book_id, occurred_at)` INCLUDE `(pages_read, reading_cycle)` — optimizes KPI/time-series queries
+- `IX_StatusHistory_BookDate` on `BookStatusHistory(book_id, created_at)` — optimizes status history queries
+- `IX_Books_Title` on `Books(title)` — optimizes title search with LIKE queries
+- `IX_Books_Score` on `Books(score)` WHERE `score IS NOT NULL` — optimizes rating/score filtering
+- `IX_Books_TotalPages` on `Books(total_pages)` WHERE `total_pages IS NOT NULL` — optimizes page count filtering
 
 ### Initial Status Rows
 
