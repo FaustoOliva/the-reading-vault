@@ -17,6 +17,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { ErrorBoundary } from '@/components/ui/errorBoundary';
+import { ToastComponent } from '@/components/ui/toast';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -53,6 +54,7 @@ export default function RootLayout() {
           <StatusBar style="auto" />
         </ThemeProvider>
       </QueryClientProvider>
+      <ToastComponent />
     </ErrorBoundary>
   );
 }

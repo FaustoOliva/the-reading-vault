@@ -18,11 +18,11 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useUpdateBook } from '@/hooks/useBooks';
 import { Book } from '@/types/book';
 import { editBookSchema, getZodErrors } from '@/types/schemas';
+import { showToast } from '@/components/ui/toast';
 import {
   Background,
   Text as TextColors,
@@ -107,7 +107,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
 
     // Check if anything changed
     if (Object.keys(updates).length === 0) {
-      Alert.alert('No changes', 'No fields were modified');
+      showToast.info('No changes', 'No fields were modified');
       return;
     }
 
@@ -118,11 +118,12 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
       },
       {
         onSuccess: () => {
+          showToast.success('Book updated', 'Changes saved successfully');
           onClose();
         },
         onError: (error: any) => {
-          Alert.alert(
-            'Update Failed',
+          showToast.error(
+            'Update failed',
             error?.message || 'Failed to update book'
           );
         },

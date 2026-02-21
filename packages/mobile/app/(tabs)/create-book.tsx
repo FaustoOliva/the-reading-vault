@@ -132,7 +132,7 @@ export default function CreateBookScreen() {
 
     createBook(bookData, {
       onSuccess: () => {
-        Alert.alert('Success', 'Book created successfully');
+        showToast.success('Book created', 'Added to your library');
         
         // Reset form
         setTitle('');
@@ -147,9 +147,9 @@ export default function CreateBookScreen() {
         router.push('/(tabs)');
       },
       onError: (error) => {
-        Alert.alert(
-          'Error', 
-          error instanceof Error ? error.message : 'Failed to create book'
+        showToast.error(
+          'Failed to create book', 
+          error instanceof Error ? error.message : 'Please try again'
         );
       },
     });
