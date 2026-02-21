@@ -17,6 +17,7 @@
  */
 
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import { ScaleButton } from '@/components/ui/animated';
 import {
   Interactive,
   Text as TextColors,
@@ -84,17 +85,15 @@ export function LoadMoreButton({
 
       {/* Load More button - only show if there are more items */}
       {hasMore && (
-        <Pressable
+        <ScaleButton
           onPress={onLoadMore}
           disabled={isLoading}
-          style={({ pressed }) => ({
+          style={{
             paddingVertical: 14,
             paddingHorizontal: 24,
             borderRadius: 12,
             backgroundColor: isLoading
               ? Border.default
-              : pressed
-              ? Interactive.primary.pressed
               : Interactive.primary.default,
             alignItems: 'center',
             justifyContent: 'center',
@@ -103,7 +102,7 @@ export function LoadMoreButton({
             borderCurve: 'continuous',
             flexDirection: 'row',
             gap: 12,
-          })}
+          }}
         >
           {isLoading ? (
             <>
@@ -141,7 +140,7 @@ export function LoadMoreButton({
               </Text>
             </View>
           )}
-        </Pressable>
+        </ScaleButton>
       )}
 
       {/* All loaded message */}

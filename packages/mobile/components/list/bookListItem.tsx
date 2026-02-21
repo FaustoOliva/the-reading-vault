@@ -19,6 +19,7 @@ import { View, Text, Pressable } from 'react-native';
 import { Link } from 'expo-router';
 import { Book } from '@/types/book';
 import { BookStatusBadge } from '@/components/ui/bookStatusBadge';
+import { FadeInView } from '@/components/ui/animated';
 import { 
   Background, 
   Text as TextColors, 
@@ -36,18 +37,19 @@ export function BookListItem({ book }: BookListItemProps) {
   const scoreColors = book.score !== null ? getScoreColors(book.score) : null;
 
   return (
-    <Link href={`/book/${book.id}` as any} asChild>
-      <Pressable
-        style={({ pressed }) => ({
-          padding: 16,
-          backgroundColor: pressed ? Interactive.primary.hover : Background.surface,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: Border.default,
-          gap: 12,
-          boxShadow: Shadow.small,
-          borderCurve: 'continuous',
-        })}
+    <FadeInView duration={200}>
+      <Link href={`/book/${book.id}` as any} asChild>
+        <Pressable
+          style={({ pressed }) => ({
+            padding: 16,
+            backgroundColor: pressed ? Interactive.primary.hover : Background.surface,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: Border.default,
+            gap: 12,
+            boxShadow: Shadow.small,
+            borderCurve: 'continuous',
+          })}
       >
         <View
           style={{
@@ -150,5 +152,6 @@ export function BookListItem({ book }: BookListItemProps) {
         </View>
       </Pressable>
     </Link>
+    </FadeInView>
   );
 }
