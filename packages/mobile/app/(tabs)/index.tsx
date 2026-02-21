@@ -16,11 +16,13 @@
  */
 
 import { useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, RefreshControl, Pressable } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useBooks } from '@/hooks/useBooks';
 import { BookListItem } from '@/components/bookListItem';
 import { PaginationControls } from '@/components/paginationControls';
+import { SearchBar } from '@/components/searchBar';
+import { AdvancedFiltersModal } from '@/components/advancedFiltersModal';
 import { BookStatus, BooksFilter } from '@/types/book';
 import { BOOK_STATUS_OPTIONS } from '@/constants/bookStatus';
 import { api } from '@/services/api';
@@ -37,6 +39,7 @@ const ITEMS_PER_PAGE = 10;
 export default function BooksListScreen() {
   const [filters, setFilters] = useState<BooksFilter>({});
   const [page, setPage] = useState(1);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   console.log('🏠 BooksListScreen render:', { filters, page });
 
@@ -106,6 +109,43 @@ export default function BooksListScreen() {
     }));
     setPage(1); // Reset to first page when filter changes
   };
+
+  /**
+   * Handle search query change
+   */
+  const handleSearchChange = (searchText: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      titleSearch: searchText || undefined,
+    }));
+    setPage(1); // Reset to first page when search changes
+  };
+
+  /**
+   * Handle advanced filters apply
+   */
+  const handleAdvancedFiltersApply = (newFilters: BooksFilter) => {
+    setFilters(newFilters);
+    setPage(1); // Reset to first page when filters change
+  };
+
+  /**
+   * Count active filters (excluding status and titleSearch which have their own UI)
+   */
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (filters.countryId) count++;
+    if (filters.authorId) count++;
+    if (filters.minScore !== undefined) count++;
+    if (filters.maxScore !== undefined) count++;
+    if (filters.minPages !== undefined) count++;
+    if (filters.maxPages !== undefined) count++;
+    if (filters.startDate) count++;
+    if (filters.endDate) count++;
+    return count;
+  };
+
+  const activeFiltersCount = getActiveFiltersCount();
 
   /**
    * Handle page change
@@ -205,96 +245,148 @@ export default function BooksListScreen() {
    */
   if (books.length === 0) {
     return (
-      <FlatList
-        data={[]}
-        renderItem={() => null}
-        contentInsetAdjustmentBehavior="automatic"
-        style={{ backgroundColor: Background.primary }}
-        contentContainerStyle={{ padding: 16, gap: 16 }}
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} />
-        }
-        ListHeaderComponent={
-          <>
-            <DebugInfo />
-            {/* Filter Section */}
-            <View style={{ gap: 6 }}>
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontWeight: '600',
-                  color: TextColors.primary,
-                }}
-              >
-                Filter by Status
-              </Text>
+      <>
+        <FlatList
+          data={[]}
+          renderItem={() => null}
+          contentInsetAdjustmentBehavior="automatic"
+          style={{ backgroundColor: Background.primary }}
+          contentContainerStyle={{ padding: 16, gap: 16 }}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} />
+          }
+          ListHeaderComponent={
+            <>
+              <DebugInfo />
+
+              {/* Search Bar */}
+              <SearchBar
+                value={filters.titleSearch || ''}
+                onChange={handleSearchChange}
+                placeholder="Search books by title..."
+              />
+
+              {/* Filter Controls */}
+              <View style={{ gap: 12, marginBottom: 12 }}>
+                {/* Status Filter */}
+                <View style={{ gap: 6 }}>
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: '600',
+                      color: TextColors.primary,
+                    }}
+                  >
+                    Filter by Status
+                  </Text>
+                  <View
+                    style={{
+                      borderWidth: 1,
+                      borderColor: Border.default,
+                      borderRadius: 8,
+                      backgroundColor: Background.surface,
+                      overflow: 'hidden',
+                      borderCurve: 'continuous',
+                    }}
+                  >
+                    <Picker
+                      selectedValue={filters.status || ''}
+                      onValueChange={handleStatusChange}
+                    >
+                      {BOOK_STATUS_OPTIONS.map((option) => (
+                        <Picker.Item
+                          key={option.value}
+                          label={option.label}
+                          value={option.value}
+                        />
+                      ))}
+                    </Picker>
+                  </View>
+                </View>
+
+                {/* Advanced Filters Button */}
+                <Pressable
+                  onPress={() => setShowAdvancedFilters(true)}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: pressed
+                      ? Interactive.secondary.pressed
+                      : Interactive.secondary.default,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: Border.default,
+                    paddingVertical: 14,
+                    paddingHorizontal: 16,
+                    gap: 8,
+                  })}
+                >
+                  <Text style={{ fontSize: 20 }}>⚙️</Text>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: '600',
+                      color: TextColors.primary,
+                    }}
+                  >
+                    Advanced Filters
+                    {activeFiltersCount > 0 && ` (${activeFiltersCount})`}
+                  </Text>
+                </Pressable>
+              </View>
+
+              {/* Empty State */}
               <View
                 style={{
-                  borderWidth: 1,
-                  borderColor: Border.default,
-                  borderRadius: 8,
-                  backgroundColor: Background.surface,
-                  overflow: 'hidden',
-                  borderCurve: 'continuous',
+                  padding: 32,
+                  alignItems: 'center',
+                  gap: 12,
                 }}
               >
-                <Picker
-                  selectedValue={filters.status || ''}
-                  onValueChange={handleStatusChange}
+                <Text
+                  style={{
+                    fontSize: 64,
+                    marginBottom: 8,
+                  }}
                 >
-                  {BOOK_STATUS_OPTIONS.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
+                  📚
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: '600',
+                    color: TextColors.primary,
+                    textAlign: 'center',
+                  }}
+                >
+                  No books found
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    color: TextColors.secondary,
+                    textAlign: 'center',
+                    lineHeight: 22,
+                  }}
+                >
+                  {filters.status || filters.titleSearch || activeFiltersCount > 0
+                    ? 'Try changing the filters or add a new book'
+                    : 'Add your first book to get started'}
+                </Text>
               </View>
-            </View>
+            </>
+          }
+        />
 
-            {/* Empty State */}
-            <View
-              style={{
-                padding: 32,
-                alignItems: 'center',
-                gap: 12,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 64,
-                  marginBottom: 8,
-                }}
-              >
-                📚
-              </Text>
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: '600',
-                  color: TextColors.primary,
-                  textAlign: 'center',
-                }}
-              >
-                No books found
-              </Text>
-              <Text
-                style={{
-                  fontSize: 15,
-                  color: TextColors.secondary,
-                  textAlign: 'center',
-                  lineHeight: 22,
-                }}
-              >
-                {filters.status
-                  ? 'Try changing the filter or add a new book'
-                  : 'Add your first book to get started'}
-              </Text>
-            </View>
-          </>
-        }
-      />
+        {/* Advanced Filters Modal */}
+        <AdvancedFiltersModal
+          visible={showAdvancedFilters}
+          filters={filters}
+          onClose={() => setShowAdvancedFilters(false)}
+          onApply={handleAdvancedFiltersApply}
+        />
+      </>
     );
   }
 
@@ -302,65 +394,118 @@ export default function BooksListScreen() {
    * Render books list
    */
   return (
-    <FlatList
-      data={books}
-      keyExtractor={(item) => item.id.toString()}
-      renderItem={({ item }) => <BookListItem book={item} />}
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: Background.primary }}
-      contentContainerStyle={{ padding: 16, gap: 12 }}
-      refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} />
-      }
-      ListHeaderComponent={
-        <>
-          <DebugInfo />
-          <View style={{ gap: 6, marginBottom: 12 }}>
-          <Text
-            style={{
-              fontSize: 15,
-              fontWeight: '600',
-              color: TextColors.primary,
-            }}
-          >
-            Filter by Status
-          </Text>
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: Border.default,
-              borderRadius: 8,
-              backgroundColor: Background.surface,
-              overflow: 'hidden',
-              borderCurve: 'continuous',
-            }}
-          >
-            <Picker
-              selectedValue={filters.status || ''}
-              onValueChange={handleStatusChange}
-            >
-              {BOOK_STATUS_OPTIONS.map((option) => (
-                <Picker.Item
-                  key={option.value}
-                  label={option.label}
-                  value={option.value}
-                />
-              ))}
-            </Picker>
-          </View>
-          </View>
-        </>
-      }
-      ListFooterComponent={
-        pagination && pagination.totalPages > 1 ? (
-          <PaginationControls
-            currentPage={pagination.page}
-            totalPages={pagination.totalPages}
-            totalItems={pagination.total}
-            onPageChange={handlePageChange}
-          />
-        ) : null
-      }
-    />
+    <>
+      <FlatList
+        data={books}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => <BookListItem book={item} />}
+        contentInsetAdjustmentBehavior="automatic"
+        style={{ backgroundColor: Background.primary }}
+        contentContainerStyle={{ padding: 16, gap: 12 }}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} />
+        }
+        ListHeaderComponent={
+          <>
+            <DebugInfo />
+
+            {/* Search Bar */}
+            <SearchBar
+              value={filters.titleSearch || ''}
+              onChange={handleSearchChange}
+              placeholder="Search books by title..."
+            />
+
+            {/* Filter Controls */}
+            <View style={{ gap: 12, marginBottom: 12 }}>
+              {/* Status Filter */}
+              <View style={{ gap: 6 }}>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: '600',
+                    color: TextColors.primary,
+                  }}
+                >
+                  Filter by Status
+                </Text>
+                <View
+                  style={{
+                    borderWidth: 1,
+                    borderColor: Border.default,
+                    borderRadius: 8,
+                    backgroundColor: Background.surface,
+                    overflow: 'hidden',
+                    borderCurve: 'continuous',
+                  }}
+                >
+                  <Picker
+                    selectedValue={filters.status || ''}
+                    onValueChange={handleStatusChange}
+                  >
+                    {BOOK_STATUS_OPTIONS.map((option) => (
+                      <Picker.Item
+                        key={option.value}
+                        label={option.label}
+                        value={option.value}
+                      />
+                    ))}
+                  </Picker>
+                </View>
+              </View>
+
+              {/* Advanced Filters Button */}
+              <Pressable
+                onPress={() => setShowAdvancedFilters(true)}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: pressed
+                    ? Interactive.secondary.pressed
+                    : Interactive.secondary.default,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: Border.default,
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                  gap: 8,
+                })}
+              >
+                <Text style={{ fontSize: 20 }}>⚙️</Text>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '600',
+                    color: TextColors.primary,
+                  }}
+                >
+                  Advanced Filters
+                  {activeFiltersCount > 0 && ` (${activeFiltersCount})`}
+                </Text>
+              </Pressable>
+            </View>
+          </>
+        }
+        ListFooterComponent={
+          pagination && pagination.totalPages > 1 ? (
+            <PaginationControls
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.total}
+              onPageChange={handlePageChange}
+            />
+          ) : null
+        }
+      />
+
+      {/* Advanced Filters Modal */}
+      <AdvancedFiltersModal
+        visible={showAdvancedFilters}
+        filters={filters}
+        onClose={() => setShowAdvancedFilters(false)}
+        onApply={handleAdvancedFiltersApply}
+      />
+    </>
   );
 }
