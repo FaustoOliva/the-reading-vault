@@ -15,25 +15,31 @@
  */
 
 import { z } from "zod";
-import { BookStatus } from "../models/BookStatus.js";
+import {
+  BookStatus,
+  bookStatusSchema,
+  updateBookBaseSchema,
+  reviewBookBaseSchema,
+  titleSchema,
+  isbnOptionalSchema,
+  pagesOptionalSchema,
+  scoreOptionalSchema,
+  commentSchema,
+  authorNameSchema,
+  countryNameSchema,
+} from "@reading-vault/common";
+import { forBodyParams } from "../adapters/zodAdapters.js";
 
 /**
  * Validation schema for GetBooks query parameters
+ * Query params arrive as strings, so we need explicit coercion
  */
 const getBooksQuerySchema = z
   .object({
-    status: z
-      .enum([
-        BookStatus.WISH_LIST,
-        BookStatus.READING,
-        BookStatus.COMPLETED,
-        BookStatus.ABANDONED,
-        BookStatus.PENDING_SCORE,
-      ])
-      .optional(),
+    status: bookStatusSchema.optional(),
     authorId: z.coerce.number().int().positive().optional(),
     countryId: z.coerce.number().int().positive().optional(),
-    titleSearch: z.string().trim().min(1).max(100).optional(),
+    titleSearch: z.string().trim().optional(),
     minScore: z.coerce.number().min(0).max(10).optional(),
     maxScore: z.coerce.number().min(0).max(10).optional(),
     minPages: z.coerce.number().int().positive().optional(),
@@ -48,63 +54,48 @@ const getBooksQuerySchema = z
 /**
  * Validation schema for CreateBook request body
  */
-const createBookBodySchema = z
-  .object({
-    title: z.string().min(1).max(255),
-    isbn: z.string().max(20).optional(),
-    totalPages: z.number().int().positive().optional(),
-    status: z
-      .enum([
-        BookStatus.WISH_LIST,
-        BookStatus.READING,
-        BookStatus.COMPLETED,
-        BookStatus.ABANDONED,
-      ])
-      .optional(),
-    score: z.number().min(0).max(10).optional(),
-    comment: z.string().optional(),
-    author: z.object({
-      name: z.string().min(1).max(255),
-      nationality: z.string().max(40).optional(),
-    }),
-  })
-  .strict()
-  .refine(
-    (data) => {
-      // If status is COMPLETED or ABANDONED, score is required
-      if (
-        data.status === BookStatus.COMPLETED ||
-        data.status === BookStatus.ABANDONED
-      ) {
-        return data.score !== undefined && data.score !== null;
-      }
-      return true;
-    },
-    {
-      message:
-        "Score is required when creating a book with COMPLETED or ABANDONED status",
-      path: ["score"],
-    },
-  );
+const createBookBodySchema = forBodyParams(
+  z
+    .object({
+      title: titleSchema,
+      isbn: isbnOptionalSchema,
+      totalPages: pagesOptionalSchema,
+      status: bookStatusSchema.optional(),
+      score: scoreOptionalSchema,
+      comment: commentSchema,
+      author: z.object({
+        name: authorNameSchema,
+        nationality: countryNameSchema.optional(),
+      }),
+    })
+    .refine(
+      (data) => {
+        // If status is COMPLETED or ABANDONED, score is required
+        if (
+          data.status === BookStatus.COMPLETED ||
+          data.status === BookStatus.ABANDONED
+        ) {
+          return data.score !== undefined && data.score !== null;
+        }
+        return true;
+      },
+      {
+        message:
+          "Score is required when creating a book with COMPLETED or ABANDONED status",
+        path: ["score"],
+      },
+    ),
+);
 
 /**
  * Validation schema for UpdateBook request body
  */
-const updateBookBodySchema = z.object({
-  title: z.string().min(1).max(255).optional(),
-  totalPages: z.number().int().positive().optional(),
-  score: z.number().min(0).max(10).optional(),
-  comment: z.string().optional(),
-});
+const updateBookBodySchema = forBodyParams(updateBookBaseSchema);
 
 /**
  * Validation schema for ReviewBook request body
  */
-const reviewBookBodySchema = z.object({
-  targetStatus: z.enum([BookStatus.COMPLETED, BookStatus.ABANDONED]),
-  score: z.number().min(0).max(10),
-  comment: z.string().optional(),
-});
+const reviewBookBodySchema = forBodyParams(reviewBookBaseSchema);
 
 export class BooksController {
   constructor(

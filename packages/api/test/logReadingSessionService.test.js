@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { BookStatus } from "../models/BookStatus.js";
+import { BookStatus } from "@reading-vault/common";
 import { Book } from "../models/Book.js";
 import { ReadingSession } from "../models/ReadingSession.js";
 import {

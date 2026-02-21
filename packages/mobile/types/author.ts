@@ -1,10 +1,8 @@
 /**
  * Author Types
  * Type definitions for Author entities
+ *
+ * Re-exported from @reading-vault/common for convenience
  */
 
-export interface Author {
-  id: number;
-  name: string;
-  nationality: string | null;
-}
+export type { Author } from "@reading-vault/common";

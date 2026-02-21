@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { GetBooksService } from "../services/getBooksService.js";
 import { Book } from "../models/Book.js";
-import { BookStatus } from "../models/BookStatus.js";
+import { BookStatus } from "@reading-vault/common";
 
 describe("GetBooksService", () => {
   let service;

@@ -18,7 +18,7 @@
  */
 
 import sql from "mssql";
-import { BookStatus } from "../models/BookStatus.js";
+import { BookStatus } from "@reading-vault/common";
 import { NotFoundError } from "../errors/index.js";
 
 export class RequestReviewService {

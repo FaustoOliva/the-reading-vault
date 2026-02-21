@@ -8,7 +8,7 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ConflictError } from "../errors/index.js";
-import { BookStatus } from "../models/BookStatus.js";
+import { BookStatus } from "@reading-vault/common";
 import { Book } from "../models/Book.js";
 
 // Mock transaction and request (must be defined before vi.mock)

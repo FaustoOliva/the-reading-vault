@@ -10,7 +10,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { GetBookByIdService } from "../services/getBookByIdService.js";
 import { NotFoundError } from "../errors/http/NotFoundError.js";
 import { Book } from "../models/Book.js";
-import { BookStatus } from "../models/BookStatus.js";
+import { BookStatus } from "@reading-vault/common";
 
 describe("GetBookByIdService", () => {
   let service;

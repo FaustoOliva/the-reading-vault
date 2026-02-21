@@ -7,10 +7,22 @@
  * - Error messages are user-friendly
  * - Validation logic matches business rules
  * - Schemas are reusable across forms
+ * - Base schemas imported from @reading-vault/common
+ * - Form-specific adapters handle string inputs and UX messages
  */
 
 import { z } from "zod";
-import { BookStatus } from "./book";
+import {
+  BookStatus,
+  REVIEW_TARGET_STATUSES,
+  titleSchema,
+  authorNameSchema,
+  countryNameSchema,
+  isbnOptionalSchema,
+  commentSchema,
+  bookStatusSchema,
+} from "@reading-vault/common";
+import { numericString, asFormDate } from "../adapters/formSchemas";
 
 /**
  * Create Book Schema
@@ -26,27 +38,25 @@ import { BookStatus } from "./book";
  * - Nationality is required only when creating new author
  */
 export const createBookSchema = z.object({
-  title: z.string().min(1, "Title is required").trim(),
-  authorName: z.string().min(1, "Author name is required").trim(),
-  countryName: z.string().optional(),
+  title: titleSchema,
+  authorName: authorNameSchema,
+  countryName: countryNameSchema.optional(),
   isbn: z.string().optional(),
-  totalPages: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || (!isNaN(Number(val)) && Number(val) > 0),
-      "Must be a positive number",
-    ),
-  status: z.nativeEnum(BookStatus).default(BookStatus.WISH_LIST),
-  score: z
-    .string()
-    .optional()
-    .refine(
-      (val) =>
-        !val || (!isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 10),
-      "Score must be between 0 and 10",
-    ),
-  comment: z.string().optional(),
+  totalPages: numericString({
+    positive: true,
+    integer: true,
+    fieldName: "Total pages",
+    required: false,
+  }),
+  status: bookStatusSchema.default(BookStatus.WISH_LIST),
+  score: numericString({
+    min: 0,
+    max: 10,
+    multipleOf: 0.5,
+    fieldName: "Score",
+    required: false,
+  }),
+  comment: commentSchema,
 });
 
 export type CreateBookFormData = z.infer<typeof createBookSchema>;
@@ -66,26 +76,22 @@ export const logSessionSchema = z.object({
   bookId: z.number({
     message: "Please select a book",
   }),
-  pagesRead: z
-    .string()
-    .min(1, "Pages read is required")
-    .refine(
-      (val) => !isNaN(Number(val)) && Number(val) > 0,
-      "Pages must be greater than zero",
-    ),
-  sessionDate: z
-    .date()
-    .refine(
-      (date) => date <= new Date(),
-      "Session date cannot be in the future",
-    ),
-  duration: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || (!isNaN(Number(val)) && Number(val) >= 0),
-      "Duration must be a positive number",
-    ),
+  pagesRead: numericString({
+    positive: true,
+    integer: true,
+    fieldName: "Pages read",
+    required: true,
+  }),
+  sessionDate: asFormDate({
+    required: true,
+    disallowFuture: true,
+    fieldName: "Session date",
+  }),
+  duration: numericString({
+    min: 0,
+    fieldName: "Duration",
+    required: false,
+  }),
 });
 
 /**
@@ -115,23 +121,21 @@ export type LogSessionFormData = z.infer<typeof logSessionSchema>;
  * - Score must be 0-10 if provided
  */
 export const editBookSchema = z.object({
-  title: z.string().min(1, "Title cannot be empty").trim().optional(),
-  totalPages: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || (!isNaN(Number(val)) && Number(val) > 0),
-      "Must be a positive number",
-    ),
-  score: z
-    .string()
-    .optional()
-    .refine(
-      (val) =>
-        !val || (!isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 10),
-      "Score must be between 0 and 10",
-    ),
-  comment: z.string().optional(),
+  title: titleSchema.optional(),
+  totalPages: numericString({
+    positive: true,
+    integer: true,
+    fieldName: "Total pages",
+    required: false,
+  }),
+  score: numericString({
+    min: 0,
+    max: 10,
+    multipleOf: 0.5,
+    fieldName: "Score",
+    required: false,
+  }),
+  comment: commentSchema,
 });
 
 export type EditBookFormData = z.infer<typeof editBookSchema>;
@@ -146,21 +150,17 @@ export type EditBookFormData = z.infer<typeof editBookSchema>;
  * - Comment is optional
  */
 export const reviewBookSchema = z.object({
-  targetStatus: z.enum([BookStatus.COMPLETED, BookStatus.ABANDONED], {
+  targetStatus: z.enum(REVIEW_TARGET_STATUSES, {
     message: "Please select Complete or Abandon",
   }),
-  score: z
-    .string()
-    .min(1, "Score is required")
-    .refine(
-      (val) => !isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 10,
-      "Score must be between 0 and 10",
-    )
-    .refine(
-      (val) => Number(val) % 0.5 === 0,
-      "Score must be in 0.5 increments",
-    ),
-  comment: z.string().optional(),
+  score: numericString({
+    min: 0,
+    max: 10,
+    multipleOf: 0.5,
+    fieldName: "Score",
+    required: true,
+  }),
+  comment: commentSchema,
 });
 
 export type ReviewBookFormData = z.infer<typeof reviewBookSchema>;
@@ -178,37 +178,35 @@ export type ReviewBookFormData = z.infer<typeof reviewBookSchema>;
  */
 export const advancedFiltersSchema = z
   .object({
-    status: z.nativeEnum(BookStatus).optional(),
+    status: bookStatusSchema.optional(),
     authorId: z.number().optional(),
     countryId: z.number().optional(),
-    minScore: z
-      .string()
-      .optional()
-      .refine(
-        (val) => !val || (!isNaN(Number(val)) && Number(val) >= 0),
-        "Must be a positive number",
-      ),
-    maxScore: z
-      .string()
-      .optional()
-      .refine(
-        (val) => !val || (!isNaN(Number(val)) && Number(val) >= 0),
-        "Must be a positive number",
-      ),
-    minPages: z
-      .string()
-      .optional()
-      .refine(
-        (val) => !val || (!isNaN(Number(val)) && Number(val) >= 0),
-        "Must be a positive number",
-      ),
-    maxPages: z
-      .string()
-      .optional()
-      .refine(
-        (val) => !val || (!isNaN(Number(val)) && Number(val) >= 0),
-        "Must be a positive number",
-      ),
+    minScore: numericString({
+      min: 0,
+      max: 10,
+      multipleOf: 0.5,
+      fieldName: "Min score",
+      required: false,
+    }),
+    maxScore: numericString({
+      min: 0,
+      max: 10,
+      multipleOf: 0.5,
+      fieldName: "Max score",
+      required: false,
+    }),
+    minPages: numericString({
+      positive: true,
+      integer: true,
+      fieldName: "Min pages",
+      required: false,
+    }),
+    maxPages: numericString({
+      positive: true,
+      integer: true,
+      fieldName: "Max pages",
+      required: false,
+    }),
     startDate: z.date().optional(),
     endDate: z.date().optional(),
   })

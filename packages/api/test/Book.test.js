@@ -8,7 +8,7 @@
 
 import { describe, it, expect } from "vitest";
 import { Book } from "../models/Book.js";
-import { BookStatus } from "../models/BookStatus.js";
+import { BookStatus } from "@reading-vault/common";
 import { BookClosedError } from "../errors/domain/BookClosedError.js";
 
 describe("Book Domain Entity", () => {

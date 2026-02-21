@@ -1,9 +1,8 @@
 /**
  * Country Types
  * Type definitions for Country entities
+ *
+ * Re-exported from @reading-vault/common for convenience
  */
 
-export interface Country {
-  id: number;
-  name: string;
-}
+export type { Country } from "@reading-vault/common";

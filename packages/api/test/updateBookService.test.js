@@ -12,7 +12,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { UpdateBookService } from "../services/updateBookService.js";
 import { Book } from "../models/Book.js";
-import { BookStatus } from "../models/BookStatus.js";
+import { BookStatus } from "@reading-vault/common";
 import { NotFoundError } from "../errors/index.js";
 
 // Mock transaction

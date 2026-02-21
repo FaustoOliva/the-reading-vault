@@ -15,17 +15,17 @@
  */
 
 import { z } from "zod";
+import { logSessionBaseSchema } from "@reading-vault/common";
+import { forBodyParams } from "../adapters/zodAdapters.js";
 
 /**
  * Validation schema for LogReadingSession request body
  */
-const logSessionBodySchema = z
-  .object({
-    bookId: z.number().int().positive(),
-    pagesRead: z.number().int().positive(),
+const logSessionBodySchema = forBodyParams(
+  logSessionBaseSchema.extend({
     occurredAt: z.string().datetime().optional(),
-  })
-  .strict();
+  }),
+);
 
 export class ReadingSessionsController {
   constructor(logReadingSessionService) {

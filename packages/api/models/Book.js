@@ -6,7 +6,7 @@
  * Rich entity: encapsulates state transition logic
  */
 
-import { BookStatus } from "./BookStatus.js";
+import { BookStatus } from "@reading-vault/common";
 import {
   BookClosedError,
   BookPendingReviewError,

@@ -19,7 +19,7 @@
 
 import sql from "mssql";
 import { ConflictError } from "../errors/index.js";
-import { BookStatus } from "../models/BookStatus.js";
+import { BookStatus } from "@reading-vault/common";
 
 export class CreateBookService {
   constructor(

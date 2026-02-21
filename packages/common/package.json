@@ -1,16 +1,25 @@
 {
-  "name": "common",
+  "name": "@reading-vault/common",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Shared types, schemas and domain constants for The Reading Vault",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
   "scripts": {
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "zod",
+    "validation",
+    "shared"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "dependencies": {
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
   }
 }

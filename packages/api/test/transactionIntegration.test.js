@@ -17,7 +17,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import sql from "mssql";
 import { LogReadingSessionService } from "../services/logReadingSessionService.js";
 import { Book } from "../models/Book.js";
-import { BookStatus } from "../models/BookStatus.js";
+import { BookStatus } from "@reading-vault/common";
 import { ReadingSession } from "../models/ReadingSession.js";
 
 describe("Transaction Integration Tests", () => {
