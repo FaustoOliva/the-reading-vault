@@ -17,6 +17,7 @@
 
 import { View, Text, Pressable } from 'react-native';
 import { Link } from 'expo-router';
+import { memo } from 'react';
 import { Book } from '@/types/book';
 import { BookStatusBadge } from '@/components/ui/bookStatusBadge';
 import { FadeInView } from '@/components/ui/animated';
@@ -33,7 +34,7 @@ interface BookListItemProps {
   book: Book;
 }
 
-export function BookListItem({ book }: BookListItemProps) {
+const BookListItemComponent = ({ book }: BookListItemProps) => {
   const scoreColors = book.score !== null ? getScoreColors(book.score) : null;
 
   return (
@@ -154,4 +155,17 @@ export function BookListItem({ book }: BookListItemProps) {
     </Link>
     </FadeInView>
   );
-}
+};
+
+// Memoize component to prevent unnecessary re-renders
+// Only re-render if book.id or book props change
+export const BookListItem = memo(BookListItemComponent, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if book data changed
+  return (
+    prevProps.book.id === nextProps.book.id &&
+    prevProps.book.title === nextProps.book.title &&
+    prevProps.book.status === nextProps.book.status &&
+    prevProps.book.score === nextProps.book.score &&
+    prevProps.book.currentReadingCycle === nextProps.book.currentReadingCycle
+  );
+});

@@ -504,7 +504,7 @@ export default function BooksListScreen() {
   }
 
   /**
-   * Render books list
+   * Render books list with performance optimizations
    */
   return (
     <>
@@ -518,6 +518,12 @@ export default function BooksListScreen() {
         refreshControl={
           <RefreshControl refreshing={isRefetching && page === 1} onRefresh={handleRefresh} />
         }
+        // Performance optimizations
+        removeClippedSubviews={true} // Unmount items outside viewport
+        maxToRenderPerBatch={10} // Render 10 items per batch
+        updateCellsBatchingPeriod={50} // Update every 50ms
+        initialNumToRender={15} // Render 15 items initially
+        windowSize={21} // Keep 21 screens worth of items in memory
         ListHeaderComponent={
           <>
             {/* Search Bar */}

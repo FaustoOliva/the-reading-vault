@@ -15,7 +15,7 @@
  */
 
 import { useState } from 'react';
-import { View, Text, ScrollView, Alert } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Alert } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useBookDetails, useReopenBook, useRequestReview } from '@/hooks/useBooks';
 import { BookDetailHero } from '@/components/ui/bookDetailHero';
@@ -41,7 +41,9 @@ export default function BookDetailScreen() {
   const {
     data: bookDetails,
     isLoading,
+    isRefetching,
     error,
+    refetch,
   } = useBookDetails(bookId);
 
   const reopenMutation = useReopenBook();
@@ -183,6 +185,9 @@ export default function BookDetailScreen() {
       <Stack.Screen options={{ title: book?.title ?? 'Book Details' }} />
       <ScrollView
         style={{ flex: 1, backgroundColor: Background.primary }}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />
+        }
         contentContainerStyle={{ padding: 16, gap: 16 }}
         contentInsetAdjustmentBehavior="automatic"
       >
