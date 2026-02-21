@@ -50,6 +50,117 @@ export class BookQueryBuilder {
   }
 
   /**
+   * Filter by country (author's nationality)
+   * @param {number} countryId - Country ID
+   * @returns {BookQueryBuilder} this for chaining
+   */
+  withCountryId(countryId) {
+    if (!countryId) return this;
+    
+    this.filters.push({
+      condition: ` AND c.id = @countryId`,
+      param: { name: 'countryId', type: sql.Int, value: countryId }
+    });
+    return this;
+  }
+
+  /**
+   * Search books by title (partial match, case-insensitive)
+   * @param {string} keyword - Search keyword
+   * @returns {BookQueryBuilder} this for chaining
+   */
+  withTitleSearch(keyword) {
+    if (!keyword || keyword.trim() === '') return this;
+    
+    this.filters.push({
+      condition: ` AND b.title LIKE @titleSearch`,
+      param: { name: 'titleSearch', type: sql.NVarChar, value: `%${keyword.trim()}%` }
+    });
+    return this;
+  }
+
+  /**
+   * Filter by score range (rating)
+   * @param {number|null} minScore - Minimum score (inclusive)
+   * @param {number|null} maxScore - Maximum score (inclusive)
+   * @returns {BookQueryBuilder} this for chaining
+   */
+  withScoreRange(minScore, maxScore) {
+    if (minScore !== null && minScore !== undefined) {
+      this.filters.push({
+        condition: ` AND b.score >= @minScore`,
+        param: { name: 'minScore', type: sql.Decimal(3, 1), value: minScore }
+      });
+    }
+    
+    if (maxScore !== null && maxScore !== undefined) {
+      this.filters.push({
+        condition: ` AND b.score <= @maxScore`,
+        param: { name: 'maxScore', type: sql.Decimal(3, 1), value: maxScore }
+      });
+    }
+    
+    return this;
+  }
+
+  /**
+   * Filter by page count range
+   * @param {number|null} minPages - Minimum pages (inclusive)
+   * @param {number|null} maxPages - Maximum pages (inclusive)
+   * @returns {BookQueryBuilder} this for chaining
+   */
+  withPageRange(minPages, maxPages) {
+    if (minPages !== null && minPages !== undefined) {
+      this.filters.push({
+        condition: ` AND b.total_pages >= @minPages`,
+        param: { name: 'minPages', type: sql.Int, value: minPages }
+      });
+    }
+    
+    if (maxPages !== null && maxPages !== undefined) {
+      this.filters.push({
+        condition: ` AND b.total_pages <= @maxPages`,
+        param: { name: 'maxPages', type: sql.Int, value: maxPages }
+      });
+    }
+    
+    return this;
+  }
+
+  /**
+   * Filter by date range based on first status transition (creation proxy)
+   * Note: Uses BookStatusHistory as proxy for book creation date since Books table lacks created_at
+   * @param {Date|string|null} startDate - Start date (inclusive)
+   * @param {Date|string|null} endDate - End date (inclusive)
+   * @returns {BookQueryBuilder} this for chaining
+   */
+  withDateRange(startDate, endDate) {
+    if (startDate) {
+      this.filters.push({
+        condition: ` AND EXISTS (
+          SELECT 1 FROM BookStatusHistory bsh
+          WHERE bsh.book_id = b.id
+          AND bsh.created_at >= @startDate
+        )`,
+        param: { name: 'startDate', type: sql.DateTime, value: new Date(startDate) }
+      });
+    }
+    
+    if (endDate) {
+      this.filters.push({
+        condition: ` AND EXISTS (
+          SELECT 1 FROM BookStatusHistory bsh
+          WHERE bsh.book_id = b.id
+          AND bsh.created_at <= @endDate
+        )`,
+        param: { name: 'endDate', type: sql.DateTime, value: new Date(endDate) }
+      });
+    }
+    
+    return this;
+  }
+
+  /**
    * Configure pagination
    * @param {number} page - Page number (1-based)
    * @param {number} limit - Items per page
@@ -122,6 +233,8 @@ export class BookQueryBuilder {
     let query = `
       SELECT COUNT(*) as total
       FROM Books b
+      INNER JOIN Authors a ON b.author_id = a.id
+      LEFT JOIN Countries c ON a.nationality_id = c.id
       INNER JOIN BookStatuses bs ON b.status_id = bs.id
       WHERE 1=1
     `;
