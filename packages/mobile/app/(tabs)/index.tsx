@@ -33,7 +33,7 @@ import {
   Feedback,
 } from '@/constants/colors';
 
-const ITEMS_PER_PAGE = 30;
+const ITEMS_PER_PAGE = 100;
 const AUTO_LOAD_THRESHOLD = 50;
 
 export default function BooksListScreen() {
@@ -92,7 +92,7 @@ export default function BooksListScreen() {
       setAccumulatedBooks((prev) => {
         // Avoid duplicates
         const newBooks = currentPageBooks.filter(
-          (newBook) => !prev.some((existingBook) => existingBook.id === newBook.id)
+          (newBook: Book) => !prev.some((existingBook) => existingBook.id === newBook.id)
         );
         return [...prev, ...newBooks];
       });
@@ -288,7 +288,7 @@ export default function BooksListScreen() {
   /**
    * Render empty state
    */
-  if (books.length === 0) {
+  if (displayedBooks.length === 0) {
     return (
       <>
         <FlatList

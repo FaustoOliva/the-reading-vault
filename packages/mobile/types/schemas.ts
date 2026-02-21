@@ -63,8 +63,7 @@ export type CreateBookFormData = z.infer<typeof createBookSchema>;
  */
 export const logSessionSchema = z.object({
   bookId: z.number({
-    required_error: 'Please select a book',
-    invalid_type_error: 'Book ID must be a number',
+    message: 'Please select a book',
   }),
   pagesRead: z
     .string()
@@ -135,7 +134,7 @@ export type EditBookFormData = z.infer<typeof editBookSchema>;
  */
 export const reviewBookSchema = z.object({
   targetStatus: z.enum([BookStatus.COMPLETED, BookStatus.ABANDONED], {
-    required_error: 'Please select Complete or Abandon',
+    message: 'Please select Complete or Abandon',
   }),
   score: z
     .string()
@@ -230,7 +229,7 @@ export type AdvancedFiltersFormData = z.infer<typeof advancedFiltersSchema>;
  */
 export const getZodErrors = (error: z.ZodError): Record<string, string> => {
   const errors: Record<string, string> = {};
-  error.errors.forEach((err) => {
+  error.issues.forEach((err) => {
     const path = err.path.join('.');
     errors[path] = err.message;
   });
