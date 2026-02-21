@@ -122,7 +122,7 @@ export default function LogSessionScreen() {
     setSuccessMessage('');
 
     try {
-      awavalidateFormssion.mutateAsync({
+      await createSession.mutateAsync({
         bookId: selectedBookId,
         pagesRead: parseInt(pagesRead, 10),
         occurredAt: sessionDate.toISOString(),
