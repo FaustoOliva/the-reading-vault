@@ -41,7 +41,20 @@ export class ApiError extends Error {
 const createTimeoutController = (timeoutMs: number) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-   with timeout and abort support
+  const cleanup = () => clearTimeout(timeoutId);
+  return { controller, cleanup };
+};
+
+/**
+ * API Client
+ * Centralized fetch wrapper with timeout and abort support
+ */
+export const api = {
+  baseUrl: API_BASE_URL,
+
+  /**
+   * Generic request handler
+   * Includes timeout and abort support
    */
   async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const fullUrl = `${this.baseUrl}${endpoint}`;
@@ -120,20 +133,7 @@ const createTimeoutController = (timeoutMs: number) => {
       // Network error (offline, timeout)
       throw new ApiError('Network error - please check your connection', 0, 'NETWORK_ERROR');
     } finally {
-      cleanup(
-      return data;
-    } catch (error) {
-      if (__DEV__) {
-        console.error('💥 API Request Failed:', {
-          url: fullUrl,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          type: error instanceof ApiError ? 'ApiError' : error?.constructor?.name || 'Unknown',
-        });
-      }
-
-      if (error instanceof ApiError) throw error;
-      // Network error (offline, timeout)
-      throw new ApiError('Network error', 0, 'NETWORK_ERROR');
+      cleanup();
     }
   },
 
