@@ -21,6 +21,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useBooks } from '@/hooks/useBooks';
 import { BookListItem } from '@/components/list/bookListItem';
 import { LoadMoreButton } from '@/components/list/loadMoreButton';
+import { SkeletonBookItem } from '@/components/list/skeletonBookItem';
 import { SearchBar } from '@/components/forms/searchBar';
 import { AdvancedFiltersModal } from '@/components/modals/advancedFiltersModal';
 import { BookStatus, BooksFilter, Book } from '@/types/book';
@@ -216,18 +217,80 @@ export default function BooksListScreen() {
 
   /**
    * Render loading state (only on initial load)
-   * Don't show full-screen spinner when refetching with existing data
+   * Show skeleton loaders instead of spinner
    */
   if (isLoading && displayedBooks.length === 0) {
     return (
-      <View style={{ flex: 1, backgroundColor: Background.primary, padding: 16 }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color={Interactive.primary.default} />
-          <Text style={{ marginTop: 12, fontSize: 15, color: TextColors.secondary }}>
-            Loading books...
-          </Text>
-        </View>
-      </View>
+      <FlatList
+        data={[1, 2, 3, 4, 5]} // 5 skeleton items
+        keyExtractor={(item) => `skeleton-${item}`}
+        renderItem={() => <SkeletonBookItem />}
+        contentInsetAdjustmentBehavior="automatic"
+        style={{ backgroundColor: Background.primary }}
+        contentContainerStyle={{ padding: 16, gap: 12 }}
+        ListHeaderComponent={
+          <>
+            <SearchBar
+              value={filters.titleSearch || ''}
+              onChange={handleSearchChange}
+              placeholder="Search books by title..."
+            />
+            <View style={{ gap: 12 }}>
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: TextColors.primary }}>
+                  Filter by Status
+                </Text>
+                <View
+                  style={{
+                    borderWidth: 1,
+                    borderColor: Border.default,
+                    borderRadius: 8,
+                    backgroundColor: Background.surface,
+                    overflow: 'hidden',
+                    borderCurve: 'continuous',
+                  }}
+                >
+                  <Picker
+                    selectedValue={filters.status || ''}
+                    onValueChange={handleStatusChange}
+                  >
+                    {BOOK_STATUS_OPTIONS.map((option) => (
+                      <Picker.Item
+                        key={option.value}
+                        label={option.label}
+                        value={option.value}
+                      />
+                    ))}
+                  </Picker>
+                </View>
+              </View>
+              <Pressable
+                onPress={() => setShowAdvancedFilters(true)}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: pressed
+                    ? Interactive.secondary.pressed
+                    : Interactive.secondary.default,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: Border.default,
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                  gap: 8,
+                })}
+              >
+                <Text style={{ fontSize: 20 }}>⚙️</Text>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: TextColors.primary }}>
+                  Advanced Filters
+                  {activeFiltersCount > 0 && ` (${activeFiltersCount})`}
+                </Text>
+              </Pressable>
+            </View>
+          </>
+        }
+      />
     );
   }
 

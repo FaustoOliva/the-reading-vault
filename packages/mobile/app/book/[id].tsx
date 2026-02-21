@@ -15,7 +15,7 @@
  */
 
 import { useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, Alert } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useBookDetails, useReopenBook, useRequestReview } from '@/hooks/useBooks';
 import { BookDetailHero } from '@/components/ui/bookDetailHero';
@@ -23,6 +23,7 @@ import { ReadingProgressCard } from '@/components/cards/readingProgressCard';
 import { ReadingCyclesHistoryCard } from '@/components/cards/readingCyclesHistoryCard';
 import { ReviewBookModal } from '@/components/modals/reviewBookModal';
 import { EditBookModal } from '@/components/modals/editBookModal';
+import { SkeletonBookDetail } from '@/components/ui/skeletonBookDetail';
 import { BookStatus } from '@/types/book';
 import {
   Background,
@@ -58,30 +59,14 @@ export default function BookDetailScreen() {
   }
 
   /**
-   * Loading State
+   * Loading State - Show skeleton
    */
   if (isLoading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: Background.primary,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
+      <>
         <Stack.Screen options={{ title: 'Loading...' }} />
-        <ActivityIndicator size="large" color={Feedback.info.text} />
-        <Text
-          style={{
-            marginTop: 12,
-            fontSize: 14,
-            color: TextColors.secondary,
-          }}
-        >
-          Loading book details...
-        </Text>
-      </View>
+        <SkeletonBookDetail />
+      </>
     );
   }
 
