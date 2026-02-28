@@ -4,6 +4,7 @@ import readingSessionRoutes from "./readingSessionRoutes.js";
 import authorRoutes from "./authorRoutes.js";
 import countryRoutes from "./countryRoutes.js";
 import kpiRoutes from "./kpiRoutes.js";
+import aiRoutes from "./aiRoutes.js";
 
 const routes = [
   healthCheckRoutes,
@@ -12,6 +13,7 @@ const routes = [
   authorRoutes,
   countryRoutes,
   kpiRoutes,
+  aiRoutes,
 ];
 
 export default routes;

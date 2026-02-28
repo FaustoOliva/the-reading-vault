@@ -9,6 +9,7 @@ import { ReadingSessionsController } from "../controllers/readingSessionsControl
 import { AuthorsController } from "../controllers/authorsController.js";
 import { CountriesController } from "../controllers/countriesController.js";
 import { KpiController } from "../controllers/kpiController.js";
+import { AIController } from "../controllers/aiController.js";
 import { MSSQLClient } from "../infraestructure/config/database.js";
 import { DatabaseRepository } from "../infraestructure/database/DatabaseRepository.js";
 import { BookRepository } from "../infraestructure/repositories/bookRepository.js";
@@ -31,6 +32,7 @@ import { GetCountriesService } from "../services/getCountriesService.js";
 import { CalculateReadingKPIService } from "../services/calculateReadingKPIService.js";
 import { GetBookReadingStatsService } from "../services/getBookReadingStatsService.js";
 import { GetReaderProfileService } from "../services/getReaderProfileService.js";
+import { RecommendBooksService } from "../services/recommendBooksService.js";
 import { config } from "./env.js";
 
 export class DIContainer {
@@ -152,6 +154,10 @@ export class DIContainer {
       aiContextRepository,
       openAIClient,
     );
+    const recommendBooksService = new RecommendBooksService(
+      getReaderProfileService,
+      openAIClient,
+    );
 
     // Inject getReaderProfileService into services that need it
     reviewBookService.getReaderProfileService = getReaderProfileService;
@@ -176,6 +182,7 @@ export class DIContainer {
       getBookReadingStatsService,
     );
     this.instances.set("getReaderProfileService", getReaderProfileService);
+    this.instances.set("recommendBooksService", recommendBooksService);
   }
 
   /**
@@ -200,6 +207,7 @@ export class DIContainer {
     const getBookReadingStatsService = this.instances.get(
       "getBookReadingStatsService",
     );
+    const recommendBooksService = this.instances.get("recommendBooksService");
 
     const mssqlClient = this.instances.get("mssqlClient");
     this.instances.set(
@@ -235,6 +243,7 @@ export class DIContainer {
       "kpiController",
       new KpiController(calculateReadingKPIService),
     );
+    this.instances.set("aiController", new AIController(recommendBooksService));
   }
 
   /**

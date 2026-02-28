@@ -862,4 +862,435 @@ describe("OpenAIClient - MVP", () => {
       expect(prompt).toContain("español");
     });
   });
+
+  describe("recommendBooks", () => {
+    it("should generate recommendations using semantic summary (primary path)", async () => {
+      // Arrange
+      const input = {
+        type: "semantic",
+        summary:
+          "This reader enjoys literary fiction with strong character development...",
+        abandonedBooks: [{ title: "Bad Book", author: "Bad Author" }],
+      };
+
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  recommendations: [
+                    {
+                      title: "The Great Novel",
+                      author: "Famous Author",
+                      synopsis: "A compelling story about...",
+                      compatibilityScore: 87,
+                      reasoning:
+                        "Matches your preference for character-driven narratives",
+                    },
+                    {
+                      title: "Another Book",
+                      author: "Another Author",
+                      synopsis: "An exploration of...",
+                      compatibilityScore: 82,
+                      reasoning: "Similar themes to your top-rated books",
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+          usage: {
+            total_tokens: 450,
+          },
+        }),
+      };
+
+      global.fetch.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await client.recommendBooks(input);
+
+      // Assert
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://api.openai.com/v1/chat/completions",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+            Authorization: "Bearer sk-test-key-123",
+          }),
+        }),
+      );
+
+      const fetchCallBody = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(fetchCallBody.model).toBe("gpt-3.5-turbo");
+      expect(fetchCallBody.temperature).toBe(0.7); // Higher for creative diversity
+      expect(fetchCallBody.max_tokens).toBe(1200);
+      expect(fetchCallBody.response_format).toEqual({ type: "json_object" });
+      expect(result.recommendations).toHaveLength(2);
+      expect(result.recommendations[0].title).toBe("The Great Novel");
+      expect(result.recommendations[0].compatibilityScore).toBe(87);
+      expect(result.tokensUsed).toBe(450);
+    });
+
+    it("should generate recommendations using structured data fallback", async () => {
+      // Arrange
+      const input = {
+        type: "structured",
+        data: {
+          statistics: {
+            completedBooks: 10,
+            avgScore: 8.5,
+          },
+          topAuthors: [
+            { name: "Author One", bookCount: 3 },
+            { name: "Author Two", bookCount: 2 },
+          ],
+          favoriteBooks: [
+            { title: "Test Book", author: "Test Author", score: 9 },
+          ],
+        },
+      };
+
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  recommendations: [
+                    {
+                      title: "Structured Book",
+                      author: "Structured Author",
+                      synopsis: "Generated from structured data",
+                      compatibilityScore: 75,
+                      reasoning: "Based on your reading statistics",
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+          usage: {
+            total_tokens: 550,
+          },
+        }),
+      };
+
+      global.fetch.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await client.recommendBooks(input);
+
+      // Assert
+      expect(result.recommendations).toHaveLength(1);
+      expect(result.recommendations[0].title).toBe("Structured Book");
+      expect(result.tokensUsed).toBe(550);
+    });
+
+    it("should throw OpenAIInvalidAPIKeyError on 401 response", async () => {
+      // Arrange
+      const input = {
+        type: "semantic",
+        summary: "Test summary",
+        abandonedBooks: [],
+      };
+
+      const mockResponse = {
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+      };
+
+      global.fetch.mockResolvedValue(mockResponse);
+
+      // Act & Assert
+      await expect(client.recommendBooks(input)).rejects.toThrow(
+        OpenAIInvalidAPIKeyError,
+      );
+    });
+
+    it("should throw OpenAIRateLimitError on 429 response", async () => {
+      // Arrange
+      const input = {
+        type: "semantic",
+        summary: "Test summary",
+        abandonedBooks: [],
+      };
+
+      const mockResponse = {
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+      };
+
+      global.fetch.mockResolvedValue(mockResponse);
+
+      // Act & Assert
+      await expect(client.recommendBooks(input)).rejects.toThrow(
+        OpenAIRateLimitError,
+      );
+    });
+
+    it("should throw OpenAITimeoutError when request times out", async () => {
+      // Arrange
+      const input = {
+        type: "semantic",
+        summary: "Test summary",
+        abandonedBooks: [],
+      };
+
+      global.fetch.mockImplementation(
+        () =>
+          new Promise((resolve, reject) => {
+            const error = new Error("Request aborted");
+            error.name = "AbortError";
+            reject(error);
+          }),
+      );
+
+      // Act & Assert
+      await expect(client.recommendBooks(input)).rejects.toThrow(
+        OpenAITimeoutError,
+      );
+    });
+
+    it("should throw OpenAIUnavailableError on network failure", async () => {
+      // Arrange
+      const input = {
+        type: "semantic",
+        summary: "Test summary",
+        abandonedBooks: [],
+      };
+
+      global.fetch.mockRejectedValue(new Error("Network error"));
+
+      // Act & Assert
+      await expect(client.recommendBooks(input)).rejects.toThrow(
+        OpenAIUnavailableError,
+      );
+    });
+
+    it("should handle malformed JSON response gracefully", async () => {
+      // Arrange
+      const input = {
+        type: "semantic",
+        summary: "Test summary",
+        abandonedBooks: [],
+      };
+
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({
+          choices: [
+            {
+              message: {
+                content: "invalid json {",
+              },
+            },
+          ],
+          usage: {
+            total_tokens: 100,
+          },
+        }),
+      };
+
+      global.fetch.mockResolvedValue(mockResponse);
+
+      // Act & Assert
+      await expect(client.recommendBooks(input)).rejects.toThrow();
+    });
+
+    it("should include system prompt for literary curator role", async () => {
+      // Arrange
+      const input = {
+        type: "semantic",
+        summary: "Test",
+        abandonedBooks: [],
+      };
+
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({ recommendations: [] }),
+              },
+            },
+          ],
+          usage: { total_tokens: 100 },
+        }),
+      };
+
+      global.fetch.mockResolvedValue(mockResponse);
+
+      // Act
+      await client.recommendBooks(input);
+
+      // Assert
+      const fetchCallBody = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(fetchCallBody.messages[0].role).toBe("system");
+      expect(fetchCallBody.messages[0].content).toContain("curador literario");
+      expect(fetchCallBody.messages[0].content).toContain(
+        "ficción contemporánea",
+      );
+    });
+  });
+
+  describe("_buildRecommendationPrompt", () => {
+    it("should build prompt using semantic summary (efficient mode)", () => {
+      // Arrange
+      const input = {
+        type: "semantic",
+        summary:
+          "This reader prefers literary fiction with complex narratives...",
+        abandonedBooks: [
+          { title: "Boring Book", author: "Boring Author" },
+          { title: "Bad Book", author: "Bad Author" },
+        ],
+      };
+
+      // Act
+      const prompt = client._buildRecommendationPrompt(input);
+
+      // Assert
+      expect(prompt).toContain("ANÁLISIS DEL PERFIL:");
+      expect(prompt).toContain("This reader prefers literary fiction");
+      expect(prompt).toContain("LIBROS ABANDONADOS (evitar similares):");
+      expect(prompt).toContain("Boring Book");
+      expect(prompt).toContain("Bad Book");
+    });
+
+    it("should build prompt using structured data fallback", () => {
+      // Arrange
+      const input = {
+        type: "structured",
+        data: {
+          statistics: {
+            completedBooks: 15,
+            avgScore: 8.7,
+          },
+          topAuthors: [
+            { name: "Gabriel García Márquez", bookCount: 5 },
+            { name: "Jorge Luis Borges", bookCount: 3 },
+          ],
+          favoriteBooks: [
+            {
+              title: "Cien Años de Soledad",
+              author: "García Márquez",
+              score: 10,
+            },
+            { title: "Ficciones", author: "Borges", score: 9 },
+          ],
+        },
+      };
+
+      // Act
+      const prompt = client._buildRecommendationPrompt(input);
+
+      // Assert
+      expect(prompt).toContain("PREFERENCIAS DEL LECTOR:");
+      expect(prompt).toContain("Gabriel García Márquez");
+      expect(prompt).toContain("Jorge Luis Borges");
+      expect(prompt).toContain("Cien Años de Soledad");
+      expect(prompt).toContain("8.7");
+      expect(prompt).toContain("15");
+    });
+
+    it("should handle missing abandonedBooks in semantic mode", () => {
+      // Arrange
+      const input = {
+        type: "semantic",
+        summary: "Test summary",
+        abandonedBooks: [],
+      };
+
+      // Act
+      const prompt = client._buildRecommendationPrompt(input);
+
+      // Assert
+      expect(prompt).toContain("ANÁLISIS DEL PERFIL:");
+      expect(prompt).not.toContain("LIBROS ABANDONADOS");
+    });
+
+    it("should include JSON format specification", () => {
+      // Arrange
+      const input = {
+        type: "semantic",
+        summary: "Test",
+        abandonedBooks: [],
+      };
+
+      // Act
+      const prompt = client._buildRecommendationPrompt(input);
+
+      // Assert
+      expect(prompt).toContain("FORMATO DE RESPUESTA (JSON estricto):");
+      expect(prompt).toContain("recommendations");
+      expect(prompt).toContain("title");
+      expect(prompt).toContain("author");
+      expect(prompt).toContain("synopsis");
+      expect(prompt).toContain("compatibilityScore");
+      expect(prompt).toContain("reasoning");
+    });
+
+    it("should specify compatibility score range 60-95", () => {
+      // Arrange
+      const input = {
+        type: "semantic",
+        summary: "Test",
+        abandonedBooks: [],
+      };
+
+      // Act
+      const prompt = client._buildRecommendationPrompt(input);
+
+      // Assert
+      expect(prompt).toContain("60-95");
+      expect(prompt).toContain("no todos son perfectos");
+    });
+
+    it("should instruct to avoid generic recommendations", () => {
+      // Arrange
+      const input = {
+        type: "semantic",
+        summary: "Test",
+        abandonedBooks: [],
+      };
+
+      // Act
+      const prompt = client._buildRecommendationPrompt(input);
+
+      // Assert
+      expect(prompt).toContain("que NO sean obvios");
+      expect(prompt).toContain("NO uses frases genéricas");
+      expect(prompt).toContain("Evita repetir autores");
+    });
+
+    it("should handle structured data with missing fields", () => {
+      // Arrange
+      const input = {
+        type: "structured",
+        data: {
+          statistics: {},
+          // Missing arrays
+        },
+      };
+
+      // Act
+      const prompt = client._buildRecommendationPrompt(input);
+
+      // Assert
+      expect(prompt).toContain("PREFERENCIAS DEL LECTOR:");
+      expect(prompt).toContain("N/A");
+    });
+  });
 });

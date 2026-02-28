@@ -12,6 +12,9 @@ export function globalErrorMiddleware(err, req, res, _next) {
   });
 
   // Si es AppError (error operacional esperado)
+  // Includes: BadRequestError, NotFoundError, ConflictError, ForbiddenError (HTTP)
+  // Domain errors: BookClosedError, EmptyVaultError, InsufficientDataError
+  // OpenAI errors: OpenAIUnavailableError (503), OpenAITimeoutError (504), OpenAIRateLimitError (429)
   if (err instanceof AppError) {
     const response = {
       error: err.message,

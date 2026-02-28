@@ -24,3 +24,7 @@ export {
   OpenAIRateLimitError,
   OpenAIInvalidAPIKeyError,
 } from "./domain/openAIErrors.js";
+export {
+  EmptyVaultError,
+  InsufficientDataError,
+} from "./domain/aiRecommendationErrors.js";
