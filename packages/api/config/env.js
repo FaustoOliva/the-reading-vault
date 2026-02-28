@@ -71,6 +71,14 @@ export const config = {
       : ["http://localhost:3000"],
   },
 
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY || "",
+    model: process.env.OPENAI_MODEL || "gpt-3.5-turbo",
+    temperature: parseFloat(process.env.OPENAI_TEMPERATURE || "0.4"),
+    maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS || "500", 10),
+    timeout: parseInt(process.env.OPENAI_TIMEOUT || "15000", 10), // 15 seconds
+  },
+
   nodeEnv: process.env.NODE_ENV || optionalEnvVars.NODE_ENV,
 
   isDevelopment: () => config.nodeEnv === "development",

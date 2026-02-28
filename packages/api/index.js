@@ -5,6 +5,7 @@ import routes from "./routes/routes.js";
 import { globalErrorMiddleware } from "./middlewares/globalErrorMiddleware.js";
 import { validateEnv, config } from "./config/env.js";
 import { DIContainer } from "./config/container.js";
+import { seedReaderProfile } from "./config/seedReaderProfile.js";
 
 async function bootstrap() {
   let database = null;
@@ -18,17 +19,22 @@ async function bootstrap() {
     container.bootstrap();
 
     // 3. Create Express app and server
-    // 3. Get database client from container
-    database = container.getDatabase();
-
-    // 4. Connect to database
-    await database.connect();
-
-    // 5. Create Express app and server
     const app = express();
     const server = new Server(app, config.port);
 
-    // 4. Register all controllers
+    // 4. Get database client from container
+    database = container.getDatabase();
+
+    // 5. Connect to database
+    await database.connect();
+
+    // 6. Seed reader profile (if missing)
+    const getReaderProfileService = container.getService(
+      "getReaderProfileService",
+    );
+    await seedReaderProfile(getReaderProfileService);
+
+    // 7. Register all controllers
     container.instances.forEach((instance, key) => {
       if (key.endsWith("Controller")) {
         const controllerClass = instance.constructor;
@@ -36,14 +42,14 @@ async function bootstrap() {
       }
     });
 
-    // 7. Configure routes
+    // 8. Configure routes
     routes.forEach((route) => server.addRoute(route));
     server.configureRoutes();
 
-    // 8. Register global error middleware (must be last)
+    // 9. Register global error middleware (must be last)
     server.app.use(globalErrorMiddleware);
 
-    // 9. Launch server
+    // 10. Launch server
     server.launch();
     console.log(`Environment: ${config.nodeEnv}`);
   } catch (error) {
