@@ -26,8 +26,13 @@ const MAPPING = {
   // Tab bar icons
   "book.fill": "book",
   "plus.circle.fill": "add-circle",
+  sparkles: "auto-awesome",
   "book.pages": "menu-book",
   "chart.pie.fill": "show-chart",
+
+  // AI screen icons
+  "exclamationmark.triangle.fill": "warning",
+  "arrow.clockwise": "refresh",
 } as IconMapping;
 
 /**

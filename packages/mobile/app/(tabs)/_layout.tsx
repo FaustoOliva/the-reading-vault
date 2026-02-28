@@ -36,6 +36,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="ai"
+        options={{
+          title: "AI",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="sparkles" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="log-session"
         options={{
           title: "Log Session",

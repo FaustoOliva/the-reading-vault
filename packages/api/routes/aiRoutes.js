@@ -35,7 +35,7 @@ export default function aiRoutes(getController) {
    * - 429: OpenAIRateLimitError
    * - 503: OpenAIUnavailableError, OpenAITimeoutError
    */
-  router.post("/recommendations", (req, res, next) =>
+  router.post("/ai/recommendations", (req, res, next) =>
     getController(AIController).recommendBooks(req, res, next),
   );
 

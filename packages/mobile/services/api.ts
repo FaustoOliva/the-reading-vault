@@ -185,4 +185,15 @@ export const api = {
   delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: "DELETE" });
   },
+
+  /**
+   * POST with no body
+   * For endpoints that trigger actions without input data
+   */
+  postNoBody<T>(endpoint: string): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  },
 };

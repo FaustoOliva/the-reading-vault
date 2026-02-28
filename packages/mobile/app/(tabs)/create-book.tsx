@@ -31,7 +31,7 @@
  * - status (optional, defaults to WISH_LIST)
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -40,7 +40,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useCreateBook } from "@/hooks/useBooks";
 import { useAuthors } from "@/hooks/useAuthors";
 import { useCountries } from "@/hooks/useCountries";
@@ -59,6 +59,10 @@ import {
 
 export default function CreateBookScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    prefillTitle?: string;
+    prefillAuthor?: string;
+  }>();
   const { mutate: createBook, isPending } = useCreateBook();
   const { data: authors, isLoading: isLoadingAuthors } = useAuthors();
   const { data: countries, isLoading: isLoadingCountries } = useCountries();
@@ -71,6 +75,28 @@ export default function CreateBookScreen() {
   const [totalPages, setTotalPages] = useState("");
   const [status, setStatus] = useState<BookStatus>(BookStatus.WISH_LIST);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Pre-fill form when coming from AI recommendations
+  useEffect(() => {
+    if (params.prefillTitle) {
+      try {
+        const decodedTitle = decodeURIComponent(params.prefillTitle);
+        setTitle(decodedTitle);
+      } catch (error) {
+        console.error("Error decoding title:", error);
+        setTitle(params.prefillTitle); // Fallback to raw value
+      }
+    }
+    if (params.prefillAuthor) {
+      try {
+        const decodedAuthor = decodeURIComponent(params.prefillAuthor);
+        setAuthorName(decodedAuthor);
+      } catch (error) {
+        console.error("Error decoding author:", error);
+        setAuthorName(params.prefillAuthor); // Fallback to raw value
+      }
+    }
+  }, [params.prefillTitle, params.prefillAuthor]);
 
   // Transform authors and countries to SearchableSelect format
   const authorItems = authors?.map((a) => ({ id: a.id, name: a.name })) || [];
