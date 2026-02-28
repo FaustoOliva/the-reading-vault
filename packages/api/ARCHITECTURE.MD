@@ -250,7 +250,165 @@ See:
 
 ---
 
-## 12. Explicit Prohibitions
+## 12. Reader Profile System
+
+**Purpose:** Provides rich contextual data for AI-powered recommendations through dual representation (structured + semantic).
+
+### Architecture Pattern
+
+**Pattern:** Repository + Service (No Domain Model)  
+**Storage:** Singleton table `ReaderProfiles` with computed aggregations  
+**Update Strategy:** Programmatic refresh on critical events
+
+### Components
+
+#### AIContextRepository
+
+**Location:** `infrastructure/repositories/aiContextRepository.js`
+
+**Responsibilities:**
+
+- Aggregate reader data from Books, Authors, Countries
+- Calculate profile statistics (MVP: simple counts, Phase 2: affinity scoring)
+- Detect semantic changes (top authors composition)
+- UPSERT profile with version increment
+- Coordinate OpenAI calls for semantic summary
+
+**Key Methods:**
+
+- `getReaderProfile()` - Fetch current profile
+- `calculateReaderProfile()` - Compute structured data from books
+- `refreshReaderProfile(reason)` - Full refresh with OpenAI + save
+- `_detectTopAuthorsChange()` - Compare top 3 authors for semantic relevance
+
+**Rules:**
+
+- All aggregations are read-only (no transactions)
+- Reuse existing repository methods (e.g., `bookRepository.calculateGlobalKPIs()`)
+- Return plain objects, not domain entities
+- Profile is a **computed value object**, not a persistent entity
+
+#### OpenAIClient
+
+**Location:** `infrastructure/ai/openAIClient.js`
+
+**Responsibilities:**
+
+- Generate narrative summaries from structured profile data
+- Manage OpenAI API communication
+- Track token usage for cost monitoring
+- Health check for connectivity verification
+
+**Key Methods:**
+
+- `generateProfileSummary(profileData)` - Call GPT-3.5-turbo
+- `checkHealth()` - Validate API key and connectivity
+
+**Configuration:**
+
+- Model: `gpt-3.5-turbo`
+- Temperature: `0.4` (deterministic)
+- Max tokens: `300` (cost control)
+- Timeout: `15000ms`
+
+**Error Handling:**
+
+- Falls back gracefully if unavailable (`semantic_summary = null`)
+- Custom domain errors: `OpenAIUnavailableError`, `OpenAITimeoutError`, `OpenAIRateLimitError`, `OpenAIInvalidAPIKeyError`
+
+#### GetReaderProfileService
+
+**Location:** `services/getReaderProfileService.js`
+
+**Responsibilities:**
+
+- Orchestrate profile retrieval and intelligent refresh
+- Decision logic for refresh triggers
+- Staleness detection (>24h check)
+
+**Key Methods:**
+
+- `execute()` - Get current profile, auto-refresh if missing/stale
+- `refreshIfNeeded(context)` - Called by other services after critical events
+- `_shouldRefreshProfile(context)` - Decision logic
+- `_isProfileStale(profile)` - Check if >24 hours old
+
+**Integration Pattern:**
+
+```javascript
+// In reviewBookService.js
+try {
+  await this.getReaderProfileService.refreshIfNeeded({
+    event: "book_completed",
+    bookId,
+  });
+} catch (error) {
+  console.warn("⚠️ Profile refresh failed:", error.message);
+  // Continue - profile refresh is non-critical
+}
+```
+
+### Data Flow
+
+```
+Books/Authors/Countries (source data)
+  ↓
+AIContextRepository.calculateReaderProfile() (aggregations)
+  ↓
+OpenAIClient.generateProfileSummary() (LLM narration)
+  ↓
+ReaderProfiles table (stored profile)
+  ↓
+AI Services (consume for recommendations)
+```
+
+### Refresh Lifecycle
+
+1. Critical event occurs (complete/abandon book, or top authors change)
+2. Service calls `refreshIfNeeded(context)`
+3. Decision logic evaluates semantic relevance
+4. If relevant: calculate → generate summary → increment version → save
+5. Profile available for AI services with latest data
+
+### Schema Versioning
+
+- `schemaVersion: 1` = MVP (basic preferences: statistics, top authors/countries, favorites)
+- `schemaVersion: 2` = Complete (adds author affinity, implicit signals, reading activity)
+
+Versioning enables backward-compatible evolution without breaking existing integrations.
+
+### Error Handling Strategy
+
+**Non-blocking:** Profile refresh failures MUST NOT fail parent operations (book reviews, reopens).
+
+**Graceful degradation:**
+
+- OpenAI unavailable → `semantic_summary = null`, profile still saves
+- Rate limit exceeded → Skip semantic generation, retry on next refresh
+- Database errors → Log warning, continue parent operation
+
+### Performance Targets
+
+- Profile read: < 50ms
+- Profile calculation: < 500ms
+- Semantic generation: < 3s (OpenAI API latency)
+- Total refresh: < 4s
+
+### Cost Management
+
+- Temperature: `0.4` (prevents overly creative/long responses)
+- Max tokens: `300` (caps response length)
+- Estimated cost per refresh: ~$0.001-0.002 USD
+- Monthly estimate (typical usage): < $0.01 USD
+
+### External Dependencies
+
+- **OpenAI API** (soft dependency with graceful degradation)
+- **SQL Server JSON functions** (`FOR JSON PATH`, `JSON_VALUE`)
+
+---
+
+## 13. Explicit Prohibitions
 
 ❌ Business logic in controllers  
 ❌ Validation outside controllers  
@@ -261,7 +419,7 @@ See:
 
 ---
 
-## 13. Agent Usage Rules
+## 14. Agent Usage Rules
 
 AI agents must:
 
@@ -272,7 +430,7 @@ AI agents must:
 
 ---
 
-## 14. References
+## 15. References
 
 - Clean Architecture – Robert C. Martin
 - Domain-Driven Design – Eric Evans

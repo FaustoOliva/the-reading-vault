@@ -870,7 +870,158 @@ ReadingCycleStats = {
 
 ---
 
-## 8. Explicitly Forbidden Use Cases
+## 8. Reader Profile Use Cases (AI Context)
+
+**Purpose:** Internal profile aggregation for AI-powered recommendations
+
+### 8.1 GetReaderProfile
+
+**Description**  
+Provides dual representation (structured + semantic) of reader preferences and patterns for AI recommendation services. Internal use only - not exposed as REST endpoint.
+
+**Input**
+
+```typescript
+{
+} // No input - singleton profile (single-user system)
+```
+
+**Output**
+
+```typescript
+{
+  id: 1,                                    // Always 1 (singleton)
+  version: number,                          // Incremental version
+  schema_version: number,                   // 1 = MVP, 2 = Complete
+  profile_data: ReaderProfile,              // Structured JSON
+  semantic_summary: string | null,          // OpenAI-generated narrative
+  last_updated: Date,
+  last_refresh_reason: string,              // Audit: event that triggered refresh
+  tokens_used: number | null                // OpenAI cost tracking
+}
+
+// MVP Profile Structure (schema_version: 1)
+ReaderProfile = {
+  version: number,
+  schemaVersion: 1,
+
+  statistics: {
+    totalBooks: number,
+    completedBooks: number,
+    booksInProgress: number,
+    abandonedBooks: number,
+    wishListBooks: number,
+    completionRate: number,                 // 0.0-1.0
+    booksRated: number,
+    avgScore: number | null                 // 0.0-10.0 (only completed books)
+  },
+
+  topAuthors: Array<{                       // Top 5 by simple book count
+    name: string,
+    nationality: string,
+    bookCount: number,                      // Total books (all statuses)
+    avgScore: number | null                 // Avg score from completed books
+  }>,
+
+  topCountries: Array<{                     // Top 3 by book count
+    name: string,
+    bookCount: number
+  }>,
+
+  favoriteBooks: Array<{                    // Books with score >= 8
+    title: string,
+    author: string,
+    score: number
+  }>,
+
+  abandonedBooks: Array<{                   // For recommendation avoidance
+    title: string,
+    author: string,
+    nationality: string
+  }>,
+
+  generatedAt: Date
+}
+```
+
+**Semantic Summary Example (MVP):**
+
+> Este lector ha completado 23 libros con una tasa de finalización del 65%, mostrando compromiso selectivo. Su score promedio de 7.8 indica exigencia moderada en sus valoraciones.
+>
+> Preferencias claras: Autores favoritos incluyen Gabriel García Márquez (8 libros) y Jorge Luis Borges (5 libros), ambos de literatura latinoamericana. Entre sus libros mejor valorados destacan "Cien Años de Soledad" (score: 10) y "El Aleph" (score: 9).
+>
+> Ha abandonado 12 libros, principalmente de autores contemporáneos. Para recomendaciones, evitar estilos similares a los abandonados y priorizar literatura latinoamericana clásica.
+
+**Models Involved**
+
+- Book
+- Author
+- Country
+- BookStatus
+
+**Errors**
+
+- None (always returns profile, creates if missing)
+
+**Transactional**
+
+- No (read-only aggregation)
+
+**Refresh Strategy**
+
+**Always refreshes on:**
+
+- Book completed (`book_completed` event)
+- Book abandoned (`book_abandoned` event)
+- Top 3 authors changed (`top_authors_changed` event)
+
+**Never refreshes on:**
+
+- Reading session logged
+- Book score updated (unless tied to completion)
+- Book added to wishlist
+- Comment edited
+
+**Staleness check:** Auto-refresh if `last_updated` > 24 hours ago when profile is requested.
+
+**OpenAI Integration**
+
+- Model: `gpt-3.5-turbo`
+- Temperature: `0.4` (deterministic)
+- Max tokens: `300` (cost control)
+- Timeout: `15 seconds`
+- Graceful degradation: `semantic_summary` can be `null` if OpenAI unavailable
+
+**Performance Target**
+
+- Profile read: < 50ms
+- Profile calculation: < 500ms
+- Semantic generation: < 3s (OpenAI latency)
+- Total refresh: < 4s
+
+**Cost Estimates**
+
+- ~$0.001-0.002 USD per profile refresh
+- ~3 refreshes/month for typical usage
+- Monthly cost: < $0.01 USD
+
+**Schema Evolution**
+
+- `schemaVersion: 1` = MVP (basic preferences)
+- `schemaVersion: 2` = Complete (adds author affinity, implicit signals, reading activity - Phase 2)
+
+**Phase 2 Additions (Future):**
+
+When implementing Phase 2 (Complete profile), the following sections will be added:
+
+- `topAuthors[]`: Enhanced with `affinity` score using formula: `(completed × 2 + reading) - (abandoned × 1.5)`
+- `implicitSignals`: `avgDaysUntilAbandon`, `deepEngagementBooks`, `lowInterestBooks`
+- `readingActivity`: `totalSessions`, `currentStreak`, `consistencyRate`, `avgPagesPerDay`
+- `metadata`: Inferred preferences (languages, publication decades, book length)
+
+---
+
+## 9. Explicitly Forbidden Use Cases
 
 The following operations **must not exist**, even if they seem intuitive:
 
@@ -888,7 +1039,7 @@ If a new use case is required, it must be:
 
 ---
 
-## 9. Agent Rules
+## 10. Agent Rules
 
 AI agents:
 
@@ -899,7 +1050,7 @@ AI agents:
 
 ---
 
-## 10. References
+## 11. References
 
 - DOMAIN.md
 - ARCHITECTURE.md
