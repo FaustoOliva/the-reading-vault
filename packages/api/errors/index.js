@@ -18,3 +18,9 @@ export { BookPendingReviewError } from "./domain/BookPendingReviewError.js";
 export { InvalidStateTransitionError } from "./domain/InvalidStateTransitionError.js";
 export { MissingScoreError } from "./domain/MissingScoreError.js";
 export { InsufficientPagesError } from "./domain/InsufficientPagesError.js";
+export {
+  OpenAIUnavailableError,
+  OpenAITimeoutError,
+  OpenAIRateLimitError,
+  OpenAIInvalidAPIKeyError,
+} from "./domain/openAIErrors.js";

@@ -19,10 +19,16 @@ import sql from "mssql";
 import { NotFoundError } from "../errors/index.js";
 
 export class ReopenBookService {
-  constructor(mssqlClient, bookRepository, bookStatusHistoryRepository) {
+  constructor(
+    mssqlClient,
+    bookRepository,
+    bookStatusHistoryRepository,
+    getReaderProfileService,
+  ) {
     this.mssqlClient = mssqlClient;
     this.bookRepository = bookRepository;
     this.bookStatusHistoryRepository = bookStatusHistoryRepository;
+    this.getReaderProfileService = getReaderProfileService;
   }
 
   /**
@@ -72,7 +78,25 @@ export class ReopenBookService {
       await transaction.commit();
 
       // Step 4: Return updated book
-      return this.bookRepository.getById(bookId);
+      const updatedBook = await this.bookRepository.getById(bookId);
+
+      // Step 5: Trigger profile refresh (non-blocking)
+      // Check if top authors changed (abandoned -> reading might affect ranking)
+      if (this.getReaderProfileService) {
+        this.getReaderProfileService
+          .refreshIfNeeded({
+            event: "book_status_changed",
+            bookId,
+          })
+          .catch((err) => {
+            console.warn(
+              "⚠️ Profile refresh failed (non-critical):",
+              err.message,
+            );
+          });
+      }
+
+      return updatedBook;
     } catch (error) {
       await transaction.rollback();
       throw error;
