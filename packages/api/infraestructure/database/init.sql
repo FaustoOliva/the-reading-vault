@@ -1,3 +1,4 @@
+-- V. 1.4.0 - Added ReaderProfiles table for Phase 4 (AI Integration - MVP)
 -- V. 1.3.0 - Added filter indexes for Phase 3 (Advanced Filtering & Search)
 -- Create Database if not exists
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'TheReadingVault')
@@ -77,11 +78,29 @@ CREATE TABLE BookStatusHistory (
 );
 GO
 
+-- 7. ReaderProfiles Table (AI Context - Phase 4 MVP)
+CREATE TABLE ReaderProfiles (
+    id INT PRIMARY KEY DEFAULT 1,
+    version INT NOT NULL DEFAULT 1,
+    schema_version INT NOT NULL DEFAULT 1, -- 1=MVP, 2=Complete (Phase 2)
+    profile_data NVARCHAR(MAX) NOT NULL, -- JSON structure with reader statistics and preferences
+    semantic_summary NVARCHAR(MAX) NULL, -- OpenAI-generated narrative summary
+    last_updated DATETIME2 NOT NULL DEFAULT GETDATE(),
+    last_refresh_reason NVARCHAR(100) NULL, -- 'book_completed', 'book_abandoned', 'top_authors_changed', etc.
+    tokens_used INT NULL, -- Track OpenAI token usage per refresh
+    
+    CONSTRAINT CHK_ReaderProfiles_Singleton CHECK (id = 1)
+);
+GO
+
 -- Index for performance in time-series queries
 CREATE INDEX IX_StatusHistory_BookDate ON BookStatusHistory (book_id, created_at);
 
 -- Index to optimize KPI calculations
 CREATE INDEX IX_ReadingSessions_BookDate ON ReadingSessions (book_id, occurred_at) INCLUDE (pages_read, reading_cycle);
+
+-- Index to optimize version tracking for reader profile
+CREATE NONCLUSTERED INDEX IX_ReaderProfiles_Version ON ReaderProfiles(version DESC);
 
 -- Indexes for advanced filtering and search (Phase 3)
 CREATE NONCLUSTERED INDEX IX_Books_Title ON Books(title);

@@ -6,6 +6,7 @@
 - **Countries** (1) ---- (N) **Authors**
 - **Books** (1) ---- (N) **ReadingSessions**
 - **Books** (1) ---- (N) **BookStatusHistory**
+- **ReaderProfiles** (singleton) — aggregates data from Books/Authors/Countries
 
 ## Table Definitions
 
@@ -70,10 +71,32 @@
 | `display_name`  | NVARCHAR(100) | NOT NULL                                       |
 | `ui_color`      | NVARCHAR(7)   | NULL — HEX color for UI                        |
 
+### 6. ReaderProfiles (AI Context - Phase 4 MVP)
+
+| Column                | Type          | Constraints                                                        |
+| :-------------------- | :------------ | :----------------------------------------------------------------- |
+| `id`                  | INT           | Primary Key, DEFAULT 1 (singleton)                                 |
+| `version`             | INT           | NOT NULL, DEFAULT 1 (increments on each refresh)                   |
+| `schema_version`      | INT           | NOT NULL, DEFAULT 1 (1=MVP, 2=Complete for Phase 2)                |
+| `profile_data`        | NVARCHAR(MAX) | NOT NULL (JSON with statistics, top authors, countries, favorites) |
+| `semantic_summary`    | NVARCHAR(MAX) | NULL (OpenAI-generated narrative, null if API unavailable)         |
+| `last_updated`        | DATETIME2     | NOT NULL, DEFAULT GETDATE()                                        |
+| `last_refresh_reason` | NVARCHAR(100) | NULL ('book_completed', 'book_abandoned', 'top_authors_changed')   |
+| `tokens_used`         | INT           | NULL (tracks OpenAI API token consumption per refresh)             |
+
+**Notes:**
+
+- Singleton table (only one profile, enforced by `CHK_ReaderProfiles_Singleton`)
+- `schema_version` enables evolutionary upgrade from MVP (1) to Complete (2) without breaking changes
+- `profile_data` stores structured JSON for programmatic access
+- `semantic_summary` provides LLM-generated narrative description
+- Graceful degradation: `semantic_summary` can be `NULL` if OpenAI is unavailable or rate-limited
+
 ### Indexes
 
 - `IX_ReadingSessions_BookDate` on `ReadingSessions(book_id, occurred_at)` INCLUDE `(pages_read, reading_cycle)` — optimizes KPI/time-series queries
 - `IX_StatusHistory_BookDate` on `BookStatusHistory(book_id, created_at)` — optimizes status history queries
+- `IX_ReaderProfiles_Version` on `ReaderProfiles(version DESC)` — optimizes version tracking for audit trail
 - `IX_Books_Title` on `Books(title)` — optimizes title search with LIKE queries
 - `IX_Books_Score` on `Books(score)` WHERE `score IS NOT NULL` — optimizes rating/score filtering
 - `IX_Books_TotalPages` on `Books(total_pages)` WHERE `total_pages IS NOT NULL` — optimizes page count filtering
