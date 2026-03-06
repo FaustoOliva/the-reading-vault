@@ -19,11 +19,9 @@
  * - No reading activity from sessions (deferred to Phase 2)
  */
 
-import sql from "mssql";
-
 export class AIContextRepository {
-  constructor(mssqlClient, bookRepository) {
-    this.mssqlClient = mssqlClient;
+  constructor(pgClient, bookRepository) {
+    this.pgClient = pgClient;
     this.bookRepository = bookRepository;
   }
 
@@ -32,7 +30,7 @@ export class AIContextRepository {
    * @returns {Promise<Object|null>} Profile object or null if not exists
    */
   async getReaderProfile() {
-    const pool = await this.mssqlClient.getConnection();
+    const pool = this.pgClient.getConnection();
 
     const query = `
       SELECT 
@@ -44,17 +42,17 @@ export class AIContextRepository {
         last_updated,
         last_refresh_reason,
         tokens_used
-      FROM ReaderProfiles
+      FROM readerprofiles
       WHERE id = 1
     `;
 
-    const result = await pool.request().query(query);
+    const result = await pool.query(query);
 
-    if (result.recordset.length === 0) {
+    if (result.rows.length === 0) {
       return null;
     }
 
-    const record = result.recordset[0];
+    const record = result.rows[0];
 
     return {
       id: record.id,
@@ -86,35 +84,29 @@ export class AIContextRepository {
     reason,
     tokensUsed,
   ) {
-    const pool = await this.mssqlClient.getConnection();
+    const pool = this.pgClient.getConnection();
 
     const query = `
-      MERGE ReaderProfiles AS target
-      USING (SELECT 1 AS id) AS source
-      ON target.id = source.id
-      WHEN MATCHED THEN
-        UPDATE SET
-          version = @version,
-          schema_version = @schemaVersion,
-          profile_data = @profileData,
-          semantic_summary = @semanticSummary,
-          last_updated = GETDATE(),
-          last_refresh_reason = @reason,
-          tokens_used = @tokensUsed
-      WHEN NOT MATCHED THEN
-        INSERT (id, version, schema_version, profile_data, semantic_summary, last_updated, last_refresh_reason, tokens_used)
-        VALUES (1, @version, @schemaVersion, @profileData, @semanticSummary, GETDATE(), @reason, @tokensUsed);
+      INSERT INTO readerprofiles (id, version, schema_version, profile_data, semantic_summary, last_updated, last_refresh_reason, tokens_used)
+      VALUES (1, $1, $2, $3, $4, NOW(), $5, $6)
+      ON CONFLICT (id) DO UPDATE SET
+        version = $1,
+        schema_version = $2,
+        profile_data = $3,
+        semantic_summary = $4,
+        last_updated = NOW(),
+        last_refresh_reason = $5,
+        tokens_used = $6
     `;
 
-    await pool
-      .request()
-      .input("version", sql.Int, version)
-      .input("schemaVersion", sql.Int, schemaVersion)
-      .input("profileData", sql.NVarChar(sql.MAX), JSON.stringify(profileData))
-      .input("semanticSummary", sql.NVarChar(sql.MAX), semanticSummary || null)
-      .input("reason", sql.NVarChar(100), reason)
-      .input("tokensUsed", sql.Int, tokensUsed || null)
-      .query(query);
+    await pool.query(query, [
+      version,
+      schemaVersion,
+      JSON.stringify(profileData),
+      semanticSummary || null,
+      reason,
+      tokensUsed || null,
+    ]);
   }
 
   /**
@@ -162,16 +154,16 @@ export class AIContextRepository {
 
     // Transform to MVP profile structure
     return {
-      totalBooks: kpis.total,
-      completedBooks: kpis.completed,
-      readingBooks: kpis.reading,
-      abandonedBooks: kpis.abandoned,
-      wishlistBooks: kpis.wishList,
+      totalBooks: parseInt(kpis.total),
+      completedBooks: parseInt(kpis.completed),
+      readingBooks: parseInt(kpis.reading),
+      abandonedBooks: parseInt(kpis.abandoned),
+      wishlistBooks: parseInt(kpis.wishList),
       completionRate:
         kpis.total > 0
           ? parseFloat(((kpis.completed / kpis.total) * 100).toFixed(2))
           : 0,
-      booksRated: kpis.booksRated,
+      booksRated: parseInt(kpis.booksRated),
       avgScore: kpis.avgScore ? parseFloat(kpis.avgScore.toFixed(2)) : null,
     };
   }
@@ -184,29 +176,30 @@ export class AIContextRepository {
    * @returns {Promise<Array>} Top 5 authors with book counts and average scores
    */
   async _calculateTopAuthors() {
-    const pool = await this.mssqlClient.getConnection();
+    const pool = this.pgClient.getConnection();
 
     const query = `
-      SELECT TOP 5
+      SELECT 
         a.name,
         c.name as nationality,
-        COUNT(*) as bookCount,
-        AVG(CASE WHEN b.score IS NOT NULL THEN b.score ELSE NULL END) as avgScore
-      FROM Books b
-      INNER JOIN Authors a ON b.author_id = a.id
-      LEFT JOIN Countries c ON a.nationality_id = c.id
-      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+        COUNT(*) as "bookCount",
+        AVG(CASE WHEN b.score IS NOT NULL THEN b.score ELSE NULL END) as "avgScore"
+      FROM books b
+      INNER JOIN authors a ON b.author_id = a.id
+      LEFT JOIN countries c ON a.nationality_id = c.id
+      INNER JOIN bookstatuses bs ON b.status_id = bs.id
       WHERE bs.internal_code IN ('COMPLETED', 'READING', 'ABANDONED')
       GROUP BY a.name, c.name
-      ORDER BY bookCount DESC, avgScore DESC
+      ORDER BY "bookCount" DESC, "avgScore" DESC
+      LIMIT 5
     `;
 
-    const result = await pool.request().query(query);
+    const result = await pool.query(query);
 
-    return result.recordset.map((record) => ({
+    return result.rows.map((record) => ({
       name: record.name,
       nationality: record.nationality || "Unknown",
-      bookCount: record.bookCount,
+      bookCount: parseInt(record.bookCount),
       avgScore: record.avgScore ? parseFloat(record.avgScore.toFixed(2)) : null,
     }));
   }
@@ -217,25 +210,26 @@ export class AIContextRepository {
    * @returns {Promise<Array>} Top 3 countries with book counts
    */
   async _calculateTopCountries() {
-    const pool = await this.mssqlClient.getConnection();
+    const pool = this.pgClient.getConnection();
 
     const query = `
-      SELECT TOP 3
+      SELECT 
         c.name,
-        COUNT(*) as bookCount
-      FROM Books b
-      INNER JOIN Authors a ON b.author_id = a.id
-      INNER JOIN Countries c ON a.nationality_id = c.id
+        COUNT(*) as "bookCount"
+      FROM books b
+      INNER JOIN authors a ON b.author_id = a.id
+      INNER JOIN countries c ON a.nationality_id = c.id
       WHERE c.name IS NOT NULL
       GROUP BY c.name
-      ORDER BY bookCount DESC
+      ORDER BY "bookCount" DESC
+      LIMIT 3
     `;
 
-    const result = await pool.request().query(query);
+    const result = await pool.query(query);
 
-    return result.recordset.map((record) => ({
+    return result.rows.map((record) => ({
       name: record.name,
-      bookCount: record.bookCount,
+      bookCount: parseInt(record.bookCount),
     }));
   }
 
@@ -245,22 +239,22 @@ export class AIContextRepository {
    * @returns {Promise<Array>} Favorite books with title, author, and score
    */
   async _calculateFavoriteBooks() {
-    const pool = await this.mssqlClient.getConnection();
+    const pool = this.pgClient.getConnection();
 
     const query = `
       SELECT 
         b.title,
         a.name as author,
         b.score
-      FROM Books b
-      INNER JOIN Authors a ON b.author_id = a.id
+      FROM books b
+      INNER JOIN authors a ON b.author_id = a.id
       WHERE b.score >= 8
       ORDER BY b.score DESC, b.title ASC
     `;
 
-    const result = await pool.request().query(query);
+    const result = await pool.query(query);
 
-    return result.recordset.map((record) => ({
+    return result.rows.map((record) => ({
       title: record.title,
       author: record.author,
       score: parseFloat(record.score.toFixed(1)),
@@ -273,24 +267,24 @@ export class AIContextRepository {
    * @returns {Promise<Array>} Abandoned books with title, author, and nationality
    */
   async _calculateAbandonedBooks() {
-    const pool = await this.mssqlClient.getConnection();
+    const pool = this.pgClient.getConnection();
 
     const query = `
       SELECT 
         b.title,
         a.name as author,
         c.name as nationality
-      FROM Books b
-      INNER JOIN Authors a ON b.author_id = a.id
-      LEFT JOIN Countries c ON a.nationality_id = c.id
-      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      FROM books b
+      INNER JOIN authors a ON b.author_id = a.id
+      LEFT JOIN countries c ON a.nationality_id = c.id
+      INNER JOIN bookstatuses bs ON b.status_id = bs.id
       WHERE bs.internal_code = 'ABANDONED'
       ORDER BY b.title ASC
     `;
 
-    const result = await pool.request().query(query);
+    const result = await pool.query(query);
 
-    return result.recordset.map((record) => ({
+    return result.rows.map((record) => ({
       title: record.title,
       author: record.author,
       nationality: record.nationality || "Unknown",

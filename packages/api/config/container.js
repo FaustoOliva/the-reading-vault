@@ -10,7 +10,7 @@ import { AuthorsController } from "../controllers/authorsController.js";
 import { CountriesController } from "../controllers/countriesController.js";
 import { KpiController } from "../controllers/kpiController.js";
 import { AIController } from "../controllers/aiController.js";
-import { MSSQLClient } from "../infraestructure/config/database.js";
+import { PostgreSQLClient } from "../infraestructure/config/postgresqlClient.js";
 import { DatabaseRepository } from "../infraestructure/database/DatabaseRepository.js";
 import { BookRepository } from "../infraestructure/repositories/bookRepository.js";
 import { AuthorRepository } from "../infraestructure/repositories/authorRepository.js";
@@ -44,22 +44,22 @@ export class DIContainer {
    * Initialize database client
    */
   _initDatabase() {
-    const mssqlClient = new MSSQLClient(config.database);
-    this.instances.set("mssqlClient", mssqlClient);
+    const pgClient = new PostgreSQLClient(config.database);
+    this.instances.set("pgClient", pgClient);
   }
 
   /**
    * Initialize all repositories
    */
   _initRepositories() {
-    const mssqlClient = this.instances.get("mssqlClient");
-    const databaseRepository = new DatabaseRepository(mssqlClient);
-    const bookRepository = new BookRepository(mssqlClient);
-    const authorRepository = new AuthorRepository(mssqlClient);
-    const countryRepository = new CountryRepository(mssqlClient);
-    const readingSessionRepository = new ReadingSessionRepository(mssqlClient);
+    const pgClient = this.instances.get("pgClient");
+    const databaseRepository = new DatabaseRepository(pgClient);
+    const bookRepository = new BookRepository(pgClient);
+    const authorRepository = new AuthorRepository(pgClient);
+    const countryRepository = new CountryRepository(pgClient);
+    const readingSessionRepository = new ReadingSessionRepository(pgClient);
     const bookStatusHistoryRepository = new BookStatusHistoryRepository(
-      mssqlClient,
+      pgClient,
     );
 
     this.instances.set("databaseRepository", databaseRepository);
@@ -75,7 +75,7 @@ export class DIContainer {
     // AI Infrastructure
     const openAIClient = new OpenAIClient(config.openai);
     const aiContextRepository = new AIContextRepository(
-      mssqlClient,
+      pgClient,
       bookRepository,
     );
 
@@ -87,7 +87,7 @@ export class DIContainer {
    * Initialize all services with their dependencies
    */
   _initServices() {
-    const mssqlClient = this.instances.get("mssqlClient");
+    const pgClient = this.instances.get("pgClient");
     const bookRepository = this.instances.get("bookRepository");
     const authorRepository = this.instances.get("authorRepository");
     const countryRepository = this.instances.get("countryRepository");
@@ -106,36 +106,36 @@ export class DIContainer {
       readingSessionRepository,
     );
     const createBookService = new CreateBookService(
-      mssqlClient,
+      pgClient,
       bookRepository,
       authorRepository,
       countryRepository,
       bookStatusHistoryRepository,
     );
     const logReadingSessionService = new LogReadingSessionService(
-      mssqlClient,
+      pgClient,
       bookRepository,
       readingSessionRepository,
       bookStatusHistoryRepository,
     );
     const updateBookService = new UpdateBookService(
-      mssqlClient,
+      pgClient,
       bookRepository,
     );
     const reviewBookService = new ReviewBookService(
-      mssqlClient,
+      pgClient,
       bookRepository,
       bookStatusHistoryRepository,
       null, // Will be set after getReaderProfileService is created
     );
     const reopenBookService = new ReopenBookService(
-      mssqlClient,
+      pgClient,
       bookRepository,
       bookStatusHistoryRepository,
       null, // Will be set after getReaderProfileService is created
     );
     const requestReviewService = new RequestReviewService(
-      mssqlClient,
+      pgClient,
       bookRepository,
       bookStatusHistoryRepository,
     );
@@ -209,10 +209,10 @@ export class DIContainer {
     );
     const recommendBooksService = this.instances.get("recommendBooksService");
 
-    const mssqlClient = this.instances.get("mssqlClient");
+    const pgClient = this.instances.get("pgClient");
     this.instances.set(
       "healthController",
-      new HealthController(mssqlClient, this),
+      new HealthController(pgClient, this),
     );
     this.instances.set(
       "booksController",
@@ -287,7 +287,7 @@ export class DIContainer {
    * Get database client
    */
   getDatabase() {
-    return this.instances.get("mssqlClient");
+    return this.instances.get("pgClient");
   }
 
   /**

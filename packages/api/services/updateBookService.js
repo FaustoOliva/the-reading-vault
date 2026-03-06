@@ -13,12 +13,11 @@
  * - Returns updated Book entity
  */
 
-import sql from "mssql";
 import { NotFoundError } from "../errors/index.js";
 
 export class UpdateBookService {
-  constructor(mssqlClient, bookRepository) {
-    this.mssqlClient = mssqlClient;
+  constructor(pgClient, bookRepository) {
+    this.pgClient = pgClient;
     this.bookRepository = bookRepository;
   }
 
@@ -37,24 +36,23 @@ export class UpdateBookService {
     }
 
     // Step 2: Update metadata within transaction
-    const pool = await this.mssqlClient.getConnection();
-    const transaction = new sql.Transaction(pool);
+    const client = await this.pgClient.beginTransaction();
 
     try {
-      await transaction.begin();
-
       const updatedBook = await this.bookRepository.updateMetadata(
         bookId,
         data,
-        transaction,
+        client,
       );
 
-      await transaction.commit();
+      await client.query("COMMIT");
 
       return updatedBook;
     } catch (error) {
-      await transaction.rollback();
+      await client.query("ROLLBACK");
       throw error;
+    } finally {
+      client.release();
     }
   }
 }

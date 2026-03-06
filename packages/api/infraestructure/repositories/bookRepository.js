@@ -14,13 +14,12 @@
  * - Uses Query Builder for OCP compliance
  */
 
-import sql from "mssql";
 import { Book } from "../../models/Book.js";
 import { BookQueryBuilder } from "./bookQueryBuilder.js";
 
 export class BookRepository {
-  constructor(mssqlClient) {
-    this.mssqlClient = mssqlClient;
+  constructor(pgClient) {
+    this.pgClient = pgClient;
   }
 
   /**
@@ -30,7 +29,7 @@ export class BookRepository {
    * @returns {Promise<{books: Book[], total: number, page: number, limit: number, totalPages: number}>}
    */
   async getAll(filters = {}, pagination = { page: 1, limit: 10 }) {
-    const pool = await this.mssqlClient.getConnection();
+    const pool = this.pgClient.getConnection();
 
     // Build query using Query Builder pattern
     const queryBuilder = new BookQueryBuilder();
@@ -70,24 +69,17 @@ export class BookRepository {
     // Build queries
     const selectQuery = queryBuilder.buildSelectQuery();
     const countQuery = queryBuilder.buildCountQuery();
-
-    // Create requests and apply parameters
-    const selectRequest = pool.request();
-    const countRequest = pool.request();
-
-    queryBuilder.applyParameters(selectRequest);
-    queryBuilder.applyParameters(countRequest);
+    const selectParams = queryBuilder.getParameters();
+    const countParams = queryBuilder.getCountParameters();
 
     // Execute queries in parallel
     const [dataResult, countResult] = await Promise.all([
-      selectRequest.query(selectQuery),
-      countRequest.query(countQuery),
+      pool.query(selectQuery, selectParams),
+      pool.query(countQuery, countParams),
     ]);
 
-    const books = dataResult.recordset.map((record) =>
-      Book.fromDatabase(record),
-    );
-    const total = countResult.recordset[0].total;
+    const books = dataResult.rows.map((record) => Book.fromDatabase(record));
+    const total = countResult.rows[0].total;
     const { page, limit } = pagination;
 
     return {
@@ -105,7 +97,7 @@ export class BookRepository {
    * @returns {Promise<Book|null>} Book entity or null if not found
    */
   async getById(bookId) {
-    const pool = await this.mssqlClient.getConnection();
+    const pool = this.pgClient.getConnection();
 
     const query = `
       SELECT 
@@ -120,23 +112,20 @@ export class BookRepository {
         b.current_reading_cycle,
         b.score,
         b.comment
-      FROM Books b
-      INNER JOIN Authors a ON b.author_id = a.id
-      LEFT JOIN Countries c ON a.nationality_id = c.id
-      INNER JOIN BookStatuses bs ON b.status_id = bs.id
-      WHERE b.id = @bookId
+      FROM books b
+      INNER JOIN authors a ON b.author_id = a.id
+      LEFT JOIN countries c ON a.nationality_id = c.id
+      INNER JOIN bookstatuses bs ON b.status_id = bs.id
+      WHERE b.id = $1
     `;
 
-    const result = await pool
-      .request()
-      .input("bookId", sql.Int, bookId)
-      .query(query);
+    const result = await pool.query(query, [bookId]);
 
-    if (result.recordset.length === 0) {
+    if (result.rows.length === 0) {
       return null;
     }
 
-    return Book.fromDatabase(result.recordset[0]);
+    return Book.fromDatabase(result.rows[0]);
   }
 
   /**
@@ -144,65 +133,62 @@ export class BookRepository {
    * @param {number} bookId - Book ID
    * @param {string} newStatus - New status code
    * @param {number} currentCycle - Current reading cycle
-   * @param {sql.Transaction} transaction - Active transaction
+   * @param {PoolClient} transaction - Active transaction
    * @returns {Promise<void>}
    */
   async updateStatus(bookId, newStatus, currentCycle, transaction) {
     const query = `
-      UPDATE Books
-      SET status_id = (SELECT id FROM BookStatuses WHERE internal_code = @newStatus),
-          current_reading_cycle = @cycle
-      WHERE id = @bookId
+      UPDATE books
+      SET status_id = (SELECT id FROM bookstatuses WHERE internal_code = $1),
+          current_reading_cycle = $2
+      WHERE id = $3
     `;
 
-    await transaction
-      .request()
-      .input("bookId", sql.Int, bookId)
-      .input("newStatus", sql.NVarChar, newStatus)
-      .input("cycle", sql.Int, currentCycle)
-      .query(query);
+    await transaction.query(query, [newStatus, currentCycle, bookId]);
   }
 
   /**
    * Update book metadata (title, totalPages, score, comment) - does NOT change status
    * @param {number} bookId - Book ID
    * @param {Object} data - Partial update data { title?, totalPages?, score?, comment? }
-   * @param {sql.Transaction} transaction - Active transaction
+   * @param {PoolClient} transaction - Active transaction
    * @returns {Promise<Book>} Updated book entity
    */
   async updateMetadata(bookId, data, transaction) {
     const updates = [];
-    const request = new sql.Request(transaction);
+    const params = [];
+    let paramIndex = 1;
 
     if (data.title !== undefined) {
-      updates.push("title = @title");
-      request.input("title", sql.NVarChar, data.title);
+      updates.push(`title = $${paramIndex++}`);
+      params.push(data.title);
     }
 
     if (data.totalPages !== undefined) {
-      updates.push("total_pages = @totalPages");
-      request.input("totalPages", sql.Int, data.totalPages);
+      updates.push(`total_pages = $${paramIndex++}`);
+      params.push(data.totalPages);
     }
 
     if (data.score !== undefined) {
-      updates.push("score = @score");
-      request.input("score", sql.Decimal(3, 1), data.score);
+      updates.push(`score = $${paramIndex++}`);
+      params.push(data.score);
     }
 
     if (data.comment !== undefined) {
-      updates.push("comment = @comment");
-      request.input("comment", sql.NVarChar, data.comment || null);
+      updates.push(`comment = $${paramIndex++}`);
+      params.push(data.comment || null);
     }
 
     // Always fetch and return the updated book within the same transaction
     if (updates.length > 0) {
       const query = `
-        UPDATE Books
+        UPDATE books
         SET ${updates.join(", ")}
-        WHERE id = @bookId
+        WHERE id = $${paramIndex}
       `;
 
-      await request.input("bookId", sql.Int, bookId).query(query);
+      params.push(bookId);
+      await transaction.query(query, params);
     }
 
     // Fetch updated book within the same transaction
@@ -219,19 +205,16 @@ export class BookRepository {
         b.current_reading_cycle,
         b.score,
         b.comment
-      FROM Books b
-      INNER JOIN Authors a ON b.author_id = a.id
-      LEFT JOIN Countries c ON a.nationality_id = c.id
-      INNER JOIN BookStatuses bs ON b.status_id = bs.id
-      WHERE b.id = @bookIdSelect
+      FROM books b
+      INNER JOIN authors a ON b.author_id = a.id
+      LEFT JOIN countries c ON a.nationality_id = c.id
+      INNER JOIN bookstatuses bs ON b.status_id = bs.id
+      WHERE b.id = $1
     `;
 
-    const selectRequest = new sql.Request(transaction);
-    const result = await selectRequest
-      .input("bookIdSelect", sql.Int, bookId)
-      .query(selectQuery);
+    const result = await transaction.query(selectQuery, [bookId]);
 
-    return Book.fromDatabase(result.recordset[0]);
+    return Book.fromDatabase(result.rows[0]);
   }
 
   /**
@@ -240,25 +223,24 @@ export class BookRepository {
    * @param {string} targetStatus - Target status code (COMPLETED or ABANDONED)
    * @param {number} score - Book score (0.0-10.0)
    * @param {string|null} comment - Optional comment
-   * @param {sql.Transaction} transaction - Active transaction
+   * @param {PoolClient} transaction - Active transaction
    * @returns {Promise<void>}
    */
   async updateReview(bookId, targetStatus, score, comment, transaction) {
     const query = `
-      UPDATE Books
-      SET status_id = (SELECT id FROM BookStatuses WHERE internal_code = @targetStatus),
-          score = @score,
-          comment = @comment
-      WHERE id = @bookId
+      UPDATE books
+      SET status_id = (SELECT id FROM bookstatuses WHERE internal_code = $1),
+          score = $2,
+          comment = $3
+      WHERE id = $4
     `;
 
-    await transaction
-      .request()
-      .input("bookId", sql.Int, bookId)
-      .input("targetStatus", sql.NVarChar, targetStatus)
-      .input("score", sql.Decimal(3, 1), score)
-      .input("comment", sql.NVarChar, comment || null)
-      .query(query);
+    await transaction.query(query, [
+      targetStatus,
+      score,
+      comment || null,
+      bookId,
+    ]);
   }
 
   /**
@@ -267,7 +249,7 @@ export class BookRepository {
    * @returns {Promise<Book|null>} Book entity or null if not found
    */
   async findByIsbn(isbn) {
-    const pool = await this.mssqlClient.getConnection();
+    const pool = this.pgClient.getConnection();
 
     const query = `
       SELECT 
@@ -282,53 +264,46 @@ export class BookRepository {
         b.current_reading_cycle,
         b.score,
         b.comment
-      FROM Books b
-      INNER JOIN Authors a ON b.author_id = a.id
-      LEFT JOIN Countries c ON a.nationality_id = c.id
-      INNER JOIN BookStatuses bs ON b.status_id = bs.id
-      WHERE b.isbn = @isbn
+      FROM books b
+      INNER JOIN authors a ON b.author_id = a.id
+      LEFT JOIN countries c ON a.nationality_id = c.id
+      INNER JOIN bookstatuses bs ON b.status_id = bs.id
+      WHERE b.isbn = $1
     `;
 
-    const result = await pool
-      .request()
-      .input("isbn", sql.NVarChar, isbn)
-      .query(query);
+    const result = await pool.query(query, [isbn]);
 
-    if (result.recordset.length === 0) {
+    if (result.rows.length === 0) {
       return null;
     }
 
-    return Book.fromDatabase(result.recordset[0]);
+    return Book.fromDatabase(result.rows[0]);
   }
 
   /**
    * Create a new book
    * @param {Object} data - { title, isbn, authorId, totalPages, statusId }
-   * @param {sql.Transaction} transaction - Required transaction
+   * @param {PoolClient} transaction - Required transaction
    * @returns {Promise<Book>} Created book entity
    */
   async create(data, transaction) {
     const { title, isbn, authorId, totalPages, statusId } = data;
 
-    const request = new sql.Request(transaction);
-
     const query = `
-      INSERT INTO Books (title, isbn, author_id, total_pages, status_id, current_reading_cycle)
-      OUTPUT INSERTED.id, INSERTED.title, INSERTED.isbn, INSERTED.author_id, 
-             INSERTED.total_pages, INSERTED.current_reading_cycle, 
-             INSERTED.score, INSERTED.comment
-      VALUES (@title, @isbn, @authorId, @totalPages, @statusId, 1)
+      INSERT INTO books (title, isbn, author_id, total_pages, status_id, current_reading_cycle)
+      VALUES ($1, $2, $3, $4, $5, 1)
+      RETURNING id, title, isbn, author_id, total_pages, current_reading_cycle, score, comment
     `;
 
-    const result = await request
-      .input("title", sql.NVarChar, title)
-      .input("isbn", sql.NVarChar, isbn || null)
-      .input("authorId", sql.Int, authorId)
-      .input("totalPages", sql.Int, totalPages || null)
-      .input("statusId", sql.Int, statusId)
-      .query(query);
+    const result = await transaction.query(query, [
+      title,
+      isbn || null,
+      authorId,
+      totalPages || null,
+      statusId,
+    ]);
 
-    const insertedRecord = result.recordset[0];
+    const insertedRecord = result.rows[0];
 
     // Get author name and status code for complete Book entity
     const fullBookQuery = `
@@ -344,18 +319,18 @@ export class BookRepository {
         b.current_reading_cycle,
         b.score,
         b.comment
-      FROM Books b
-      INNER JOIN Authors a ON b.author_id = a.id
-      LEFT JOIN Countries c ON a.nationality_id = c.id
-      INNER JOIN BookStatuses bs ON b.status_id = bs.id
-      WHERE b.id = @bookId
+      FROM books b
+      INNER JOIN authors a ON b.author_id = a.id
+      LEFT JOIN countries c ON a.nationality_id = c.id
+      INNER JOIN bookstatuses bs ON b.status_id = bs.id
+      WHERE b.id = $1
     `;
 
-    const fullResult = await request
-      .input("bookId", sql.Int, insertedRecord.id)
-      .query(fullBookQuery);
+    const fullResult = await transaction.query(fullBookQuery, [
+      insertedRecord.id,
+    ]);
 
-    return Book.fromDatabase(fullResult.recordset[0]);
+    return Book.fromDatabase(fullResult.rows[0]);
   }
 
   /**
@@ -364,7 +339,7 @@ export class BookRepository {
    * @returns {Promise<Object>} Global book statistics
    */
   async calculateGlobalKPIs() {
-    const pool = await this.mssqlClient.getConnection();
+    const pool = this.pgClient.getConnection();
 
     const query = `
       SELECT 
@@ -372,16 +347,16 @@ export class BookRepository {
         SUM(CASE WHEN bs.internal_code = 'COMPLETED' THEN 1 ELSE 0 END) as completed,
         SUM(CASE WHEN bs.internal_code = 'ABANDONED' THEN 1 ELSE 0 END) as abandoned,
         SUM(CASE WHEN bs.internal_code = 'READING' THEN 1 ELSE 0 END) as reading,
-        SUM(CASE WHEN bs.internal_code = 'PENDING_SCORE' THEN 1 ELSE 0 END) as pendingScore,
-        SUM(CASE WHEN bs.internal_code = 'WISH_LIST' THEN 1 ELSE 0 END) as wishList,
-        AVG(CASE WHEN b.score IS NOT NULL THEN b.score ELSE NULL END) as avgScore,
-        COUNT(CASE WHEN b.score IS NOT NULL THEN 1 END) as booksRated
-      FROM Books b
-      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+        SUM(CASE WHEN bs.internal_code = 'PENDING_SCORE' THEN 1 ELSE 0 END) as "pendingScore",
+        SUM(CASE WHEN bs.internal_code = 'WISH_LIST' THEN 1 ELSE 0 END) as "wishList",
+        AVG(CASE WHEN b.score IS NOT NULL THEN b.score ELSE NULL END) as "avgScore",
+        COUNT(CASE WHEN b.score IS NOT NULL THEN 1 END) as "booksRated"
+      FROM books b
+      INNER JOIN bookstatuses bs ON b.status_id = bs.id
     `;
 
-    const result = await pool.request().query(query);
-    return result.recordset[0];
+    const result = await pool.query(query);
+    return result.rows[0];
   }
 
   /**
@@ -390,26 +365,26 @@ export class BookRepository {
    * @returns {Promise<number|null>} Average days or null if no completed books
    */
   async getAverageDaysToComplete() {
-    const pool = await this.mssqlClient.getConnection();
+    const pool = this.pgClient.getConnection();
 
     const query = `
       SELECT 
-        AVG(DATEDIFF(DAY, first_session, last_session)) as average_days
+        AVG(EXTRACT(DAY FROM (last_session - first_session))) as average_days
       FROM (
         SELECT 
           b.id,
           MIN(rs.occurred_at) as first_session,
           MAX(rs.occurred_at) as last_session
-        FROM Books b
-        INNER JOIN BookStatuses bs ON b.status_id = bs.id
-        INNER JOIN ReadingSessions rs ON rs.book_id = b.id
+        FROM books b
+        INNER JOIN bookstatuses bs ON b.status_id = bs.id
+        INNER JOIN readingsessions rs ON rs.book_id = b.id
         WHERE bs.internal_code = 'COMPLETED'
         GROUP BY b.id
         HAVING MIN(rs.occurred_at) <= MAX(rs.occurred_at)
       ) as completed_books
     `;
 
-    const result = await pool.request().query(query);
-    return result.recordset[0].average_days || null;
+    const result = await pool.query(query);
+    return result.rows[0].average_days || null;
   }
 }

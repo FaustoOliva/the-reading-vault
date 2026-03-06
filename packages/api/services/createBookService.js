@@ -17,19 +17,18 @@
  * - Supports all valid BookStatus values for legacy imports
  */
 
-import sql from "mssql";
 import { ConflictError } from "../errors/index.js";
 import { BookStatus } from "@reading-vault/common";
 
 export class CreateBookService {
   constructor(
-    mssqlClient,
+    pgClient,
     bookRepository,
     authorRepository,
     countryRepository,
     bookStatusHistoryRepository,
   ) {
-    this.mssqlClient = mssqlClient;
+    this.pgClient = pgClient;
     this.bookRepository = bookRepository;
     this.authorRepository = authorRepository;
     this.countryRepository = countryRepository;
@@ -73,17 +72,14 @@ export class CreateBookService {
     const needsCountryCreation = author.nationality && !countryId;
 
     // Step 4: Begin transaction for writes
-    const pool = await this.mssqlClient.getConnection();
-    const transaction = new sql.Transaction(pool);
+    const client = await this.pgClient.beginTransaction();
 
     try {
-      await transaction.begin();
-
       // Create country if needed
       if (needsCountryCreation) {
         const country = await this.countryRepository.create(
           { name: author.nationality },
-          transaction,
+          client,
         );
         countryId = country.id;
       }
@@ -92,7 +88,7 @@ export class CreateBookService {
       if (needsAuthorCreation) {
         authorRecord = await this.authorRepository.create(
           { name: author.name, nationalityId: countryId },
-          transaction,
+          client,
         );
       }
 
@@ -100,15 +96,11 @@ export class CreateBookService {
       const targetStatus = status || BookStatus.WISH_LIST;
 
       // Get status ID for target status
-      const request = new sql.Request(transaction);
-      const statusResult = await request.input(
-        "statusCode",
-        sql.NVarChar,
-        targetStatus,
-      ).query(`
-          SELECT id FROM BookStatuses WHERE internal_code = @statusCode
-        `);
-      const statusId = statusResult.recordset[0].id;
+      const statusResult = await client.query(
+        `SELECT id FROM bookstatuses WHERE internal_code = $1`,
+        [targetStatus]
+      );
+      const statusId = statusResult.rows[0].id;
 
       // Step 6: Create book
       const book = await this.bookRepository.create(
@@ -119,7 +111,7 @@ export class CreateBookService {
           totalPages,
           statusId,
         },
-        transaction,
+        client,
       );
 
       // Step 7: Create BookStatusHistory entry (NULL → targetStatus)
@@ -130,15 +122,17 @@ export class CreateBookService {
           newStatus: targetStatus,
           readingCycle: 1,
         },
-        transaction,
+        client,
       );
 
-      await transaction.commit();
+      await client.query("COMMIT");
 
       return book;
     } catch (error) {
-      await transaction.rollback();
+      await client.query("ROLLBACK");
       throw error;
+    } finally {
+      client.release();
     }
   }
 }

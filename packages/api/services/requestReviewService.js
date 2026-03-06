@@ -17,13 +17,12 @@
  * - Uses transaction for atomicity
  */
 
-import sql from "mssql";
 import { BookStatus } from "@reading-vault/common";
 import { NotFoundError } from "../errors/index.js";
 
 export class RequestReviewService {
-  constructor(mssqlClient, bookRepository, bookStatusHistoryRepository) {
-    this.mssqlClient = mssqlClient;
+  constructor(pgClient, bookRepository, bookStatusHistoryRepository) {
+    this.pgClient = pgClient;
     this.bookRepository = bookRepository;
     this.bookStatusHistoryRepository = bookStatusHistoryRepository;
   }
@@ -47,12 +46,9 @@ export class RequestReviewService {
     book.ensureCanRequestReview();
 
     // Step 3: Transition within transaction
-    const pool = await this.mssqlClient.getConnection();
-    const transaction = new sql.Transaction(pool);
+    const client = await this.pgClient.beginTransaction();
 
     try {
-      await transaction.begin();
-
       const oldStatus = book.status;
       const newStatus = BookStatus.PENDING_SCORE;
       const currentCycle = book.currentReadingCycle;
@@ -62,7 +58,7 @@ export class RequestReviewService {
         bookId,
         newStatus,
         currentCycle,
-        transaction,
+        client,
       );
 
       // 3.2 Insert BookStatusHistory
@@ -73,16 +69,18 @@ export class RequestReviewService {
           newStatus,
           readingCycle: currentCycle,
         },
-        transaction,
+        client,
       );
 
-      await transaction.commit();
+      await client.query("COMMIT");
 
       // Step 4: Return updated book
       return this.bookRepository.getById(bookId);
     } catch (error) {
-      await transaction.rollback();
+      await client.query("ROLLBACK");
       throw error;
+    } finally {
+      client.release();
     }
   }
 }

@@ -15,17 +15,16 @@
  * - Returns ReadingSession entity
  */
 
-import sql from "mssql";
 import { NotFoundError, BadRequestError } from "../errors/index.js";
 
 export class LogReadingSessionService {
   constructor(
-    mssqlClient,
+    pgClient,
     bookRepository,
     readingSessionRepository,
     bookStatusHistoryRepository,
   ) {
-    this.mssqlClient = mssqlClient;
+    this.pgClient = pgClient;
     this.bookRepository = bookRepository;
     this.readingSessionRepository = readingSessionRepository;
     this.bookStatusHistoryRepository = bookStatusHistoryRepository;
@@ -68,12 +67,9 @@ export class LogReadingSessionService {
     const transition = book.calculateTransition(currentPagesInCycle, pagesRead);
 
     // Step 6: Begin transaction for writes only
-    const pool = await this.mssqlClient.getConnection();
-    const transaction = new sql.Transaction(pool);
+    const client = await this.pgClient.beginTransaction();
 
     try {
-      await transaction.begin();
-
       // 6.1 Insert ReadingSession
       const session = await this.readingSessionRepository.create(
         {
@@ -82,7 +78,7 @@ export class LogReadingSessionService {
           readingCycle: transition.newCycle,
           occurredAt: occurredAt || new Date(),
         },
-        transaction,
+        client,
       );
 
       // 6.2 Update Book if status changed
@@ -91,7 +87,7 @@ export class LogReadingSessionService {
           bookId,
           transition.newStatus,
           transition.newCycle,
-          transaction,
+          client,
         );
 
         // 6.3 Insert BookStatusHistory
@@ -102,16 +98,18 @@ export class LogReadingSessionService {
             newStatus: transition.newStatus,
             readingCycle: transition.newCycle,
           },
-          transaction,
+          client,
         );
       }
 
-      await transaction.commit();
+      await client.query("COMMIT");
 
       return session;
     } catch (error) {
-      await transaction.rollback();
+      await client.query("ROLLBACK");
       throw error;
+    } finally {
+      client.release();
     }
   }
 }

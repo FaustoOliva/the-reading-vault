@@ -8,7 +8,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "dev": "node --watch index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "migrate:data": "node scripts/migrateSQLServerToPostgreSQL.js",
+    "migrate:truncate": "node scripts/truncatePostgreSQL.js"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +22,7 @@
     "dotenv": "^16.4.7",
     "express": "^5.2.1",
     "mssql": "^12.2.0",
+    "pg": "^8.19.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {

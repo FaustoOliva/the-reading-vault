@@ -1,6 +1,6 @@
 export class HealthController {
-  constructor(mssqlClient, container) {
-    this.mssqlClient = mssqlClient;
+  constructor(pgClient, container) {
+    this.pgClient = pgClient;
     this.container = container;
   }
 
@@ -14,7 +14,7 @@ export class HealthController {
 
     // Database check
     try {
-      await this.mssqlClient.pool.request().query("SELECT 1");
+      await this.pgClient.getPool().query("SELECT 1");
       health.services.database = { status: "connected" };
     } catch (error) {
       health.services.database = { status: "error", message: error.message };

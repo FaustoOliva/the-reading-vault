@@ -6,16 +6,16 @@
  */
 
 export class DatabaseRepository {
-  constructor(mssqlClient) {
-    this.mssqlClient = mssqlClient;
+  constructor(pgClient) {
+    this.pgClient = pgClient;
   }
 
   /**
    * Get connection pool
-   * @returns {Promise<sql.ConnectionPool>}
+   * @returns {Pool}
    */
   getConnection() {
-    const pool = this.mssqlClient.getPool();
+    const pool = this.pgClient.getPool();
     if (!pool) {
       throw new Error(
         "Database connection not established. Call connect() first.",
@@ -27,44 +27,16 @@ export class DatabaseRepository {
   /**
    * Execute raw query
    * @param {string} query - SQL query string
-   * @param {Object} inputs - Named parameters
+   * @param {Array} params - Query parameters (positional)
    * @returns {Promise<Object>} Query result
    */
-  async executeQuery(query, inputs = {}) {
+  async executeQuery(query, params = []) {
     try {
-      const request = this.getConnection().request();
-
-      // Bind all input parameters
-      Object.entries(inputs).forEach(([key, value]) => {
-        request.input(key, value);
-      });
-
-      const result = await request.query(query);
+      const pool = this.getConnection();
+      const result = await pool.query(query, params);
       return result;
     } catch (error) {
       console.error("Query execution failed:", error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * Execute stored procedure
-   * @param {string} procedureName - Stored procedure name
-   * @param {Object} inputs - Named parameters
-   * @returns {Promise<Object>} Execution result
-   */
-  async executeStoredProcedure(procedureName, inputs = {}) {
-    try {
-      const request = this.getConnection().request();
-
-      Object.entries(inputs).forEach(([key, value]) => {
-        request.input(key, value);
-      });
-
-      const result = await request.execute(procedureName);
-      return result;
-    } catch (error) {
-      console.error("Stored procedure execution failed:", error.message);
       throw error;
     }
   }

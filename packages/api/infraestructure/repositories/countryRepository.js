@@ -12,11 +12,9 @@
  * - Receives DB session/transaction explicitly when needed
  */
 
-import sql from "mssql";
-
 export class CountryRepository {
-  constructor(mssqlClient) {
-    this.mssqlClient = mssqlClient;
+  constructor(pgClient) {
+    this.pgClient = pgClient;
   }
 
   /**
@@ -25,26 +23,25 @@ export class CountryRepository {
    * @returns {Promise<Array<{id: number, name: string}>>}
    */
   async getAll(filters = {}) {
-    const pool = await this.mssqlClient.getConnection();
-    const request = pool.request();
+    const pool = this.pgClient.getConnection();
 
-    let whereClause = "";
-
-    if (filters.nameLike) {
-      whereClause = "WHERE name LIKE @nameLike";
-      request.input("nameLike", sql.NVarChar, `%${filters.nameLike}%`);
-    }
-
-    const result = await request.query(`
+    let query = `
       SELECT 
         id,
         name
-      FROM Countries
-      ${whereClause}
-      ORDER BY name ASC
-    `);
+      FROM countries
+    `;
 
-    return result.recordset;
+    const params = [];
+    if (filters.nameLike) {
+      query += ` WHERE name ILIKE $1`;
+      params.push(`%${filters.nameLike}%`);
+    }
+
+    query += ` ORDER BY name ASC`;
+
+    const result = await pool.query(query, params);
+    return result.rows;
   }
 
   /**
@@ -53,35 +50,38 @@ export class CountryRepository {
    * @returns {Promise<{id: number, name: string} | null>}
    */
   async findByName(name) {
-    const pool = await this.mssqlClient.getConnection();
+    const pool = this.pgClient.getConnection();
 
-    const result = await pool.request().input("name", sql.NVarChar, name)
-      .query(`
+    const result = await pool.query(
+      `
         SELECT id, name
-        FROM Countries
-        WHERE LOWER(name) = LOWER(@name)
-      `);
+        FROM countries
+        WHERE LOWER(name) = LOWER($1)
+      `,
+      [name]
+    );
 
-    return result.recordset.length > 0 ? result.recordset[0] : null;
+    return result.rows.length > 0 ? result.rows[0] : null;
   }
 
   /**
    * Create a new country
    * @param {Object} data - { name }
-   * @param {sql.Transaction} transaction - Required transaction
+   * @param {PoolClient} transaction - Required transaction
    * @returns {Promise<{id: number, name: string}>}
    */
   async create(data, transaction) {
     const { name } = data;
 
-    const request = new sql.Request(transaction);
+    const result = await transaction.query(
+      `
+        INSERT INTO countries (name)
+        VALUES ($1)
+        RETURNING id, name
+      `,
+      [name]
+    );
 
-    const result = await request.input("name", sql.NVarChar, name).query(`
-        INSERT INTO Countries (name)
-        OUTPUT INSERTED.id, INSERTED.name
-        VALUES (@name)
-      `);
-
-    return result.recordset[0];
+    return result.rows[0];
   }
 }

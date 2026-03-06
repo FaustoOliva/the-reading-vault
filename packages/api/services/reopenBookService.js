@@ -15,17 +15,16 @@
  * - Returns updated Book entity
  */
 
-import sql from "mssql";
 import { NotFoundError } from "../errors/index.js";
 
 export class ReopenBookService {
   constructor(
-    mssqlClient,
+    pgClient,
     bookRepository,
     bookStatusHistoryRepository,
     getReaderProfileService,
   ) {
-    this.mssqlClient = mssqlClient;
+    this.pgClient = pgClient;
     this.bookRepository = bookRepository;
     this.bookStatusHistoryRepository = bookStatusHistoryRepository;
     this.getReaderProfileService = getReaderProfileService;
@@ -48,12 +47,9 @@ export class ReopenBookService {
     book.ensureCanBeReopened();
 
     // Step 3: Reopen book within transaction
-    const pool = await this.mssqlClient.getConnection();
-    const transaction = new sql.Transaction(pool);
+    const client = await this.pgClient.beginTransaction();
 
     try {
-      await transaction.begin();
-
       const newCycle = book.currentReadingCycle + 1;
 
       // 3.1 Update book status and increment cycle
@@ -61,7 +57,7 @@ export class ReopenBookService {
         bookId,
         "READING",
         newCycle,
-        transaction,
+        client,
       );
 
       // 3.2 Insert BookStatusHistory
@@ -72,10 +68,10 @@ export class ReopenBookService {
           newStatus: "READING",
           readingCycle: newCycle,
         },
-        transaction,
+        client,
       );
 
-      await transaction.commit();
+      await client.query("COMMIT");
 
       // Step 4: Return updated book
       const updatedBook = await this.bookRepository.getById(bookId);
@@ -98,8 +94,10 @@ export class ReopenBookService {
 
       return updatedBook;
     } catch (error) {
-      await transaction.rollback();
+      await client.query("ROLLBACK");
       throw error;
+    } finally {
+      client.release();
     }
   }
 }

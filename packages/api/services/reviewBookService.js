@@ -15,17 +15,16 @@
  * - Returns updated Book entity
  */
 
-import sql from "mssql";
 import { NotFoundError } from "../errors/index.js";
 
 export class ReviewBookService {
   constructor(
-    mssqlClient,
+    pgClient,
     bookRepository,
     bookStatusHistoryRepository,
     getReaderProfileService,
   ) {
-    this.mssqlClient = mssqlClient;
+    this.pgClient = pgClient;
     this.bookRepository = bookRepository;
     this.bookStatusHistoryRepository = bookStatusHistoryRepository;
     this.getReaderProfileService = getReaderProfileService;
@@ -51,19 +50,16 @@ export class ReviewBookService {
     book.ensureCanBeReviewed(targetStatus, score);
 
     // Step 3: Update book and insert history within transaction
-    const pool = await this.mssqlClient.getConnection();
-    const transaction = new sql.Transaction(pool);
+    const client = await this.pgClient.beginTransaction();
 
     try {
-      await transaction.begin();
-
       // 3.1 Update book status and score
       await this.bookRepository.updateReview(
         bookId,
         targetStatus,
         score,
         comment,
-        transaction,
+        client,
       );
 
       // 3.2 Insert BookStatusHistory
@@ -74,10 +70,10 @@ export class ReviewBookService {
           newStatus: targetStatus,
           readingCycle: book.currentReadingCycle,
         },
-        transaction,
+        client,
       );
 
-      await transaction.commit();
+      await client.query("COMMIT");
 
       // Step 4: Return updated book
       const updatedBook = await this.bookRepository.getById(bookId);
@@ -102,8 +98,10 @@ export class ReviewBookService {
 
       return updatedBook;
     } catch (error) {
-      await transaction.rollback();
+      await client.query("ROLLBACK");
       throw error;
+    } finally {
+      client.release();
     }
   }
 }
