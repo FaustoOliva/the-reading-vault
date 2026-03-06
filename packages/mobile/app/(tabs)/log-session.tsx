@@ -15,8 +15,8 @@ import {
   Platform,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Haptics from "expo-haptics";
+import { DatePicker } from "@/components/date-picker";
 import { useBooks, useBookDetails } from "@/hooks/useBooks";
 import { useCreateReadingSession } from "@/hooks/useReadingSessions";
 import { BookStatus } from "@/types/book";
@@ -38,7 +38,6 @@ export default function LogSessionScreen() {
   const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
   const [pagesRead, setPagesRead] = useState("");
   const [sessionDate, setSessionDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [duration, setDuration] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -205,7 +204,11 @@ export default function LogSessionScreen() {
           <View style={styles.pickerContainer}>
             <Picker
               selectedValue={selectedBookId}
-              onValueChange={(value) => setSelectedBookId(value)}
+              onValueChange={(value) => {
+                // Picker in web returns strings, convert to number
+                const numericValue = value === null ? null : Number(value);
+                setSelectedBookId(numericValue);
+              }}
               style={styles.picker}
               accessibilityLabel="Select book"
               accessibilityHint="Choose a book from your wish list or currently reading"
@@ -268,45 +271,14 @@ export default function LogSessionScreen() {
       </View>
 
       {/* Session Date */}
-      <View style={styles.field}>
-        <Text style={styles.label}>Session Date *</Text>
-        <Pressable
-          onPress={() => setShowDatePicker(true)}
-          style={[
-            styles.dateButton,
-            validationErrors.sessionDate && styles.dateButtonError,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={`Session date: ${sessionDate.toLocaleDateString()}`}
-          accessibilityHint="Tap to change session date"
-        >
-          <Text style={styles.dateButtonText}>
-            {sessionDate.toLocaleDateString()}
-          </Text>
-        </Pressable>
-        {showDatePicker && (
-          <DateTimePicker
-            value={sessionDate}
-            mode="date"
-            display="default"
-            onChange={(_event: any, date?: Date) => {
-              setShowDatePicker(Platform.OS === "ios");
-              if (date) setSessionDate(date);
-            }}
-            maximumDate={new Date()}
-          />
-        )}
-        {validationErrors.sessionDate && (
-          <Text
-            style={styles.error}
-            selectable
-            accessibilityRole="alert"
-            accessibilityLiveRegion="polite"
-          >
-            {validationErrors.sessionDate}
-          </Text>
-        )}
-      </View>
+      <DatePicker
+        value={sessionDate}
+        onChange={setSessionDate}
+        label="Session Date *"
+        maximumDate={new Date()}
+        error={validationErrors.sessionDate}
+        accessibilityHint="Select the date when this reading session occurred"
+      />
 
       {/* Duration Input */}
       <View style={styles.field}>

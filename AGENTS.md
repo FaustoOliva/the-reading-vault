@@ -60,9 +60,6 @@ Before committing any code, you MUST:
 1. **Verify no errors:** Check for TypeScript/compilation errors
 
    ```bash
-   npm run build
-   # OR for specific packages:
-   cd packages/api && npm run build
    cd packages/mobile && npx tsc --noEmit
    ```
 

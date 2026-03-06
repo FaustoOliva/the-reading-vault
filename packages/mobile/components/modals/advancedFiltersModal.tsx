@@ -36,10 +36,16 @@ import { useAuthors } from "@/hooks/useAuthors";
 import { useCountries } from "@/hooks/useCountries";
 import { BooksFilter } from "@/types/book";
 import {
+  validateFilters,
+  parseFilterValues,
+  FilterValidationErrors,
+} from "@/types/filterValidation";
+import {
   Background,
   Text as TextColors,
   Border,
   Interactive,
+  Feedback,
 } from "@/constants/colors";
 
 interface AdvancedFiltersModalProps {
@@ -76,6 +82,7 @@ export function AdvancedFiltersModal({
   );
   const [startDate, setStartDate] = useState<string>(filters.startDate || "");
   const [endDate, setEndDate] = useState<string>(filters.endDate || "");
+  const [errors, setErrors] = useState<FilterValidationErrors>({});
 
   const { data: authorsResponse } = useAuthors();
   const { data: countriesResponse } = useCountries();
@@ -104,23 +111,47 @@ export function AdvancedFiltersModal({
     setMaxPages("");
     setStartDate("");
     setEndDate("");
+    setErrors({});
   };
 
   const handleApply = () => {
+    // Validate all filter values
+    const validation = validateFilters({
+      countryId,
+      authorId,
+      minScore,
+      maxScore,
+      minPages,
+      maxPages,
+      startDate,
+      endDate,
+    });
+
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      return;
+    }
+
+    // Parse validated values
+    const parsedValues = parseFilterValues({
+      countryId,
+      authorId,
+      minScore,
+      maxScore,
+      minPages,
+      maxPages,
+      startDate,
+      endDate,
+    });
+
     const newFilters: BooksFilter = {
       ...filters,
-      countryId: countryId || undefined,
-      authorId: authorId || undefined,
-      minScore: minScore ? parseFloat(minScore) : undefined,
-      maxScore: maxScore ? parseFloat(maxScore) : undefined,
-      minPages: minPages ? parseInt(minPages, 10) : undefined,
-      maxPages: maxPages ? parseInt(maxPages, 10) : undefined,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
+      ...parsedValues,
     };
 
     onApply(newFilters);
     onClose();
+    setErrors({});
   };
 
   return (
@@ -154,9 +185,11 @@ export function AdvancedFiltersModal({
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={countryId}
-                onValueChange={(value) =>
-                  setCountryId(value === 0 ? undefined : value)
-                }
+                onValueChange={(value) => {
+                  // Picker in web returns strings, convert to number
+                  const numericValue = Number(value);
+                  setCountryId(numericValue === 0 ? undefined : numericValue);
+                }}
                 style={styles.picker}
               >
                 <Picker.Item label="All Countries" value={0} />
@@ -177,9 +210,11 @@ export function AdvancedFiltersModal({
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={authorId}
-                onValueChange={(value) =>
-                  setAuthorId(value === 0 ? undefined : value)
-                }
+                onValueChange={(value) => {
+                  // Picker in web returns strings, convert to number
+                  const numericValue = Number(value);
+                  setAuthorId(numericValue === 0 ? undefined : numericValue);
+                }}
                 style={styles.picker}
               >
                 <Picker.Item label="All Authors" value={0} />
@@ -207,29 +242,48 @@ export function AdvancedFiltersModal({
               <View style={styles.rangeInput}>
                 <Text style={styles.rangeLabel}>Min</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errors.minScore && styles.inputError]}
                   value={minScore}
-                  onChangeText={setMinScore}
+                  onChangeText={(text) => {
+                    setMinScore(text);
+                    if (errors.minScore)
+                      setErrors({ ...errors, minScore: undefined });
+                  }}
                   placeholder="0.0"
                   placeholderTextColor={TextColors.secondary}
                   keyboardType="decimal-pad"
                   maxLength={4}
+                  accessibilityHint="Minimum score (0-10)"
                 />
               </View>
               <Text style={styles.rangeSeparator}>—</Text>
               <View style={styles.rangeInput}>
                 <Text style={styles.rangeLabel}>Max</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errors.maxScore && styles.inputError]}
                   value={maxScore}
-                  onChangeText={setMaxScore}
+                  onChangeText={(text) => {
+                    setMaxScore(text);
+                    if (errors.maxScore)
+                      setErrors({ ...errors, maxScore: undefined });
+                  }}
                   placeholder="10.0"
                   placeholderTextColor={TextColors.secondary}
                   keyboardType="decimal-pad"
                   maxLength={4}
+                  accessibilityHint="Maximum score (0-10)"
                 />
               </View>
             </View>
+            {(errors.minScore || errors.maxScore) && (
+              <Text
+                style={styles.errorText}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
+                {errors.minScore || errors.maxScore}
+              </Text>
+            )}
           </View>
 
           {/* Page Count Range */}
@@ -239,29 +293,48 @@ export function AdvancedFiltersModal({
               <View style={styles.rangeInput}>
                 <Text style={styles.rangeLabel}>Min Pages</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errors.minPages && styles.inputError]}
                   value={minPages}
-                  onChangeText={setMinPages}
+                  onChangeText={(text) => {
+                    setMinPages(text);
+                    if (errors.minPages)
+                      setErrors({ ...errors, minPages: undefined });
+                  }}
                   placeholder="0"
                   placeholderTextColor={TextColors.secondary}
                   keyboardType="number-pad"
                   maxLength={5}
+                  accessibilityHint="Minimum page count"
                 />
               </View>
               <Text style={styles.rangeSeparator}>—</Text>
               <View style={styles.rangeInput}>
                 <Text style={styles.rangeLabel}>Max Pages</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errors.maxPages && styles.inputError]}
                   value={maxPages}
-                  onChangeText={setMaxPages}
+                  onChangeText={(text) => {
+                    setMaxPages(text);
+                    if (errors.maxPages)
+                      setErrors({ ...errors, maxPages: undefined });
+                  }}
                   placeholder="9999"
                   placeholderTextColor={TextColors.secondary}
                   keyboardType="number-pad"
                   maxLength={5}
+                  accessibilityHint="Maximum page count"
                 />
               </View>
             </View>
+            {(errors.minPages || errors.maxPages) && (
+              <Text
+                style={styles.errorText}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
+                {errors.minPages || errors.maxPages}
+              </Text>
+            )}
           </View>
 
           {/* Date Range - Simplified (ISO string input) */}
@@ -274,28 +347,47 @@ export function AdvancedFiltersModal({
               <View style={styles.dateInput}>
                 <Text style={styles.rangeLabel}>Start Date</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errors.startDate && styles.inputError]}
                   value={startDate}
-                  onChangeText={setStartDate}
+                  onChangeText={(text) => {
+                    setStartDate(text);
+                    if (errors.startDate)
+                      setErrors({ ...errors, startDate: undefined });
+                  }}
                   placeholder="2025-01-01"
                   placeholderTextColor={TextColors.secondary}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  accessibilityHint="Start date in YYYY-MM-DD format"
                 />
               </View>
               <View style={styles.dateInput}>
                 <Text style={styles.rangeLabel}>End Date</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errors.endDate && styles.inputError]}
                   value={endDate}
-                  onChangeText={setEndDate}
+                  onChangeText={(text) => {
+                    setEndDate(text);
+                    if (errors.endDate)
+                      setErrors({ ...errors, endDate: undefined });
+                  }}
                   placeholder="2025-12-31"
                   placeholderTextColor={TextColors.secondary}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  accessibilityHint="End date in YYYY-MM-DD format"
                 />
               </View>
             </View>
+            {(errors.startDate || errors.endDate) && (
+              <Text
+                style={styles.errorText}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
+                {errors.startDate || errors.endDate}
+              </Text>
+            )}
           </View>
         </ScrollView>
 
@@ -463,5 +555,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: Interactive.primary.text,
+  },
+  inputError: {
+    borderColor: Feedback.error.border,
+    backgroundColor: Feedback.error.background,
+  },
+  errorText: {
+    fontSize: 13,
+    color: Feedback.error.text,
+    marginTop: 4,
   },
 });

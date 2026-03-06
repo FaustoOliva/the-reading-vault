@@ -37,6 +37,20 @@ export function FormPicker<T extends string | number>({
   accessibilityLabel,
   accessibilityHint,
 }: FormPickerProps<T>) {
+  // Detect if we're working with numbers based on the options
+  const isNumericType =
+    options.length > 0 && typeof options[0].value === "number";
+
+  const handleValueChange = (selectedValue: T) => {
+    // Picker in web returns strings, convert back to number if needed
+    if (isNumericType && typeof selectedValue === "string") {
+      const numericValue = Number(selectedValue) as T;
+      onValueChange(numericValue);
+    } else {
+      onValueChange(selectedValue);
+    }
+  };
+
   return (
     <View style={{ gap: 6 }}>
       <Text
@@ -60,7 +74,7 @@ export function FormPicker<T extends string | number>({
       >
         <Picker
           selectedValue={value}
-          onValueChange={onValueChange}
+          onValueChange={handleValueChange}
           accessibilityLabel={accessibilityLabel || label}
           accessibilityHint={accessibilityHint}
           style={{
