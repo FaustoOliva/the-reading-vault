@@ -175,7 +175,7 @@ export default function StatisticsScreen() {
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: Background.primary }}
-      contentContainerStyle={{ padding: 16, gap: 16 }}
+      contentContainerStyle={{ padding: 16, gap: 12 }}
       refreshControl={
         <RefreshControl
           refreshing={isRefetching}
@@ -187,15 +187,22 @@ export default function StatisticsScreen() {
       {/* Header */}
       <Text
         style={{
-          fontSize: 24,
+          fontSize: 28,
           fontWeight: "700",
-          color: TextColors.primary,
-          marginBottom: 8,
+          color: TextColors.primary
         }}
       >
         Your Reading Stats
       </Text>
-
+      <Text
+        style={{
+          fontSize: 14,
+          color: TextColors.secondary,
+          paddingVertical: 4,
+        }}
+      >
+        A snapshot of your reading journey so far. Keep it up!
+      </Text>
       {/* Volume Metrics */}
       <Text
         style={{

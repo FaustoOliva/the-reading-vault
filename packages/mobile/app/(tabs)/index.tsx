@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useBooks } from "@/hooks/useBooks";
 import { SearchBar } from "@/components/forms/searchBar";
+import { CustomDropdown } from "@/components/forms/customDropdown";
 import { BookListItem } from "@/components/list/bookListItem";
 import { LoadMoreButton } from "@/components/list/loadMoreButton";
 import { SkeletonBookItem } from "@/components/list/skeletonBookItem";
@@ -77,7 +78,10 @@ function getComparableTimestamp(book: Book): number {
   return book.id;
 }
 
-function compareNullableNumbersDesc(a: number | null, b: number | null): number {
+function compareNullableNumbersDesc(
+  a: number | null,
+  b: number | null,
+): number {
   if (a === null && b === null) return 0;
   if (a === null) return 1;
   if (b === null) return -1;
@@ -99,7 +103,10 @@ function sortBooks(books: Book[], sortBy: SortOptionValue): Book[] {
     }
 
     if (sortBy === "YEAR") {
-      return compareNullableNumbersDesc(left.publicationYear, right.publicationYear);
+      return compareNullableNumbersDesc(
+        left.publicationYear,
+        right.publicationYear,
+      );
     }
 
     if (sortBy === "PAGES") {
@@ -107,8 +114,12 @@ function sortBooks(books: Book[], sortBy: SortOptionValue): Book[] {
     }
 
     if (sortBy === "RECENTLY_ADDED") {
-      const leftCreated = left.createdAt ? Date.parse(left.createdAt) : Number.NaN;
-      const rightCreated = right.createdAt ? Date.parse(right.createdAt) : Number.NaN;
+      const leftCreated = left.createdAt
+        ? Date.parse(left.createdAt)
+        : Number.NaN;
+      const rightCreated = right.createdAt
+        ? Date.parse(right.createdAt)
+        : Number.NaN;
 
       if (!Number.isNaN(leftCreated) && !Number.isNaN(rightCreated)) {
         return rightCreated - leftCreated;
@@ -141,7 +152,6 @@ export default function BooksListScreen() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOptionValue>("LAST_ACTIVITY");
   const [accumulatedBooks, setAccumulatedBooks] = useState<Book[]>([]);
-  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
 
   const {
     data: response,
@@ -151,7 +161,10 @@ export default function BooksListScreen() {
     isRefetching,
   } = useBooks(filters, { page, limit: ITEMS_PER_PAGE });
 
-  const currentPageBooks = useMemo(() => response?.data ?? [], [response?.data]);
+  const currentPageBooks = useMemo(
+    () => response?.data ?? [],
+    [response?.data],
+  );
   const pagination = response?.pagination;
 
   useEffect(() => {
@@ -164,7 +177,8 @@ export default function BooksListScreen() {
     if (page > 1 && currentPageBooks.length > 0) {
       setAccumulatedBooks((prev) => {
         const newBooks = currentPageBooks.filter(
-          (newBook) => !prev.some((existingBook) => existingBook.id === newBook.id),
+          (newBook) =>
+            !prev.some((existingBook) => existingBook.id === newBook.id),
         );
 
         return [...prev, ...newBooks];
@@ -183,13 +197,7 @@ export default function BooksListScreen() {
     ) {
       setPage((prev) => prev + 1);
     }
-  }, [
-    pagination,
-    accumulatedBooks.length,
-    isLoading,
-    isRefetching,
-    page,
-  ]);
+  }, [pagination, accumulatedBooks.length, isLoading, isRefetching, page]);
 
   const displayedBooks = useMemo(() => {
     if (page > 1 || accumulatedBooks.length > 0) {
@@ -204,15 +212,22 @@ export default function BooksListScreen() {
     [displayedBooks, sortBy],
   );
 
-  const groupedSections = useMemo(() => groupBooksByStatus(sortedBooks), [sortedBooks]);
+  const groupedSections = useMemo(
+    () => groupBooksByStatus(sortedBooks),
+    [sortedBooks],
+  );
 
   const completedCount = useMemo(
-    () => displayedBooks.filter((book) => book.status === BookStatus.COMPLETED).length,
+    () =>
+      displayedBooks.filter((book) => book.status === BookStatus.COMPLETED)
+        .length,
     [displayedBooks],
   );
 
   const readingCount = useMemo(
-    () => displayedBooks.filter((book) => book.status === BookStatus.READING).length,
+    () =>
+      displayedBooks.filter((book) => book.status === BookStatus.READING)
+        .length,
     [displayedBooks],
   );
 
@@ -234,10 +249,6 @@ export default function BooksListScreen() {
     setAccumulatedBooks([]);
   };
 
-  const handleSortChange = (value: SortOptionValue) => {
-    setSortBy(value);
-  };
-
   const handleLoadMore = () => {
     if (pagination && page < pagination.totalPages) {
       setPage((prev) => prev + 1);
@@ -251,10 +262,20 @@ export default function BooksListScreen() {
   };
 
   const renderFiltersHeader = () => (
-    <View style={{ gap: 12, marginBottom: 8 }}>
+    <View style={{ gap: 12, marginBottom: 8, marginTop: 4 }}>
       <View style={{ gap: 4 }}>
-
-        <Text style={{ fontSize: 14, color: TextColors.secondary, paddingVertical: 4 }}>
+        <Text
+          style={{ fontSize: 28, fontWeight: "700", color: TextColors.primary }}
+        >
+          Library
+        </Text>
+        <Text
+          style={{
+            fontSize: 14,
+            color: TextColors.secondary,
+            paddingVertical: 4,
+          }}
+        >
           Track progress, continue reading, and review your habits
         </Text>
       </View>
@@ -277,7 +298,9 @@ export default function BooksListScreen() {
             paddingVertical: 6,
             borderRadius: 999,
             borderWidth: 1,
-            borderColor: !filters.status ? Interactive.primary.default : Border.default,
+            borderColor: !filters.status
+              ? Interactive.primary.default
+              : Border.default,
             backgroundColor: !filters.status
               ? Interactive.primary.default
               : pressed
@@ -289,7 +312,9 @@ export default function BooksListScreen() {
             style={{
               fontSize: 13,
               fontWeight: "600",
-              color: !filters.status ? Interactive.primary.text : TextColors.primary,
+              color: !filters.status
+                ? Interactive.primary.text
+                : TextColors.primary,
             }}
           >
             All
@@ -307,7 +332,9 @@ export default function BooksListScreen() {
                 paddingVertical: 6,
                 borderRadius: 999,
                 borderWidth: 1,
-                borderColor: isActive ? Interactive.primary.default : Border.default,
+                borderColor: isActive
+                  ? Interactive.primary.default
+                  : Border.default,
                 backgroundColor: isActive
                   ? Interactive.primary.default
                   : pressed
@@ -319,7 +346,9 @@ export default function BooksListScreen() {
                 style={{
                   fontSize: 13,
                   fontWeight: "600",
-                  color: isActive ? Interactive.primary.text : TextColors.primary,
+                  color: isActive
+                    ? Interactive.primary.text
+                    : TextColors.primary,
                 }}
               >
                 {BOOK_STATUS_LABELS[status]}
@@ -329,140 +358,16 @@ export default function BooksListScreen() {
         })}
       </ScrollView>
 
-      <View style={{ gap: 8, position: "relative", zIndex: 10 }}>
-        <Text style={{ fontSize: 13, fontWeight: "600", color: TextColors.secondary }}>
-          Sort by
-        </Text>
-        <Pressable
-          onPress={() => setIsSortMenuOpen(!isSortMenuOpen)}
-          style={({ pressed }) => ({
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            borderWidth: 1.5,
-            borderColor: isSortMenuOpen ? Interactive.primary.default : Border.default,
-            borderRadius: 12,
-            backgroundColor: pressed
-              ? Interactive.secondary.pressed
-              : Background.surface,
-            borderCurve: "continuous",
-          })}
-        >
-          <Text
-            style={{
-              fontSize: 15,
-              fontWeight: "500",
-              color: TextColors.primary,
-            }}
-          >
-            {SORT_OPTIONS.find((option) => option.value === sortBy)?.label}
-          </Text>
-          <Text
-            style={{
-              fontSize: 18,
-              color: TextColors.tertiary,
-              transform: [{ rotate: isSortMenuOpen ? "180deg" : "0deg" }],
-            }}
-          >
-            ▼
-          </Text>
-        </Pressable>
-        {isSortMenuOpen && (
-          <>
-            <Pressable
-              style={{
-                position: "absolute",
-                top: -1000,
-                left: -1000,
-                right: -1000,
-                bottom: -1000,
-                zIndex: 999,
-              }}
-              onPress={() => setIsSortMenuOpen(false)}
-            />
-          <View
-            style={{
-              position: "absolute",
-              top: 70,
-              left: 0,
-              right: 0,
-              backgroundColor: Background.surface,
-              borderWidth: 1,
-              borderColor: Border.focus,
-              borderRadius: 12,
-              borderCurve: "continuous",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.1,
-              shadowRadius: 12,
-              elevation: 4,
-              zIndex: 1000,
-              overflow: "hidden",
-            }}
-          >
-            {SORT_OPTIONS.map((option, index) => {
-              const isSelected = option.value === sortBy;
-              const isFirst = index === 0;
-              const isLast = index === SORT_OPTIONS.length - 1;
-              
-              return (
-                <Pressable
-                  key={option.value}
-                  onPress={() => {
-                    handleSortChange(option.value);
-                    setIsSortMenuOpen(false);
-                  }}
-                  style={({ pressed }) => ({
-                    paddingHorizontal: 16,
-                    paddingVertical: 14,
-                    backgroundColor: pressed
-                      ? Interactive.secondary.pressed
-                      : isSelected
-                      ? Interactive.secondary.hover
-                      : Background.surface,
-                    borderTopLeftRadius: isFirst ? 12 : 0,
-                    borderTopRightRadius: isFirst ? 12 : 0,
-                    borderBottomLeftRadius: isLast ? 12 : 0,
-                    borderBottomRightRadius: isLast ? 12 : 0,
-                  })}
-                >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 15,
-                        fontWeight: isSelected ? "600" : "400",
-                        color: isSelected
-                          ? Interactive.primary.default
-                          : TextColors.primary,
-                      }}
-                    >
-                      {option.label}
-                    </Text>
-                    {isSelected && (
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          color: Interactive.primary.default,
-                        }}
-                      >
-                        ✓
-                      </Text>
-                    )}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-          </>
-        )}
+      <View>
+        <CustomDropdown
+          label="Sort by"
+          value={sortBy}
+          onValueChange={setSortBy}
+          options={SORT_OPTIONS}
+          renderInModal
+          accessibilityLabel="Sort books"
+          accessibilityHint="Select how books are sorted"
+        />
       </View>
 
       <View
@@ -525,7 +430,10 @@ export default function BooksListScreen() {
               >
                 Error loading books
               </Text>
-              <Text style={{ fontSize: 14, color: Feedback.error.text }} selectable>
+              <Text
+                style={{ fontSize: 14, color: Feedback.error.text }}
+                selectable
+              >
                 {error.message || "An unexpected error occurred"}
               </Text>
             </View>
@@ -569,7 +477,13 @@ export default function BooksListScreen() {
             gap: 8,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "700", color: TextColors.primary }}>
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: "700",
+              color: TextColors.primary,
+            }}
+          >
             No books found
           </Text>
           <Text

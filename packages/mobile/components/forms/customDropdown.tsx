@@ -16,8 +16,8 @@
  * 4. Dropdown closes and value updates
  */
 
-import { useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { useRef, useState } from "react";
+import { View, Text, Pressable, Modal } from "react-native";
 import {
   Text as TextColors,
   Border,
@@ -37,6 +37,7 @@ interface CustomDropdownProps<T> {
   onValueChange: (value: T) => void;
   options: DropdownOption<T>[];
   error?: string;
+  renderInModal?: boolean;
   accessibilityLabel?: string;
   accessibilityHint?: string;
 }
@@ -47,10 +48,13 @@ export function CustomDropdown<T extends string | number>({
   onValueChange,
   options,
   error,
+  renderInModal = false,
   accessibilityLabel,
   accessibilityHint,
 }: CustomDropdownProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 });
+  const triggerRef = useRef<View>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
 
@@ -58,6 +62,94 @@ export function CustomDropdown<T extends string | number>({
     onValueChange(newValue);
     setIsOpen(false);
   };
+
+  const openDropdown = () => {
+    if (!renderInModal) {
+      setIsOpen(true);
+      return;
+    }
+
+    triggerRef.current?.measureInWindow((x, y, width, height) => {
+      setMenuPosition({
+        top: y + height + 8,
+        left: x,
+        width,
+      });
+      setIsOpen(true);
+    });
+  };
+
+  const toggleDropdown = () => {
+    if (isOpen) {
+      setIsOpen(false);
+      return;
+    }
+
+    openDropdown();
+  };
+
+  const renderOptions = () => (
+    <>
+      {options.map((option, index) => {
+        const isSelected = option.value === value;
+        const isFirst = index === 0;
+        const isLast = index === options.length - 1;
+
+        return (
+          <Pressable
+            key={String(option.value)}
+            onPress={() => handleSelect(option.value)}
+            accessibilityRole="menuitem"
+            accessibilityLabel={option.label}
+            accessibilityState={{ selected: isSelected }}
+            style={({ pressed }) => ({
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              backgroundColor: pressed
+                ? Interactive.secondary.pressed
+                : isSelected
+                  ? Interactive.secondary.hover
+                  : Background.surface,
+              borderTopLeftRadius: isFirst ? 12 : 0,
+              borderTopRightRadius: isFirst ? 12 : 0,
+              borderBottomLeftRadius: isLast ? 12 : 0,
+              borderBottomRightRadius: isLast ? 12 : 0,
+            })}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: isSelected ? "600" : "400",
+                  color: isSelected
+                    ? Interactive.primary.default
+                    : TextColors.primary,
+                }}
+              >
+                {option.label}
+              </Text>
+              {isSelected && (
+                <Text
+                  style={{
+                    fontSize: 16,
+                    color: Interactive.primary.default,
+                  }}
+                >
+                  ✓
+                </Text>
+              )}
+            </View>
+          </Pressable>
+        );
+      })}
+    </>
+  );
 
   return (
     <View style={{ gap: 8, position: "relative", zIndex: isOpen ? 10000 : 1 }}>
@@ -72,7 +164,8 @@ export function CustomDropdown<T extends string | number>({
       </Text>
 
       <Pressable
-        onPress={() => setIsOpen(!isOpen)}
+        ref={triggerRef}
+        onPress={toggleDropdown}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel || label}
         accessibilityHint={
@@ -119,7 +212,7 @@ export function CustomDropdown<T extends string | number>({
       </Pressable>
 
       {/* Backdrop to close dropdown - covers entire screen */}
-      {isOpen && (
+      {isOpen && !renderInModal && (
         <Pressable
           style={{
             position: "absolute",
@@ -134,7 +227,7 @@ export function CustomDropdown<T extends string | number>({
       )}
 
       {/* Dropdown Menu */}
-      {isOpen && (
+      {isOpen && !renderInModal && (
         <View
           style={{
             position: "absolute",
@@ -155,65 +248,45 @@ export function CustomDropdown<T extends string | number>({
             overflow: "hidden",
           }}
         >
-          {options.map((option, index) => {
-            const isSelected = option.value === value;
-            const isFirst = index === 0;
-            const isLast = index === options.length - 1;
-
-            return (
-              <Pressable
-                key={String(option.value)}
-                onPress={() => handleSelect(option.value)}
-                accessibilityRole="menuitem"
-                accessibilityLabel={option.label}
-                accessibilityState={{ selected: isSelected }}
-                style={({ pressed }) => ({
-                  paddingHorizontal: 16,
-                  paddingVertical: 14,
-                  backgroundColor: pressed
-                    ? Interactive.secondary.pressed
-                    : isSelected
-                      ? Interactive.secondary.hover
-                      : Background.surface,
-                  borderTopLeftRadius: isFirst ? 12 : 0,
-                  borderTopRightRadius: isFirst ? 12 : 0,
-                  borderBottomLeftRadius: isLast ? 12 : 0,
-                  borderBottomRightRadius: isLast ? 12 : 0,
-                })}
-              >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: isSelected ? "600" : "400",
-                      color: isSelected
-                        ? Interactive.primary.default
-                        : TextColors.primary,
-                    }}
-                  >
-                    {option.label}
-                  </Text>
-                  {isSelected && (
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        color: Interactive.primary.default,
-                      }}
-                    >
-                      ✓
-                    </Text>
-                  )}
-                </View>
-              </Pressable>
-            );
-          })}
+          {renderOptions()}
         </View>
+      )}
+
+      {renderInModal && (
+        <Modal
+          visible={isOpen}
+          transparent
+          animationType="none"
+          onRequestClose={() => setIsOpen(false)}
+        >
+          <View style={{ flex: 1 }}>
+            <Pressable
+              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+              onPress={() => setIsOpen(false)}
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: menuPosition.top,
+                left: menuPosition.left,
+                width: menuPosition.width,
+                backgroundColor: Background.surface,
+                borderWidth: 1.5,
+                borderColor: Border.focus,
+                borderRadius: 12,
+                borderCurve: "continuous",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 12,
+                elevation: 10,
+                overflow: "hidden",
+              }}
+            >
+              {renderOptions()}
+            </View>
+          </View>
+        </Modal>
       )}
 
       {/* Error message */}

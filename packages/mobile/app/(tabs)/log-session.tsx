@@ -202,7 +202,7 @@ export default function LogSessionScreen() {
       </View>
 
       {/* Book Selector */}
-      <View style={{ gap: 8 }}>
+      <View style={{ gap: 8, position: "relative", zIndex: 20 }}>
         {booksLoading ? (
           <>
             <Text style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}>
