@@ -7,11 +7,11 @@ import { z } from "zod";
  * Book Status enum schema
  */
 export declare const bookStatusSchema: z.ZodEnum<{
-    WISH_LIST: import("../enums/bookStatus.js").BookStatus.WISH_LIST;
-    READING: import("../enums/bookStatus.js").BookStatus.READING;
-    COMPLETED: import("../enums/bookStatus.js").BookStatus.COMPLETED;
-    ABANDONED: import("../enums/bookStatus.js").BookStatus.ABANDONED;
-    PENDING_SCORE: import("../enums/bookStatus.js").BookStatus.PENDING_SCORE;
+  WISH_LIST: import("../enums/bookStatus.js").BookStatus.WISH_LIST;
+  READING: import("../enums/bookStatus.js").BookStatus.READING;
+  COMPLETED: import("../enums/bookStatus.js").BookStatus.COMPLETED;
+  ABANDONED: import("../enums/bookStatus.js").BookStatus.ABANDONED;
+  PENDING_SCORE: import("../enums/bookStatus.js").BookStatus.PENDING_SCORE;
 }>;
 /**
  * Score validation (0-10 with 0.5 increments)
@@ -69,12 +69,15 @@ export declare const publicationYearOptionalSchema: z.ZodOptional<z.ZodNumber>;
  * Base schema for updating book metadata
  * Used by both API (direct numbers) and Mobile (adapted to strings)
  */
-export declare const updateBookBaseSchema: z.ZodObject<{
+export declare const updateBookBaseSchema: z.ZodObject<
+  {
     title: z.ZodOptional<z.ZodString>;
     totalPages: z.ZodOptional<z.ZodNumber>;
     publicationYear: z.ZodOptional<z.ZodNumber>;
     score: z.ZodOptional<z.ZodNumber>;
     comment: z.ZodOptional<z.ZodString>;
-}, z.core.$strip>;
+  },
+  z.core.$strip
+>;
 export type UpdateBookBase = z.infer<typeof updateBookBaseSchema>;
 //# sourceMappingURL=book.schemas.d.ts.map

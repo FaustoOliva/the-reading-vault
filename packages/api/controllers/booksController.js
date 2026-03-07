@@ -45,7 +45,12 @@ const getBooksQuerySchema = z
     maxScore: z.coerce.number().min(0).max(10).optional(),
     minPages: z.coerce.number().int().positive().optional(),
     maxPages: z.coerce.number().int().positive().optional(),
-    publicationYearStart: z.coerce.number().int().min(1000).max(9999).optional(),
+    publicationYearStart: z.coerce
+      .number()
+      .int()
+      .min(1000)
+      .max(9999)
+      .optional(),
     publicationYearEnd: z.coerce.number().int().min(1000).max(9999).optional(),
     startDate: z.string().datetime().optional(),
     endDate: z.string().datetime().optional(),

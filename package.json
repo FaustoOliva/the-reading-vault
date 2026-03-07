@@ -15,6 +15,7 @@
     "start:api": "npm start --workspace=api",
     "dev:api": "npm run dev --workspace=api",
     "start:mobile": "npm start --workspace=mobile",
+    "start:web": "npm start --workspace=mobile --web",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {

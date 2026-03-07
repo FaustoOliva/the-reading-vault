@@ -65,10 +65,10 @@ export const publicationYearOptionalSchema = publicationYearSchema.optional();
  * Used by both API (direct numbers) and Mobile (adapted to strings)
  */
 export const updateBookBaseSchema = z.object({
-    title: titleOptionalSchema,
-    totalPages: pagesOptionalSchema,
-    publicationYear: publicationYearOptionalSchema,
-    score: scoreOptionalSchema,
-    comment: commentSchema,
+  title: titleOptionalSchema,
+  totalPages: pagesOptionalSchema,
+  publicationYear: publicationYearOptionalSchema,
+  score: scoreOptionalSchema,
+  comment: commentSchema,
 });
 //# sourceMappingURL=book.schemas.js.map

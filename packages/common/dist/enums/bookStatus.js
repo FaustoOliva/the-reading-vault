@@ -15,40 +15,40 @@
 // TypeScript enum for Mobile package
 export var BookStatus;
 (function (BookStatus) {
-    BookStatus["WISH_LIST"] = "WISH_LIST";
-    BookStatus["READING"] = "READING";
-    BookStatus["COMPLETED"] = "COMPLETED";
-    BookStatus["ABANDONED"] = "ABANDONED";
-    BookStatus["PENDING_SCORE"] = "PENDING_SCORE";
+  BookStatus["WISH_LIST"] = "WISH_LIST";
+  BookStatus["READING"] = "READING";
+  BookStatus["COMPLETED"] = "COMPLETED";
+  BookStatus["ABANDONED"] = "ABANDONED";
+  BookStatus["PENDING_SCORE"] = "PENDING_SCORE";
 })(BookStatus || (BookStatus = {}));
 // Frozen object for API package (JavaScript interop)
 export const BookStatusValues = Object.freeze({
-    WISH_LIST: "WISH_LIST",
-    READING: "READING",
-    COMPLETED: "COMPLETED",
-    ABANDONED: "ABANDONED",
-    PENDING_SCORE: "PENDING_SCORE",
+  WISH_LIST: "WISH_LIST",
+  READING: "READING",
+  COMPLETED: "COMPLETED",
+  ABANDONED: "ABANDONED",
+  PENDING_SCORE: "PENDING_SCORE",
 });
 /**
  * Get all valid status values as array
  */
 export function getValidStatuses() {
-    return Object.values(BookStatus);
+  return Object.values(BookStatus);
 }
 /**
  * Check if a status value is valid
  */
 export function isValidStatus(status) {
-    return getValidStatuses().includes(status);
+  return getValidStatuses().includes(status);
 }
 /**
  * Array of all status values for Zod enum validation
  */
 export const BOOK_STATUS_VALUES = [
-    BookStatus.WISH_LIST,
-    BookStatus.READING,
-    BookStatus.COMPLETED,
-    BookStatus.ABANDONED,
-    BookStatus.PENDING_SCORE,
+  BookStatus.WISH_LIST,
+  BookStatus.READING,
+  BookStatus.COMPLETED,
+  BookStatus.ABANDONED,
+  BookStatus.PENDING_SCORE,
 ];
 //# sourceMappingURL=bookStatus.js.map

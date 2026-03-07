@@ -9,7 +9,7 @@ import { pagesSchema } from "./book.schemas.js";
  * Date/timestamp handling varies by context (API uses ISO strings, Mobile uses Date objects)
  */
 export const logSessionBaseSchema = z.object({
-    bookId: z.number().int().positive(),
-    pagesRead: pagesSchema,
+  bookId: z.number().int().positive(),
+  pagesRead: pagesSchema,
 });
 //# sourceMappingURL=session.schemas.js.map
