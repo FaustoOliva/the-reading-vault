@@ -374,10 +374,10 @@ export default function BooksListScreen() {
             <Pressable
               style={{
                 position: "absolute",
-                top: -16,
-                left: -16,
-                right: -16,
-                bottom: -16,
+                top: -1000,
+                left: -1000,
+                right: -1000,
+                bottom: -1000,
                 zIndex: 999,
               }}
               onPress={() => setIsSortMenuOpen(false)}
@@ -399,6 +399,7 @@ export default function BooksListScreen() {
               shadowRadius: 12,
               elevation: 4,
               zIndex: 1000,
+              overflow: "hidden",
             }}
           >
             {SORT_OPTIONS.map((option, index) => {
@@ -420,7 +421,7 @@ export default function BooksListScreen() {
                       ? Interactive.secondary.pressed
                       : isSelected
                       ? Interactive.secondary.hover
-                      : "transparent",
+                      : Background.surface,
                     borderTopLeftRadius: isFirst ? 12 : 0,
                     borderTopRightRadius: isFirst ? 12 : 0,
                     borderBottomLeftRadius: isLast ? 12 : 0,

@@ -4,23 +4,24 @@
  *
  * Rules:
  * - Client-side validation before submission
- * - Uses FormInput, FormPicker, and SearchableSelect components
+ * - Uses FormInput, FormPicker, and InputWithSuggestions components
  * - Accessible colors and design
  * - Form state managed with useState
  * - Server state (mutation) with React Query
  * - Initial status can be selected (defaults to WISH_LIST)
  *
  * Features:
- * - Select from existing authors or create new
+ * - Input authors with inline suggestions (no dropdowns)
  * - Nationality field only visible when creating NEW author
- * - Select from existing countries or create new
+ * - Input countries with inline suggestions
  * - Choose initial status (WISH_LIST, READING, COMPLETED, ABANDONED)
  * - API handles author/country creation automatically
  *
  * UX Behavior:
  * - When typing a new author name: nationality field appears
  * - When selecting existing author: nationality field hides (author already has nationality)
- * - Prevents accidentally changing existing author's nationality
+ * - Suggestions appear as pills below the input (no floating dropdowns)
+ * - User can tap suggestion or continue typing to create new entry
  *
  * API Contract:
  * - title (required)
@@ -45,8 +46,8 @@ import { useCreateBook } from "@/hooks/useBooks";
 import { useAuthors } from "@/hooks/useAuthors";
 import { useCountries } from "@/hooks/useCountries";
 import { FormInput } from "@/components/forms/formInput";
-import { FormPicker } from "@/components/forms/formPicker";
-import { SearchableSelect } from "@/components/forms/searchableSelect";
+import { InputWithSuggestions } from "@/components/forms/inputWithSuggestions";
+import { CustomDropdown } from "@/components/forms/customDropdown";
 import { showToast } from "@/components/ui/toast";
 import { BookStatus } from "@/types/book";
 import { BOOK_STATUS_LABELS } from "@/constants/bookStatus";
@@ -98,10 +99,9 @@ export default function CreateBookScreen() {
     }
   }, [params.prefillTitle, params.prefillAuthor]);
 
-  // Transform authors and countries to SearchableSelect format
-  const authorItems = authors?.map((a) => ({ id: a.id, name: a.name })) || [];
-  const countryItems =
-    countries?.map((c) => ({ id: c.id, name: c.name })) || [];
+  // Transform authors and countries to simple string arrays
+  const authorSuggestions = authors?.map((a) => a.name) || [];
+  const countrySuggestions = countries?.map((c) => c.name) || [];
 
   // Check if the current author name matches an existing author
   const existingAuthor = useMemo(() => {
@@ -113,13 +113,6 @@ export default function CreateBookScreen() {
 
   // Only show nationality field when creating a new author
   const isCreatingNewAuthor = !existingAuthor;
-
-  // Handle author selection from dropdown
-  const handleAuthorSelect = (author: { id: number; name: string }) => {
-    setAuthorName(author.name);
-    // Clear nationality when selecting an existing author
-    setCountryName("");
-  };
 
   /**
    * Validate form before submission using Zod schema
@@ -227,9 +220,18 @@ export default function CreateBookScreen() {
       }}
       contentContainerStyle={{
         padding: 16,
-        gap: 16,
+        gap: 20,
       }}
     >
+      {/* Header */}
+      <View style={{ gap: 4, marginBottom: 8 }}>
+        <Text style={{ fontSize: 28, fontWeight: "700", color: TextColors.primary }}>
+          Add New Book
+        </Text>
+        <Text style={{ fontSize: 14, color: TextColors.secondary, lineHeight: 20 }}>
+          Expand your library by adding a new book. Select from existing authors or create new ones.
+        </Text>
+      </View>
       <FormInput
         label="Title *"
         value={title}
@@ -241,35 +243,32 @@ export default function CreateBookScreen() {
         accessibilityHint="Enter the title of the book"
       />
 
-      <SearchableSelect
+      <InputWithSuggestions
         label="Author *"
         value={authorName}
         onChangeText={setAuthorName}
-        onSelectItem={handleAuthorSelect}
-        items={authorItems}
-        placeholder="Search or create author..."
+        suggestions={authorSuggestions}
+        placeholder="Type author name..."
         error={errors.authorName}
-        createLabel="Create author"
-        zIndex={3}
+        autoCapitalize="words"
         accessibilityLabel="Author name, required"
-        accessibilityHint="Search for an existing author or type to create a new one"
+        accessibilityHint="Type an author name. Select from suggestions or create new."
       />
 
       {isCreatingNewAuthor && authorName.trim() && (
-        <SearchableSelect
+        <InputWithSuggestions
           label="Author Nationality (Optional)"
           value={countryName}
           onChangeText={setCountryName}
-          items={countryItems}
-          placeholder="Search or create country..."
-          createLabel="Create country"
-          zIndex={2}
+          suggestions={countrySuggestions}
+          placeholder="Type country name..."
+          autoCapitalize="words"
           accessibilityLabel="Author nationality, optional"
-          accessibilityHint="Only shown when creating a new author. Search for a country or type to create one"
+          accessibilityHint="Only shown when creating a new author. Type a country name or select from suggestions."
         />
       )}
 
-      <FormPicker
+      <CustomDropdown
         label="Initial Status"
         value={status}
         onValueChange={setStatus}
@@ -333,23 +332,30 @@ export default function CreateBookScreen() {
               : pressed
                 ? Interactive.primary.pressed
                 : Interactive.primary.default,
-          padding: 16,
+          paddingVertical: 16,
+          paddingHorizontal: 24,
           borderRadius: 12,
           borderCurve: "continuous",
           alignItems: "center",
-          marginTop: 8,
+          justifyContent: "center",
+          marginTop: 12,
+          minHeight: 56,
           opacity: !isFormValid() || isPending ? 0.7 : 1,
         })}
       >
-        <Text
-          style={{
-            color: Interactive.primary.text,
-            fontSize: 17,
-            fontWeight: "600",
-          }}
-        >
-          {isPending ? "Creating..." : "Create Book"}
-        </Text>
+        {isPending ? (
+          <ActivityIndicator size="small" color={Interactive.primary.text} />
+        ) : (
+          <Text
+            style={{
+              color: Interactive.primary.text,
+              fontSize: 17,
+              fontWeight: "600",
+            }}
+          >
+            Create Book
+          </Text>
+        )}
       </Pressable>
     </ScrollView>
   );

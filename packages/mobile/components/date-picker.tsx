@@ -6,7 +6,7 @@
  */
 
 import { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
+import { View, Text, Pressable, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import {
   Border,
@@ -63,8 +63,10 @@ export function DatePicker({
       : undefined;
 
     return (
-      <View style={styles.field}>
-        <Text style={styles.label}>{label}</Text>
+      <View style={{ gap: 8 }}>
+        <Text style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}>
+          {label}
+        </Text>
         <input
           type="date"
           value={formatDateForInput(value)}
@@ -72,22 +74,30 @@ export function DatePicker({
           max={maxDateString}
           min={minDateString}
           style={{
-            padding: 12,
+            paddingLeft: 16,
+            paddingRight: 16,
             fontSize: 16,
-            borderWidth: 1,
+            borderWidth: 1.5,
+            borderStyle: "solid",
             borderColor: error ? Feedback.error.border : Border.default,
-            borderRadius: 8,
+            borderRadius: 12,
             backgroundColor: Background.surface,
             color: TextColors.primary,
             fontFamily: "System",
             width: "100%",
+            height: 50,
+            boxSizing: "border-box",
           }}
           aria-label={label}
           aria-describedby={accessibilityHint}
         />
         {error && (
           <Text
-            style={styles.error}
+            style={{
+              fontSize: 14,
+              color: Feedback.error.text,
+              marginTop: -4,
+            }}
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
           >
@@ -100,16 +110,29 @@ export function DatePicker({
 
   // Native implementation using @react-native-community/datetimepicker
   return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
+    <View style={{ gap: 8 }}>
+      <Text style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}>
+        {label}
+      </Text>
       <Pressable
         onPress={() => setShowPicker(true)}
-        style={[styles.dateButton, error && styles.dateButtonError]}
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${value.toLocaleDateString()}`}
         accessibilityHint={accessibilityHint || "Tap to change date"}
+        style={{
+          height: 50,
+          borderWidth: 1.5,
+          borderColor: error ? Feedback.error.border : Border.default,
+          borderRadius: 12,
+          borderCurve: "continuous",
+          paddingHorizontal: 16,
+          justifyContent: "center",
+          backgroundColor: Background.surface,
+        }}
       >
-        <Text style={styles.dateButtonText}>{value.toLocaleDateString()}</Text>
+        <Text style={{ fontSize: 16, color: TextColors.primary }}>
+          {value.toLocaleDateString()}
+        </Text>
       </Pressable>
       {showPicker && (
         <DateTimePicker
@@ -126,7 +149,11 @@ export function DatePicker({
       )}
       {error && (
         <Text
-          style={styles.error}
+          style={{
+            fontSize: 14,
+            color: Feedback.error.text,
+            marginTop: -4,
+          }}
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"
         >
@@ -136,34 +163,3 @@ export function DatePicker({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  field: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: TextColors.primary,
-    marginBottom: 8,
-  },
-  dateButton: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: Border.default,
-    borderRadius: 8,
-    backgroundColor: Background.surface,
-  },
-  dateButtonError: {
-    borderColor: Feedback.error.border,
-  },
-  dateButtonText: {
-    fontSize: 16,
-    color: TextColors.primary,
-  },
-  error: {
-    fontSize: 14,
-    color: Feedback.error.text,
-    marginTop: 4,
-  },
-});
