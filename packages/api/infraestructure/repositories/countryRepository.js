@@ -22,7 +22,7 @@ export class CountryRepository {
   /**
    * Get all countries with optional name filtering, sorted alphabetically
    * @param {Object} filters - Optional filters { nameLike }
-   * @returns {Promise<Array<{id: number, name: string}>>}
+   * @returns {Promise<Array<{id: number, name: string, isoCode: string}>>}
    */
   async getAll(filters = {}) {
     const pool = await this.mssqlClient.getConnection();
@@ -38,7 +38,8 @@ export class CountryRepository {
     const result = await request.query(`
       SELECT 
         id,
-        name
+        name,
+        iso_code as isoCode
       FROM Countries
       ${whereClause}
       ORDER BY name ASC
@@ -50,14 +51,14 @@ export class CountryRepository {
   /**
    * Find country by name (case-insensitive)
    * @param {string} name - Country name
-   * @returns {Promise<{id: number, name: string} | null>}
+   * @returns {Promise<{id: number, name: string, isoCode: string} | null>}
    */
   async findByName(name) {
     const pool = await this.mssqlClient.getConnection();
 
     const result = await pool.request().input("name", sql.NVarChar, name)
       .query(`
-        SELECT id, name
+        SELECT id, name, iso_code as isoCode
         FROM Countries
         WHERE LOWER(name) = LOWER(@name)
       `);
@@ -67,19 +68,21 @@ export class CountryRepository {
 
   /**
    * Create a new country
-   * @param {Object} data - { name }
+   * @param {Object} data - { name, isoCode }
    * @param {sql.Transaction} transaction - Required transaction
-   * @returns {Promise<{id: number, name: string}>}
+   * @returns {Promise<{id: number, name: string, isoCode: string}>}
    */
   async create(data, transaction) {
-    const { name } = data;
+    const { name, isoCode } = data;
 
     const request = new sql.Request(transaction);
 
-    const result = await request.input("name", sql.NVarChar, name).query(`
-        INSERT INTO Countries (name)
-        OUTPUT INSERTED.id, INSERTED.name
-        VALUES (@name)
+    const result = await request
+      .input("name", sql.NVarChar, name)
+      .input("isoCode", sql.NVarChar, isoCode).query(`
+        INSERT INTO Countries (name, iso_code)
+        OUTPUT INSERTED.id, INSERTED.name, INSERTED.iso_code as isoCode
+        VALUES (@name, @isoCode)
       `);
 
     return result.recordset[0];

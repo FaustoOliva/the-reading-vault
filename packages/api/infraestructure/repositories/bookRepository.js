@@ -25,7 +25,7 @@ export class BookRepository {
 
   /**
    * Get all books with optional filters and pagination
-   * @param {Object} filters - Optional filters { status, authorId, countryId, titleSearch, minScore, maxScore, minPages, maxPages, startDate, endDate }
+    * @param {Object} filters - Optional filters { status, authorId, countryId, titleSearch, minScore, maxScore, minPages, maxPages, publicationYearStart, publicationYearEnd, startDate, endDate }
    * @param {Object} pagination - Pagination params { page, limit }
    * @returns {Promise<{books: Book[], total: number, page: number, limit: number, totalPages: number}>}
    */
@@ -58,6 +58,16 @@ export class BookRepository {
 
     if (filters.minPages !== undefined || filters.maxPages !== undefined) {
       queryBuilder.withPageRange(filters.minPages, filters.maxPages);
+    }
+
+    if (
+      filters.publicationYearStart !== undefined ||
+      filters.publicationYearEnd !== undefined
+    ) {
+      queryBuilder.withPublicationYearRange(
+        filters.publicationYearStart,
+        filters.publicationYearEnd,
+      );
     }
 
     if (filters.startDate || filters.endDate) {
@@ -115,7 +125,9 @@ export class BookRepository {
         b.author_id,
         a.name as author_name,
         c.name as author_nationality,
+        c.iso_code as author_country_iso_code,
         b.total_pages,
+        b.publication_year,
         bs.internal_code as status_code,
         b.current_reading_cycle,
         b.score,
@@ -166,7 +178,7 @@ export class BookRepository {
   /**
    * Update book metadata (title, totalPages, score, comment) - does NOT change status
    * @param {number} bookId - Book ID
-   * @param {Object} data - Partial update data { title?, totalPages?, score?, comment? }
+   * @param {Object} data - Partial update data { title?, totalPages?, publicationYear?, score?, comment? }
    * @param {sql.Transaction} transaction - Active transaction
    * @returns {Promise<Book>} Updated book entity
    */
@@ -182,6 +194,11 @@ export class BookRepository {
     if (data.totalPages !== undefined) {
       updates.push("total_pages = @totalPages");
       request.input("totalPages", sql.Int, data.totalPages);
+    }
+
+    if (data.publicationYear !== undefined) {
+      updates.push("publication_year = @publicationYear");
+      request.input("publicationYear", sql.Int, data.publicationYear || null);
     }
 
     if (data.score !== undefined) {
@@ -214,7 +231,9 @@ export class BookRepository {
         b.author_id,
         a.name as author_name,
         c.name as author_nationality,
+        c.iso_code as author_country_iso_code,
         b.total_pages,
+        b.publication_year,
         bs.internal_code as status_code,
         b.current_reading_cycle,
         b.score,
@@ -277,7 +296,9 @@ export class BookRepository {
         b.author_id,
         a.name as author_name,
         c.name as author_nationality,
+        c.iso_code as author_country_iso_code,
         b.total_pages,
+        b.publication_year,
         bs.internal_code as status_code,
         b.current_reading_cycle,
         b.score,
@@ -308,16 +329,17 @@ export class BookRepository {
    * @returns {Promise<Book>} Created book entity
    */
   async create(data, transaction) {
-    const { title, isbn, authorId, totalPages, statusId } = data;
+    const { title, isbn, authorId, totalPages, publicationYear, statusId } =
+      data;
 
     const request = new sql.Request(transaction);
 
     const query = `
-      INSERT INTO Books (title, isbn, author_id, total_pages, status_id, current_reading_cycle)
+      INSERT INTO Books (title, isbn, author_id, total_pages, publication_year, status_id, current_reading_cycle)
       OUTPUT INSERTED.id, INSERTED.title, INSERTED.isbn, INSERTED.author_id, 
-             INSERTED.total_pages, INSERTED.current_reading_cycle, 
+             INSERTED.total_pages, INSERTED.publication_year, INSERTED.current_reading_cycle, 
              INSERTED.score, INSERTED.comment
-      VALUES (@title, @isbn, @authorId, @totalPages, @statusId, 1)
+      VALUES (@title, @isbn, @authorId, @totalPages, @publicationYear, @statusId, 1)
     `;
 
     const result = await request
@@ -325,6 +347,7 @@ export class BookRepository {
       .input("isbn", sql.NVarChar, isbn || null)
       .input("authorId", sql.Int, authorId)
       .input("totalPages", sql.Int, totalPages || null)
+      .input("publicationYear", sql.Int, publicationYear || null)
       .input("statusId", sql.Int, statusId)
       .query(query);
 
@@ -339,7 +362,9 @@ export class BookRepository {
         b.author_id,
         a.name as author_name,
         c.name as author_nationality,
+        c.iso_code as author_country_iso_code,
         b.total_pages,
+        b.publication_year,
         bs.internal_code as status_code,
         b.current_reading_cycle,
         b.score,

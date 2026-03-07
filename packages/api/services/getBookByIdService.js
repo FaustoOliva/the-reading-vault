@@ -65,10 +65,12 @@ export class GetBookByIdService {
         id: book.id,
         title: book.title,
         isbn: book.isbn,
+        publicationYear: book.publicationYear,
         author: {
           id: book.authorId,
           name: book.authorName,
           nationality: book.authorNationality,
+          countryIsoCode: book.authorCountryIsoCode,
         },
         total_pages: book.totalPages,
         status: book.status,

@@ -203,6 +203,8 @@ export default function BooksListScreen() {
     if (filters.maxScore !== undefined) count++;
     if (filters.minPages !== undefined) count++;
     if (filters.maxPages !== undefined) count++;
+    if (filters.publicationYearStart !== undefined) count++;
+    if (filters.publicationYearEnd !== undefined) count++;
     if (filters.startDate) count++;
     if (filters.endDate) count++;
     return count;

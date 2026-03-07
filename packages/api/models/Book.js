@@ -22,7 +22,9 @@ export class Book {
     authorId,
     authorName,
     authorNationality,
+    authorCountryIsoCode,
     totalPages,
+    publicationYear,
     status,
     currentReadingCycle,
     score,
@@ -34,7 +36,9 @@ export class Book {
     this.authorId = authorId;
     this.authorName = authorName;
     this.authorNationality = authorNationality;
+    this.authorCountryIsoCode = authorCountryIsoCode;
     this.totalPages = totalPages;
+    this.publicationYear = publicationYear;
     this.status = status;
     this.currentReadingCycle = currentReadingCycle;
     this.score = score;
@@ -52,7 +56,9 @@ export class Book {
       authorId: record.author_id,
       authorName: record.author_name,
       authorNationality: record.author_nationality,
+      authorCountryIsoCode: record.author_country_iso_code,
       totalPages: record.total_pages,
+      publicationYear: record.publication_year,
       status: record.status_code,
       currentReadingCycle: record.current_reading_cycle,
       score: record.score,
@@ -72,8 +78,10 @@ export class Book {
         id: this.authorId,
         name: this.authorName,
         nationality: this.authorNationality,
+        countryIsoCode: this.authorCountryIsoCode,
       },
       totalPages: this.totalPages,
+      publicationYear: this.publicationYear,
       status: this.status,
       currentReadingCycle: this.currentReadingCycle,
       score: this.score,

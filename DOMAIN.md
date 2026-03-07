@@ -1,6 +1,6 @@
 # 📐 Business Rules & Logic - The Reading Vault
 
-**Version:** 1.0 | **Last Updated:** January 20, 2026 | **Status:** Single Source of Truth
+**Version:** 1.1 | **Last Updated:** March 7, 2026 | **Status:** Single Source of Truth
 
 ---
 
@@ -54,6 +54,7 @@
 | `isbn`                  | String            | Max 20 chars, NULL allowed | NULL for legacy books without ISBN                            |
 | `author_id`             | FK (Author)       | Required, INT              | Must exist in Authors table                                   |
 | `total_pages`           | Int               | NULL allowed               | NULL for legacy books; validated > 0 when provided            |
+| `publication_year`      | Int               | NULL allowed               | Optional; if provided must be between 1000 and 9999           |
 | `status_id`             | FK (BookStatuses) | INT, NOT NULL              | Internally FK; API exposes as enum (WISH_LIST, READING, etc.) |
 | `current_reading_cycle` | Int               | >= 1, NOT NULL, DEFAULT 1  | Incremented when status transitions from COMPLETED → READING  |
 | `score`                 | DECIMAL(3,1)      | NULL allowed, 0.0 to 10.0  | Mandatory when transitioning to COMPLETED or ABANDONED        |
@@ -84,11 +85,19 @@
 
 ### 2.4 Author Entity
 
-| Field            | Type           | Constraints                | Notes                                       |
-| ---------------- | -------------- | -------------------------- | ------------------------------------------- |
-| `id`             | INT            | Primary Key, IDENTITY(1,1) | System-generated                            |
-| `name`           | String         | Unique, NOT NULL, Max 255  | Must validate duplicate before insert       |
-| `nationality_id` | FK (Countries) | INT, NULL allowed          | References Countries table; NULL if unknown |
+| Field            | Type           | Constraints                | Notes                                                    |
+| ---------------- | -------------- | -------------------------- | -------------------------------------------------------- |
+| `id`             | INT            | Primary Key, IDENTITY(1,1) | System-generated                                         |
+| `name`           | String         | Unique, NOT NULL, Max 255  | Must validate duplicate before insert                    |
+| `nationality_id` | FK (Countries) | INT, NULL allowed          | References Countries table; NULL if unknown              |
+
+### 2.5 Country Entity
+
+| Field      | Type   | Constraints                       | Notes                                                |
+| ---------- | ------ | --------------------------------- | ---------------------------------------------------- |
+| `id`       | INT    | Primary Key, IDENTITY(1,1)        | System-generated                                     |
+| `name`     | String | Unique, NOT NULL, Max 40          | Human-readable country name                          |
+| `iso_code` | String | NOT NULL, UNIQUE, 2 chars (A-Z)   | ISO 3166-1 alpha-2 code used by frontend flag icons |
 
 ---
 
@@ -350,7 +359,19 @@ END IF
 
 **Note:** Database does not enforce UNIQUE constraint on `isbn` to allow NULL values for legacy books.
 
-### 6.4 Scoring Mandate
+### 6.4 Publication Year Validation
+
+**Constraint:** `Books.publication_year` is optional (`NULL` allowed).
+
+**Validation Rule:**
+
+```
+IF publication_year IS NOT NULL AND (publication_year < 1000 OR publication_year > 9999) THEN
+  THROW ValidationException("Publication year must be between 1000 and 9999")
+END IF
+```
+
+### 6.5 Scoring Mandate
 
 **Rule:** Score (0.0 to 10.0) is **mandatory** when transitioning to:
 

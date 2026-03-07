@@ -38,11 +38,11 @@ export class CreateBookService {
 
   /**
    * Execute CreateBook use case
-   * @param {Object} input - { title, isbn, totalPages, status, author: { name, nationality } }
+   * @param {Object} input - { title, isbn, totalPages, publicationYear, status, author: { name, nationality } }
    * @returns {Promise<Book>}
    */
   async execute(input) {
-    const { title, isbn, totalPages, status, author } = input;
+    const { title, isbn, totalPages, publicationYear, status, author } = input;
 
     // Step 1: Check if ISBN already exists (outside transaction)
     if (isbn) {
@@ -117,6 +117,7 @@ export class CreateBookService {
           isbn,
           authorId: authorRecord.id,
           totalPages,
+          publicationYear,
           statusId,
         },
         transaction,

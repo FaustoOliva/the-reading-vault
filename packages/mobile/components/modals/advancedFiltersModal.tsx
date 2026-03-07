@@ -80,6 +80,12 @@ export function AdvancedFiltersModal({
   const [maxPages, setMaxPages] = useState<string>(
     filters.maxPages?.toString() || "",
   );
+  const [publicationYearStart, setPublicationYearStart] = useState<string>(
+    filters.publicationYearStart?.toString() || "",
+  );
+  const [publicationYearEnd, setPublicationYearEnd] = useState<string>(
+    filters.publicationYearEnd?.toString() || "",
+  );
   const [startDate, setStartDate] = useState<string>(filters.startDate || "");
   const [endDate, setEndDate] = useState<string>(filters.endDate || "");
   const [errors, setErrors] = useState<FilterValidationErrors>({});
@@ -98,6 +104,8 @@ export function AdvancedFiltersModal({
     setMaxScore(filters.maxScore?.toString() || "");
     setMinPages(filters.minPages?.toString() || "");
     setMaxPages(filters.maxPages?.toString() || "");
+    setPublicationYearStart(filters.publicationYearStart?.toString() || "");
+    setPublicationYearEnd(filters.publicationYearEnd?.toString() || "");
     setStartDate(filters.startDate || "");
     setEndDate(filters.endDate || "");
   }, [filters, visible]);
@@ -109,6 +117,8 @@ export function AdvancedFiltersModal({
     setMaxScore("");
     setMinPages("");
     setMaxPages("");
+    setPublicationYearStart("");
+    setPublicationYearEnd("");
     setStartDate("");
     setEndDate("");
     setErrors({});
@@ -123,6 +133,8 @@ export function AdvancedFiltersModal({
       maxScore,
       minPages,
       maxPages,
+      publicationYearStart,
+      publicationYearEnd,
       startDate,
       endDate,
     });
@@ -140,6 +152,8 @@ export function AdvancedFiltersModal({
       maxScore,
       minPages,
       maxPages,
+      publicationYearStart,
+      publicationYearEnd,
       startDate,
       endDate,
     });
@@ -333,6 +347,69 @@ export function AdvancedFiltersModal({
                 accessibilityLiveRegion="polite"
               >
                 {errors.minPages || errors.maxPages}
+              </Text>
+            )}
+          </View>
+
+          {/* Publication Year Range */}
+          <View style={styles.section}>
+            <Text style={styles.label}>Publication Year Range</Text>
+            <View style={styles.rangeContainer}>
+              <View style={styles.rangeInput}>
+                <Text style={styles.rangeLabel}>Start Year</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    errors.publicationYearStart && styles.inputError,
+                  ]}
+                  value={publicationYearStart}
+                  onChangeText={(text) => {
+                    setPublicationYearStart(text);
+                    if (errors.publicationYearStart)
+                      setErrors({
+                        ...errors,
+                        publicationYearStart: undefined,
+                      });
+                  }}
+                  placeholder="1900"
+                  placeholderTextColor={TextColors.secondary}
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  accessibilityHint="Start publication year"
+                />
+              </View>
+              <Text style={styles.rangeSeparator}>—</Text>
+              <View style={styles.rangeInput}>
+                <Text style={styles.rangeLabel}>End Year</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    errors.publicationYearEnd && styles.inputError,
+                  ]}
+                  value={publicationYearEnd}
+                  onChangeText={(text) => {
+                    setPublicationYearEnd(text);
+                    if (errors.publicationYearEnd)
+                      setErrors({
+                        ...errors,
+                        publicationYearEnd: undefined,
+                      });
+                  }}
+                  placeholder="2026"
+                  placeholderTextColor={TextColors.secondary}
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  accessibilityHint="End publication year"
+                />
+              </View>
+            </View>
+            {(errors.publicationYearStart || errors.publicationYearEnd) && (
+              <Text
+                style={styles.errorText}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
+                {errors.publicationYearStart || errors.publicationYearEnd}
               </Text>
             )}
           </View>

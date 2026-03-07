@@ -127,6 +127,19 @@ const BookListItemComponent = ({ book }: BookListItemProps) => {
 
           {/* Bottom metadata row */}
           <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
+            {book.publicationYear !== null && (
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: TextColors.tertiary,
+                  fontWeight: "500",
+                }}
+                selectable
+              >
+                📅 {book.publicationYear}
+              </Text>
+            )}
+
             {book.totalPages && (
               <Text
                 style={{
@@ -170,6 +183,7 @@ export const BookListItem = memo(
       prevProps.book.title === nextProps.book.title &&
       prevProps.book.status === nextProps.book.status &&
       prevProps.book.score === nextProps.book.score &&
+      prevProps.book.publicationYear === nextProps.book.publicationYear &&
       prevProps.book.currentReadingCycle === nextProps.book.currentReadingCycle
     );
   },

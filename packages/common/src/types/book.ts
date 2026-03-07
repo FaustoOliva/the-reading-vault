@@ -12,6 +12,7 @@ export interface Author {
   id: number;
   name: string;
   nationality: string | null;
+  countryIsoCode?: string | null;
 }
 
 /**
@@ -20,6 +21,7 @@ export interface Author {
 export interface Country {
   id: number;
   name: string;
+  isoCode: string;
 }
 
 /**
@@ -31,9 +33,11 @@ export interface Book {
   author: {
     id: number;
     name: string;
+    countryIsoCode?: string | null;
   };
   isbn: string | null;
   totalPages: number | null;
+  publicationYear: number | null;
   status: BookStatus;
   currentReadingCycle: number;
   score: number | null;
@@ -75,10 +79,12 @@ export interface BookDetails {
     id: number;
     title: string;
     isbn: string | null;
+    publicationYear: number | null;
     author: {
       id: number;
       name: string;
       nationality: string | null;
+      countryIsoCode?: string | null;
     };
     total_pages: number | null;
     status: BookStatus;
@@ -100,6 +106,7 @@ export interface CreateBookInput {
   title: string;
   isbn?: string;
   totalPages?: number;
+  publicationYear?: number;
   status?: BookStatus;
   score?: number;
   comment?: string;
@@ -115,6 +122,7 @@ export interface CreateBookInput {
 export interface UpdateBookInput {
   title?: string;
   totalPages?: number;
+  publicationYear?: number;
   score?: number;
   comment?: string;
 }
@@ -140,6 +148,8 @@ export interface BooksFilter {
   maxScore?: number;
   minPages?: number;
   maxPages?: number;
+  publicationYearStart?: number;
+  publicationYearEnd?: number;
   startDate?: string;
   endDate?: string;
 }

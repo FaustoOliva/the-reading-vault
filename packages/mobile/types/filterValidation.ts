@@ -11,6 +11,8 @@ export interface FilterValidationErrors {
   maxScore?: string;
   minPages?: string;
   maxPages?: string;
+  publicationYearStart?: string;
+  publicationYearEnd?: string;
   startDate?: string;
   endDate?: string;
 }
@@ -25,6 +27,8 @@ export interface RawFilterValues {
   maxScore: string;
   minPages: string;
   maxPages: string;
+  publicationYearStart: string;
+  publicationYearEnd: string;
   startDate: string;
   endDate: string;
 }
@@ -190,6 +194,47 @@ export function validateFilters(values: RawFilterValues): {
     errors.minPages = "Minimum pages must be less than or equal to maximum";
   }
 
+  // Parse publication year range
+  let publicationYearStartValue: number | undefined;
+  let publicationYearEndValue: number | undefined;
+
+  if (values.publicationYearStart) {
+    const yearResult = validateNumber(values.publicationYearStart, {
+      min: 1000,
+      max: 9999,
+      fieldName: "Start publication year",
+      allowDecimal: false,
+    });
+    if ("error" in yearResult) {
+      errors.publicationYearStart = yearResult.error;
+    } else if (!isNaN(yearResult.value)) {
+      publicationYearStartValue = yearResult.value;
+    }
+  }
+
+  if (values.publicationYearEnd) {
+    const yearResult = validateNumber(values.publicationYearEnd, {
+      min: 1000,
+      max: 9999,
+      fieldName: "End publication year",
+      allowDecimal: false,
+    });
+    if ("error" in yearResult) {
+      errors.publicationYearEnd = yearResult.error;
+    } else if (!isNaN(yearResult.value)) {
+      publicationYearEndValue = yearResult.value;
+    }
+  }
+
+  if (
+    publicationYearStartValue !== undefined &&
+    publicationYearEndValue !== undefined &&
+    publicationYearStartValue > publicationYearEndValue
+  ) {
+    errors.publicationYearStart =
+      "Start publication year must be less than or equal to end year";
+  }
+
   // Validate dates
   let startDateValue: string | undefined;
   let endDateValue: string | undefined;
@@ -235,6 +280,12 @@ export function parseFilterValues(values: RawFilterValues) {
     maxScore: values.maxScore ? parseFloat(values.maxScore) : undefined,
     minPages: values.minPages ? parseInt(values.minPages, 10) : undefined,
     maxPages: values.maxPages ? parseInt(values.maxPages, 10) : undefined,
+    publicationYearStart: values.publicationYearStart
+      ? parseInt(values.publicationYearStart, 10)
+      : undefined,
+    publicationYearEnd: values.publicationYearEnd
+      ? parseInt(values.publicationYearEnd, 10)
+      : undefined,
     startDate: values.startDate || undefined,
     endDate: values.endDate || undefined,
   };

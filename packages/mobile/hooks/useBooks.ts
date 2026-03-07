@@ -82,6 +82,17 @@ function buildQueryString(
     params.append("maxPages", filters.maxPages.toString());
   }
 
+  if (filters?.publicationYearStart !== undefined) {
+    params.append(
+      "publicationYearStart",
+      filters.publicationYearStart.toString(),
+    );
+  }
+
+  if (filters?.publicationYearEnd !== undefined) {
+    params.append("publicationYearEnd", filters.publicationYearEnd.toString());
+  }
+
   if (filters?.startDate) {
     // Convert to ISO 8601 datetime format if needed
     const startDateTime = filters.startDate.includes("T")

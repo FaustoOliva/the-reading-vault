@@ -22,6 +22,7 @@
 import { View, Text } from "react-native";
 import { BookDetails } from "@/types/book";
 import { BookStatusBadge } from "@/components/ui/bookStatusBadge";
+import { CountryFlag } from "@/components/ui/countryFlag";
 import {
   Background,
   Text as TextColors,
@@ -66,15 +67,21 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
         >
           Author
         </Text>
-        <Text style={{ fontSize: 16, color: TextColors.primary }} selectable>
-          {book?.author?.name ?? "Unknown"}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Text style={{ fontSize: 16, color: TextColors.primary }} selectable>
+            {book?.author?.name ?? "Unknown"}
+          </Text>
           {book?.author?.nationality && (
-            <Text style={{ color: TextColors.secondary }}>
-              {" "}
-              ({book.author.nationality})
-            </Text>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+            >
+              <CountryFlag isoCode={book.author.countryIsoCode} size="small" />
+              <Text style={{ fontSize: 14, color: TextColors.secondary }}>
+                {book.author.nationality}
+              </Text>
+            </View>
           )}
-        </Text>
+        </View>
       </View>
 
       {/* ISBN (if exists) */}
@@ -98,6 +105,31 @@ export function BookInfoCard({ book }: BookInfoCardProps) {
             selectable
           >
             {book.isbn}
+          </Text>
+        </View>
+      )}
+
+      {/* Publication Year (if exists) */}
+      {book.publicationYear !== null && (
+        <View style={{ gap: 4 }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              color: TextColors.tertiary,
+            }}
+          >
+            Published
+          </Text>
+          <Text
+            style={{
+              fontSize: 16,
+              fontVariant: ["tabular-nums"],
+              color: TextColors.primary,
+            }}
+            selectable
+          >
+            {book.publicationYear}
           </Text>
         </View>
       )}

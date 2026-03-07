@@ -20,10 +20,11 @@
 
 ### 2. Countries
 
-| Column | Type         | Constraints                |
-| :----- | :----------- | :------------------------- |
-| `id`   | INT          | Primary Key, Identity(1,1) |
-| `name` | NVARCHAR(40) | NOT NULL, UNIQUE           |
+| Column     | Type         | Constraints                                  |
+| :--------- | :----------- | :------------------------------------------- |
+| `id`       | INT          | Primary Key, Identity(1,1)                   |
+| `name`     | NVARCHAR(40) | NOT NULL, UNIQUE                             |
+| `iso_code` | NVARCHAR(2)  | NOT NULL, UNIQUE (ISO 3166-1 alpha-2 format) |
 
 ### 2. Books
 
@@ -34,6 +35,7 @@
 | `title`                 | NVARCHAR(255) | NOT NULL                                                         |
 | `isbn`                  | NVARCHAR(20)  | NULL                                                             |
 | `total_pages`           | INT           | NULL                                                             |
+| `publication_year`      | INT           | NULL, CHECK (`publication_year` between 1000 and 9999)          |
 | `current_reading_cycle` | INT           | NOT NULL, DEFAULT 1                                              |
 | `status_id`             | INT           | Foreign Key (BookStatuses.id) — replaces textual `status` column |
 | `score`                 | DECIMAL(3,1)  | NULL (0.0 to 10.0)                                               |
@@ -100,6 +102,7 @@
 - `IX_Books_Title` on `Books(title)` — optimizes title search with LIKE queries
 - `IX_Books_Score` on `Books(score)` WHERE `score IS NOT NULL` — optimizes rating/score filtering
 - `IX_Books_TotalPages` on `Books(total_pages)` WHERE `total_pages IS NOT NULL` — optimizes page count filtering
+- `IX_Books_PublicationYear` on `Books(publication_year)` WHERE `publication_year IS NOT NULL` — optimizes publication year filtering
 
 ### Initial Status Rows
 

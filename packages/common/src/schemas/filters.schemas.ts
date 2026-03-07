@@ -4,7 +4,12 @@
  */
 
 import { z } from "zod";
-import { bookStatusSchema, scoreSchema, pagesSchema } from "./book.schemas.js";
+import {
+  bookStatusSchema,
+  scoreSchema,
+  pagesSchema,
+  publicationYearSchema,
+} from "./book.schemas.js";
 
 /**
  * Base schema for filtering books
@@ -19,6 +24,8 @@ export const bookFiltersBaseSchema = z.object({
   maxScore: scoreSchema.optional(),
   minPages: pagesSchema.optional(),
   maxPages: pagesSchema.optional(),
+  publicationYearStart: publicationYearSchema.optional(),
+  publicationYearEnd: publicationYearSchema.optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
 });

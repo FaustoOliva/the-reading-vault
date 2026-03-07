@@ -132,6 +132,38 @@ export class BookQueryBuilder {
   }
 
   /**
+   * Filter by publication year range
+   * @param {number|null} startYear - Minimum publication year (inclusive)
+   * @param {number|null} endYear - Maximum publication year (inclusive)
+   * @returns {BookQueryBuilder} this for chaining
+   */
+  withPublicationYearRange(startYear, endYear) {
+    if (startYear !== null && startYear !== undefined) {
+      this.filters.push({
+        condition: ` AND b.publication_year >= @publicationYearStart`,
+        param: {
+          name: "publicationYearStart",
+          type: sql.Int,
+          value: startYear,
+        },
+      });
+    }
+
+    if (endYear !== null && endYear !== undefined) {
+      this.filters.push({
+        condition: ` AND b.publication_year <= @publicationYearEnd`,
+        param: {
+          name: "publicationYearEnd",
+          type: sql.Int,
+          value: endYear,
+        },
+      });
+    }
+
+    return this;
+  }
+
+  /**
    * Filter by date range based on first status transition (creation proxy)
    * Note: Uses BookStatusHistory as proxy for book creation date since Books table lacks created_at
    * @param {Date|string|null} startDate - Start date (inclusive)
@@ -196,7 +228,9 @@ export class BookQueryBuilder {
         b.author_id,
         a.name as author_name,
         c.name as author_nationality,
+        c.iso_code as author_country_iso_code,
         b.total_pages,
+        b.publication_year,
         bs.internal_code as status_code,
         b.current_reading_cycle,
         b.score,

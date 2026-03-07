@@ -53,13 +53,22 @@ export const authorNameSchema = z.string().trim().min(1).max(200);
  */
 export const countryNameSchema = z.string().trim().min(1).max(100);
 /**
+ * Publication year validation (1000-9999)
+ */
+export const publicationYearSchema = z.number().int().min(1000).max(9999);
+/**
+ * Optional publication year (used in updates and creation)
+ */
+export const publicationYearOptionalSchema = publicationYearSchema.optional();
+/**
  * Base schema for updating book metadata
  * Used by both API (direct numbers) and Mobile (adapted to strings)
  */
 export const updateBookBaseSchema = z.object({
-  title: titleOptionalSchema,
-  totalPages: pagesOptionalSchema,
-  score: scoreOptionalSchema,
-  comment: commentSchema,
+    title: titleOptionalSchema,
+    totalPages: pagesOptionalSchema,
+    publicationYear: publicationYearOptionalSchema,
+    score: scoreOptionalSchema,
+    comment: commentSchema,
 });
 //# sourceMappingURL=book.schemas.js.map

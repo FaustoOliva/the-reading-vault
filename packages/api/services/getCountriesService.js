@@ -22,7 +22,7 @@ export class GetCountriesService {
   /**
    * Execute GetCountries use case
    * @param {Object} filters - Optional filters { nameLike }
-   * @returns {Promise<{countries: Array<{id: number, name: string}>}>}
+   * @returns {Promise<{countries: Array<{id: number, name: string, isoCode: string}>}>}
    */
   async execute(filters = {}) {
     // Delegate to repository
