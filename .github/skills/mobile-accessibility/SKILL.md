@@ -68,6 +68,43 @@ import { Text, Background, Border, Status, Interactive, Feedback } from '@/const
 
 The color system in `colors.ts` already meets these standards.
 
+### Badge Text Colors (Critical)
+
+**Small text on light backgrounds requires maximum contrast.**
+
+For badges (status indicators, labels) with:
+- Small text (12-13px)
+- Light backgrounds (-50 shades like `#F1F5F9`, `#EFF6FF`, `#ECFDF5`)
+
+**MUST use -800 or -900 text colors** (NOT -700 or lighter):
+
+```typescript
+// ✅ Correct - Strong contrast
+export const Status = {
+  reading: {
+    background: '#EFF6FF',  // blue-50
+    text: '#1E3A8A',        // blue-900 (NOT blue-700)
+    border: '#BFDBFE',
+  },
+  completed: {
+    background: '#ECFDF5',  // emerald-50
+    text: '#065F46',        // emerald-800 (NOT emerald-700)
+    border: '#A7F3D0',
+  },
+};
+
+// ❌ Wrong - Weak contrast
+export const Status = {
+  reading: {
+    background: '#EFF6FF',  // blue-50
+    text: '#1E40AF',        // blue-700 ← Too light for 12px text!
+    border: '#BFDBFE',
+  },
+};
+```
+
+**Why?** Small text (< 14px) needs higher contrast ratios. Using -700 on -50 backgrounds may technically pass WCAG but creates poor visual hierarchy and readability, especially on mobile screens in varying lighting conditions.
+
 ## Adding New Dynamic Colors
 
 When you need colors NOT in the system (e.g., score-based colors):
