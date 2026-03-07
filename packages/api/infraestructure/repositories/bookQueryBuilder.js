@@ -65,7 +65,7 @@ export class BookQueryBuilder {
   }
 
   /**
-   * Search books by title (partial match, case-insensitive)
+   * Search books by title or author name (partial match)
    * @param {string} keyword - Search keyword
    * @returns {BookQueryBuilder} this for chaining
    */
@@ -73,7 +73,7 @@ export class BookQueryBuilder {
     if (!keyword || keyword.trim() === "") return this;
 
     this.filters.push({
-      condition: ` AND b.title LIKE @titleSearch`,
+      condition: ` AND (b.title LIKE @titleSearch OR a.name LIKE @titleSearch)`,
       param: {
         name: "titleSearch",
         type: sql.NVarChar,

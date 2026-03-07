@@ -81,11 +81,13 @@ describe("BookQueryBuilder", () => {
   });
 
   describe("withTitleSearch", () => {
-    it("should add title search filter with LIKE operator", () => {
+    it("should add title or author search filter with LIKE operator", () => {
       builder.withTitleSearch("pragmatic");
       const query = builder.buildSelectQuery();
 
-      expect(query).toContain("AND b.title LIKE @titleSearch");
+      expect(query).toContain(
+        "AND (b.title LIKE @titleSearch OR a.name LIKE @titleSearch)",
+      );
     });
 
     it("should wrap keyword with wildcards", () => {
@@ -319,7 +321,9 @@ describe("BookQueryBuilder", () => {
 
       expect(query).toContain("AND bs.internal_code = @status");
       expect(query).toContain("AND b.author_id = @authorId");
-      expect(query).toContain("AND b.title LIKE @titleSearch");
+      expect(query).toContain(
+        "AND (b.title LIKE @titleSearch OR a.name LIKE @titleSearch)",
+      );
     });
 
     it("should handle all filters at once", () => {
@@ -339,7 +343,9 @@ describe("BookQueryBuilder", () => {
       expect(query).toContain("bs.internal_code = @status");
       expect(query).toContain("b.author_id = @authorId");
       expect(query).toContain("c.id = @countryId");
-      expect(query).toContain("b.title LIKE @titleSearch");
+      expect(query).toContain(
+        "(b.title LIKE @titleSearch OR a.name LIKE @titleSearch)",
+      );
       expect(query).toContain("b.score >= @minScore");
       expect(query).toContain("b.score <= @maxScore");
       expect(query).toContain("b.total_pages >= @minPages");
