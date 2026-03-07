@@ -1,33 +1,19 @@
 /**
  * BookListItem Component
- * Displays a single book in the list with navigation
- *
- * Visual Hierarchy:
- * - Left: Title (bold, large) + Author (gray, small)
- * - Right column: Score (top, colored by value) + Status badge (bottom)
- * - Card background differentiated from list background
- *
- * Rules:
- * - Use Pressable for touchable feedback
- * - Use borderCurve: 'continuous' for rounded corners
- * - Use boxShadow for elevation (not shadowOpacity/elevation)
- * - Use flex gap for spacing
- * - Score colors scale with value (red→orange→yellow→green)
+ * Typography-first list row optimized for scanability and reading progress.
  */
 
 import { View, Text, Pressable } from "react-native";
 import { Link } from "expo-router";
 import { memo } from "react";
-import { Book } from "@/types/book";
+import { Book, BookStatus } from "@/types/book";
 import { BookStatusBadge } from "@/components/ui/bookStatusBadge";
+import { useBookStats } from "@/hooks/useBookStats";
 import { FadeInView } from "@/components/ui/animated";
 import {
-  Background,
   Text as TextColors,
   Border,
-  Shadow,
   Interactive,
-  getScoreColors,
 } from "@/constants/colors";
 
 interface BookListItemProps {
@@ -35,139 +21,146 @@ interface BookListItemProps {
 }
 
 const BookListItemComponent = ({ book }: BookListItemProps) => {
-  const scoreColors = book.score !== null ? getScoreColors(book.score) : null;
+  const isReading = book.status === BookStatus.READING;
+  const { data: readingStats } = useBookStats(isReading ? book.id : undefined);
+
+  const pagesRead = readingStats?.current_cycle_stats?.pages_read ?? 0;
+  const hasTotalPages = typeof book.totalPages === "number" && book.totalPages > 0;
+  const progressPercent = hasTotalPages
+    ? Math.max(0, Math.min(100, (pagesRead / (book.totalPages as number)) * 100))
+    : null;
+
+  const metadataParts: string[] = [];
+  if (book.publicationYear !== null) {
+    metadataParts.push(String(book.publicationYear));
+  }
+  if (book.totalPages) {
+    metadataParts.push(`${book.totalPages} pages`);
+  }
+  const metadata = metadataParts.join(" • ");
 
   return (
     <FadeInView duration={200}>
-      <Link href={`/book/${book.id}` as any} asChild>
-        <Pressable
-          style={({ pressed }) => ({
-            padding: 16,
-            backgroundColor: pressed
-              ? Interactive.primary.hover
-              : Background.surface,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: Border.default,
-            gap: 12,
-            boxShadow: Shadow.small,
-            borderCurve: "continuous",
-          })}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              gap: 16,
-            }}
+      <View style={{ marginBottom: 20 }}>
+        <Link href={`/book/${book.id}` as any} asChild>
+          <Pressable
+            style={({ pressed }) => ({
+              paddingTop: 16,
+              paddingBottom: 16,
+              paddingHorizontal: 4,
+              backgroundColor: pressed ? Interactive.secondary.hover : "transparent",
+            })}
           >
-            {/* Left: Title + Author */}
-            <View style={{ flex: 1, gap: 6 }}>
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "700",
-                  color: TextColors.primary,
-                  lineHeight: 24,
-                  letterSpacing: -0.2,
-                }}
-                numberOfLines={2}
-                selectable
-              >
-                {book.title}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: TextColors.tertiary,
-                  lineHeight: 18,
-                }}
-                numberOfLines={1}
-                selectable
-              >
-                {book.author.name}
-              </Text>
-            </View>
-
-            {/* Right: Score + Status in column */}
-            <View style={{ alignItems: "flex-end", gap: 8, minWidth: 80 }}>
-              {book.score !== null && scoreColors && (
-                <View
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              {/* Left column: Main content */}
+              <View style={{ flex: 1, gap: 8 }}>
+                <Text
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 4,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 8,
-                    backgroundColor: scoreColors.background,
-                    borderWidth: 1.5,
-                    borderColor: scoreColors.border,
-                    borderCurve: "continuous",
+                    fontSize: 19,
+                    fontWeight: "600",
+                    color: TextColors.primary,
+                    lineHeight: 25,
+                    letterSpacing: -0.2,
                   }}
+                  numberOfLines={2}
+                  selectable
                 >
-                  <Text style={{ fontSize: 14 }}>⭐</Text>
+                  {book.title}
+                </Text>
+
+                <Text
+                  style={{
+                    fontSize: 15,
+                    color: TextColors.secondary,
+                    lineHeight: 20,
+                  }}
+                  numberOfLines={1}
+                  selectable
+                >
+                  {book.author.name}
+                </Text>
+
+                {metadata.length > 0 && (
                   <Text
                     style={{
-                      fontSize: 16,
-                      fontWeight: "700",
-                      color: scoreColors.text,
+                      fontSize: 13,
+                      color: TextColors.tertiary,
+                    }}
+                    selectable
+                  >
+                    {metadata}
+                  </Text>
+                )}
+
+                {isReading && hasTotalPages && progressPercent !== null && (
+                  <View style={{ gap: 8, marginTop: 8 }}>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "600",
+                        color: TextColors.secondary,
+                        fontVariant: ["tabular-nums"],
+                      }}
+                      selectable
+                    >
+                      {pagesRead} / {book.totalPages} pages
+                    </Text>
+                    <View
+                      style={{
+                        height: 8,
+                        borderRadius: 999,
+                        backgroundColor: Border.default,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <View
+                        style={{
+                          height: "100%",
+                          width: `${progressPercent}%`,
+                          backgroundColor: Interactive.primary.default,
+                        }}
+                      />
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              {/* Right column: Status and rating stacked vertically */}
+              <View
+                style={{
+                  gap: 10,
+                  alignItems: "flex-end",
+                  justifyContent: "flex-start",
+                  minWidth: 100,
+                }}
+              >
+                <BookStatusBadge status={book.status} />
+                {book.score !== null && (
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: "600",
+                      color: TextColors.secondary,
                       fontVariant: ["tabular-nums"],
                     }}
                     selectable
                   >
-                    {book.score.toFixed(1)}
+                    ⭐ {book.score.toFixed(1)}
                   </Text>
-                </View>
-              )}
-              <BookStatusBadge status={book.status} />
+                )}
+              </View>
             </View>
-          </View>
-
-          {/* Bottom metadata row */}
-          <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
-            {book.publicationYear !== null && (
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: TextColors.tertiary,
-                  fontWeight: "500",
-                }}
-                selectable
-              >
-                📅 {book.publicationYear}
-              </Text>
-            )}
-
-            {book.totalPages && (
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: TextColors.tertiary,
-                  fontWeight: "500",
-                }}
-                selectable
-              >
-                📄 {book.totalPages} pages
-              </Text>
-            )}
-
-            {book.currentReadingCycle > 1 && (
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: TextColors.tertiary,
-                  fontWeight: "500",
-                }}
-                selectable
-              >
-                🔄 Cycle {book.currentReadingCycle}
-              </Text>
-            )}
-          </View>
-        </Pressable>
-      </Link>
+          </Pressable>
+        </Link>
+        {/* Visible separator */}
+        <View
+          style={{
+            height: 1,
+            backgroundColor: Border.focus,
+            marginTop: 16,
+          }}
+        />
+      </View>
     </FadeInView>
   );
 };
@@ -184,6 +177,7 @@ export const BookListItem = memo(
       prevProps.book.status === nextProps.book.status &&
       prevProps.book.score === nextProps.book.score &&
       prevProps.book.publicationYear === nextProps.book.publicationYear &&
+      prevProps.book.totalPages === nextProps.book.totalPages &&
       prevProps.book.currentReadingCycle === nextProps.book.currentReadingCycle
     );
   },

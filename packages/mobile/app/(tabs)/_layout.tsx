@@ -36,15 +36,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="ai"
-        options={{
-          title: "AI",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="sparkles" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="log-session"
         options={{
           title: "Log Session",
@@ -59,6 +50,15 @@ export default function TabLayout() {
           title: "Stats",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="chart.pie.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="ai"
+        options={{
+          title: "AI",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="sparkles" color={color} />
           ),
         }}
       />

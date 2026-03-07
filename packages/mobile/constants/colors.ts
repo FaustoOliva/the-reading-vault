@@ -40,32 +40,32 @@ export const Border = {
 
 /**
  * Status Colors (Book statuses - badges)
- * Dark enough for good contrast, bright enough to be recognizable
+ * Improved contrast with darker text colors for better readability
  */
 export const Status = {
   wishList: {
     background: "#F1F5F9", // slate-100
-    text: "#475569", // slate-600 - Contrast: 8.6:1
+    text: "#1E293B", // slate-800 - Darker for better contrast
     border: "#CBD5E1", // slate-300
   },
   reading: {
     background: "#EFF6FF", // blue-50
-    text: "#1E40AF", // blue-700 - Contrast: 8.1:1
+    text: "#1E3A8A", // blue-900 - Darker for better contrast
     border: "#BFDBFE", // blue-200
   },
   completed: {
     background: "#ECFDF5", // emerald-50
-    text: "#047857", // emerald-700 - Contrast: 6.8:1
+    text: "#065F46", // emerald-800 - Darker for better contrast
     border: "#A7F3D0", // emerald-200
   },
   abandoned: {
     background: "#FEF2F2", // red-50
-    text: "#B91C1C", // red-700 - Contrast: 7.5:1
+    text: "#991B1B", // red-800 - Darker for better contrast
     border: "#FECACA", // red-200
   },
   pendingScore: {
     background: "#FFFBEB", // amber-50
-    text: "#B45309", // amber-700 - Contrast: 7.5:1
+    text: "#92400E", // amber-800 - Darker for better contrast
     border: "#FDE68A", // amber-200
   },
 } as const;

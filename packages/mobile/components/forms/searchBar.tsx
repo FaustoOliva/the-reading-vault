@@ -33,7 +33,7 @@ interface SearchBarProps {
 export function SearchBar({
   value,
   onChange,
-  placeholder = "Search books by title...",
+  placeholder = "Search title or author",
   debounceMs = 300,
 }: SearchBarProps) {
   const [localValue, setLocalValue] = useState(value);
@@ -88,12 +88,6 @@ export function SearchBar({
           </Pressable>
         )}
       </View>
-      {/* Minimum character hint */}
-      {localValue.length > 0 && localValue.length < 3 && (
-        <Text style={styles.hintText}>
-          Type at least 3 characters to search ({3 - localValue.length} more)
-        </Text>
-      )}
     </View>
   );
 }
@@ -138,11 +132,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: TextColors.secondary,
     fontWeight: "600",
-  },
-  hintText: {
-    fontSize: 13,
-    color: TextColors.tertiary,
-    marginTop: 6,
-    marginLeft: 4,
   },
 });
