@@ -145,7 +145,7 @@ export class ErrorBoundary extends Component<Props, State> {
               selectable
             >
               The app encountered an unexpected error. This has been logged and
-              we'll look into it.
+              we&apos;ll look into it.
             </Text>
 
             {/* Error Details (only in DEV) */}

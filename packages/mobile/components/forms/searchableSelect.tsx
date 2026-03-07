@@ -230,7 +230,7 @@ export function SearchableSelect({
                             fontWeight: "600",
                           }}
                         >
-                          ➕ {createLabel} '{value}'
+                          ➕ {createLabel} &apos;{value}&apos;
                         </Text>
                       </Pressable>
                     ) : null

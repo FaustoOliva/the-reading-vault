@@ -92,21 +92,23 @@ export const api = {
       }
 
       if (!response.ok) {
-        const error = await response
+        const errorPayload = await response
           .json()
-          .catch(() => ({ message: "Request failed" }));
+          .catch(() => ({ error: "Request failed" }));
+        const errorMessage =
+          errorPayload.message ||
+          errorPayload.error ||
+          `HTTP ${response.status}`;
+        const errorCode =
+          errorPayload.code || errorPayload?.details?.code || undefined;
         if (__DEV__) {
           console.error("❌ API Error Response:", {
             url: fullUrl,
             status: response.status,
-            error,
+            error: errorPayload,
           });
         }
-        throw new ApiError(
-          error.message || `HTTP ${response.status}`,
-          response.status,
-          error.code,
-        );
+        throw new ApiError(errorMessage, response.status, errorCode);
       }
 
       const data = await response.json();

@@ -239,6 +239,7 @@ export default function BookDetailScreen() {
           author: book.author,
           isbn: book.isbn,
           totalPages: book.total_pages,
+          publicationYear: book.publicationYear,
           status: book.status,
           currentReadingCycle: book.current_reading_cycle,
           score: book.score,

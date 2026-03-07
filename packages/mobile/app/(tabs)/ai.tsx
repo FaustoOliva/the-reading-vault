@@ -80,7 +80,9 @@ export default function AIScreen() {
         case "EMPTY_VAULT":
           return "You need to add some books to your vault first before getting recommendations.";
         case "INSUFFICIENT_DATA":
-          return "You need at least 3 books (completed or reading) to generate recommendations.";
+          return "Your reader profile is not ready yet. Complete or abandon more books to unlock recommendations.";
+        case "READER_PROFILE_MINIMUM_NOT_MET":
+          return "Recommendations will be available once you complete or abandon at least 5 books.";
         case "OPENAI_RATE_LIMIT":
           return "Too many requests. Please wait a moment and try again.";
         case "OPENAI_TIMEOUT":
@@ -98,9 +100,14 @@ export default function AIScreen() {
    * Get error action based on error code
    */
   const getErrorAction = (error: unknown) => {
-    if (error instanceof ApiError && error.code === "EMPTY_VAULT") {
+    if (
+      error instanceof ApiError &&
+      (error.code === "EMPTY_VAULT" ||
+        error.code === "INSUFFICIENT_DATA" ||
+        error.code === "READER_PROFILE_MINIMUM_NOT_MET")
+    ) {
       return {
-        label: "Add Your First Book",
+        label: "Add a Book",
         onPress: () => router.push("/(tabs)/create-book"),
       };
     }
