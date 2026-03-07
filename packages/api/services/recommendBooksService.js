@@ -20,7 +20,7 @@
  * Phase: MVP (5.1 - AI Recommendations)
  */
 
-import { EmptyVaultError, InsufficientDataError } from "../errors/index.js";
+import { ReaderProfileMinimumBooksError } from "../errors/index.js";
 
 export class RecommendBooksService {
   constructor(getReaderProfileService, openAIClient) {
@@ -38,19 +38,27 @@ export class RecommendBooksService {
    * @throws {OpenAITimeoutError} - Request timeout
    */
   async execute() {
-    // 1. Fetch current profile (auto-refreshes if stale)
-    const profile = await this.getReaderProfileService.execute();
+    // 1. Fetch profile and create it on demand when the minimum requirement is met
+    const profile = await this.getReaderProfileService.execute({
+      createIfEligible: true,
+      refreshForRecommendations: true,
+    });
 
     // 2. Validate profile readiness
     if (!profile || !profile.profileData) {
-      throw new EmptyVaultError();
+      const requirement =
+        await this.getReaderProfileService.getMinimumRequirementStatus();
+      throw new ReaderProfileMinimumBooksError(
+        requirement.current,
+        requirement.required,
+      );
     }
 
     const stats = profile.profileData.statistics;
-    const minBooks = (stats.completedBooks || 0) + (stats.readingBooks || 0);
+    const minBooks = (stats.completedBooks || 0) + (stats.abandonedBooks || 0);
 
-    if (minBooks < 3) {
-      throw new InsufficientDataError(minBooks, 3);
+    if (minBooks < 5) {
+      throw new ReaderProfileMinimumBooksError(minBooks, 5);
     }
 
     // 3. Prepare input for OpenAI (semantic-first approach)

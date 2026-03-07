@@ -27,4 +27,5 @@ export {
 export {
   EmptyVaultError,
   InsufficientDataError,
+  ReaderProfileMinimumBooksError,
 } from "./domain/aiRecommendationErrors.js";

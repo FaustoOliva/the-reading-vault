@@ -1,23 +1,12 @@
 /**
  * GetReaderProfileService (Query Use Case)
- * Retrieves reader profile with intelligent refresh logic
+ * Manages reader profile lifecycle for startup and AI recommendations.
  *
- * Responsibilities:
- * - Return current reader profile for AI services
- * - Automatically refresh if profile is missing or stale (>24h)
- * - Provide refresh hook for other services after critical events
- * - Call OpenAI for semantic summary generation with error handling
- *
- * Rules:
- * - Framework-agnostic
- * - No validation needed (internal service)
- * - Graceful degradation: OpenAI failures don't block profile save
- * - Non-transactional (AIContextRepository handles persistence)
- * - Profile refresh failures MUST NOT fail parent operations
- *
- * Phase: MVP (Phase 1)
- * - Simple refresh triggers: book_completed, book_abandoned, top_authors_changed
- * - Staleness check: >24 hours
+ * Rules implemented:
+ * - Profile can exist only when COMPLETED + ABANDONED books >= 5
+ * - Startup creates profile only when missing and eligible
+ * - Important events only mark profile as pending refresh (no auto-refresh)
+ * - Recommendations refresh only when profile is stale (>24h) and an important event is pending
  */
 
 import {
@@ -27,37 +16,64 @@ import {
 } from "../errors/index.js";
 
 export class GetReaderProfileService {
+  static MIN_BOOKS_FOR_PROFILE = 5;
+
   constructor(aiContextRepository, openAIClient) {
     this.aiContextRepository = aiContextRepository;
     this.openAIClient = openAIClient;
   }
 
   /**
-   * Execute GetReaderProfile use case
-   * Returns current profile, auto-refreshes if missing or stale
-   * @returns {Promise<Object>} Current reader profile
+   * Execute GetReaderProfile use case.
+   * @param {Object} options
+   * @param {boolean} options.createIfEligible - Creates profile when missing and requirement is met
+   * @param {boolean} options.refreshForRecommendations - Applies stale+event refresh rule
+   * @returns {Promise<Object|null>} Current reader profile or null when unavailable
    */
-  async execute() {
-    const profile = await this.aiContextRepository.getReaderProfile();
+  async execute(options = {}) {
+    const { createIfEligible = false, refreshForRecommendations = false } =
+      options;
 
-    // Auto-refresh if profile missing or stale
-    if (!profile || this._isProfileStale(profile)) {
-      const reason = !profile ? "initial_profile" : "stale_profile";
-      console.log(`📊 Auto-refreshing reader profile (${reason})...`);
+    let profile = await this.aiContextRepository.getReaderProfile();
 
-      try {
-        const refreshResult = await this._performRefresh(reason);
-        return {
+    if (!profile && createIfEligible) {
+      const currentBooks =
+        await this.aiContextRepository.countBooksForProfileRequirement();
+
+      if (currentBooks >= GetReaderProfileService.MIN_BOOKS_FOR_PROFILE) {
+        const refreshResult = await this._performRefresh("initial_profile");
+        profile = {
+          id: 1,
+          version: refreshResult.version,
+          schemaVersion: 1,
+          profileData: refreshResult.profileData,
+          semanticSummary: refreshResult.semanticSummary,
+          lastUpdated: new Date(),
+          lastRefreshReason: "initial_profile",
+          tokensUsed: refreshResult.tokensUsed,
+          importantEventPending: false,
+        };
+      }
+    }
+
+    if (profile && refreshForRecommendations) {
+      const shouldRefresh =
+        this._isProfileStale(profile) && profile.importantEventPending;
+
+      if (shouldRefresh) {
+        const refreshResult = await this._performRefresh(
+          "recommendations_sync",
+        );
+        profile = {
           ...profile,
           version: refreshResult.version,
           profileData: refreshResult.profileData,
           semanticSummary: refreshResult.semanticSummary,
           tokensUsed: refreshResult.tokensUsed,
+          lastUpdated: new Date(),
+          lastRefreshReason: "recommendations_sync",
+          importantEventPending: false,
         };
-      } catch (error) {
-        console.warn("⚠️ Profile refresh failed:", error.message);
-        // Return existing profile if refresh fails
-        return profile;
       }
     }
 
@@ -65,63 +81,53 @@ export class GetReaderProfileService {
   }
 
   /**
-   * Refresh profile if semantically relevant event occurred
-   * Called by other services (reviewBookService, reopenBookService, etc.)
-   * @param {Object} context - { event, bookId?, previousProfile? }
-   * @returns {Promise<{refreshed: boolean, reason?: string, version?: number}>}
+   * Returns minimum requirement state for profile availability.
+   * @returns {Promise<{current:number, required:number, eligible:boolean}>}
+   */
+  async getMinimumRequirementStatus() {
+    const current =
+      await this.aiContextRepository.countBooksForProfileRequirement();
+    return {
+      current,
+      required: GetReaderProfileService.MIN_BOOKS_FOR_PROFILE,
+      eligible: current >= GetReaderProfileService.MIN_BOOKS_FOR_PROFILE,
+    };
+  }
+
+  /**
+   * Register an important event for future recommendation refresh checks.
+   * This does not trigger an immediate profile refresh.
+   * @returns {Promise<void>}
+   */
+  async markImportantEventPending() {
+    try {
+      await this.aiContextRepository.markImportantEventPending();
+    } catch (error) {
+      // Important-event marking is non-critical.
+      console.warn("⚠️ Failed to mark important profile event:", error.message);
+    }
+  }
+
+  /**
+   * Backward-compatible API: no automatic refresh anymore.
+   * Important events are only marked for future recommendation-time refresh.
+   * @param {Object} context
+   * @param {string} context.event
+   * @returns {Promise<{refreshed: boolean, marked?: boolean}>}
    */
   async refreshIfNeeded(context) {
-    const { event, bookId } = context;
+    const { event } = context;
+    const importantEvents = {
+      book_completed: true,
+      book_abandoned: true,
+    };
 
-    try {
-      // Get current profile
-      const currentProfile = await this.aiContextRepository.getReaderProfile();
-
-      // Determine if refresh needed
-      const decision = this._shouldRefreshProfile({
-        event,
-        currentProfile,
-      });
-
-      if (!decision.shouldRefresh) {
-        return { refreshed: false };
-      }
-
-      // Special case: check if top authors actually changed
-      if (event === "book_status_changed") {
-        // Calculate new profile temporarily to check top authors
-        const newProfileData =
-          await this.aiContextRepository.calculateReaderProfile();
-
-        const topAuthorsChanged =
-          this.aiContextRepository.detectTopAuthorsChange(
-            currentProfile?.profileData || null,
-            newProfileData,
-          );
-
-        if (!topAuthorsChanged) {
-          return { refreshed: false };
-        }
-
-        decision.reason = "top_authors_changed";
-      }
-
-      // Perform refresh
-      console.log(
-        `📊 Refreshing reader profile (${decision.reason})${bookId ? ` for book ${bookId}` : ""}...`,
-      );
-      const result = await this._performRefresh(decision.reason);
-
-      return {
-        refreshed: true,
-        reason: decision.reason,
-        version: result.version,
-      };
-    } catch (error) {
-      // Profile refresh failures MUST NOT fail parent operations
-      console.warn("⚠️ Profile refresh failed:", error.message);
-      return { refreshed: false, error: error.message };
+    if (!importantEvents[event]) {
+      return { refreshed: false, marked: false };
     }
+
+    await this.markImportantEventPending();
+    return { refreshed: false, marked: true };
   }
 
   /**
@@ -174,36 +180,6 @@ export class GetReaderProfileService {
   }
 
   /**
-   * Determine if profile refresh is needed based on event
-   * @private
-   * @param {Object} params - { event, currentProfile }
-   * @returns {Object} { shouldRefresh: boolean, reason?: string }
-   */
-  _shouldRefreshProfile({ event, currentProfile }) {
-    // Always refresh on these critical events
-    const criticalEvents = {
-      book_completed: true,
-      book_abandoned: true,
-    };
-
-    if (criticalEvents[event]) {
-      return { shouldRefresh: true, reason: event };
-    }
-
-    // Check if status change might affect top authors
-    if (event === "book_status_changed") {
-      return { shouldRefresh: true, reason: "check_top_authors" };
-    }
-
-    // Check staleness
-    if (this._isProfileStale(currentProfile)) {
-      return { shouldRefresh: true, reason: "stale_profile" };
-    }
-
-    return { shouldRefresh: false };
-  }
-
-  /**
    * Check if profile is stale (>24 hours old)
    * @private
    * @param {Object|null} profile - Current profile
@@ -212,7 +188,10 @@ export class GetReaderProfileService {
   _isProfileStale(profile) {
     if (!profile) return true;
 
-    const lastUpdated = new Date(profile.lastUpdated);
+    const lastUpdatedValue = profile.lastUpdated || profile.last_updated;
+    if (!lastUpdatedValue) return true;
+
+    const lastUpdated = new Date(lastUpdatedValue);
     const now = new Date();
     const hoursSinceUpdate = (now - lastUpdated) / (1000 * 60 * 60);
 

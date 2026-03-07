@@ -43,7 +43,8 @@ export class AIContextRepository {
         semantic_summary,
         last_updated,
         last_refresh_reason,
-        tokens_used
+        tokens_used,
+        important_event_pending
       FROM ReaderProfiles
       WHERE id = 1
     `;
@@ -65,6 +66,7 @@ export class AIContextRepository {
       lastUpdated: record.last_updated,
       lastRefreshReason: record.last_refresh_reason,
       tokensUsed: record.tokens_used,
+      importantEventPending: Boolean(record.important_event_pending),
     };
   }
 
@@ -85,6 +87,7 @@ export class AIContextRepository {
     semanticSummary,
     reason,
     tokensUsed,
+    importantEventPending = false,
   ) {
     const pool = await this.mssqlClient.getConnection();
 
@@ -100,10 +103,11 @@ export class AIContextRepository {
           semantic_summary = @semanticSummary,
           last_updated = GETDATE(),
           last_refresh_reason = @reason,
-          tokens_used = @tokensUsed
+          tokens_used = @tokensUsed,
+          important_event_pending = @importantEventPending
       WHEN NOT MATCHED THEN
-        INSERT (id, version, schema_version, profile_data, semantic_summary, last_updated, last_refresh_reason, tokens_used)
-        VALUES (1, @version, @schemaVersion, @profileData, @semanticSummary, GETDATE(), @reason, @tokensUsed);
+        INSERT (id, version, schema_version, profile_data, semantic_summary, last_updated, last_refresh_reason, tokens_used, important_event_pending)
+        VALUES (1, @version, @schemaVersion, @profileData, @semanticSummary, GETDATE(), @reason, @tokensUsed, @importantEventPending);
     `;
 
     await pool
@@ -114,7 +118,36 @@ export class AIContextRepository {
       .input("semanticSummary", sql.NVarChar(sql.MAX), semanticSummary || null)
       .input("reason", sql.NVarChar(100), reason)
       .input("tokensUsed", sql.Int, tokensUsed || null)
+      .input("importantEventPending", sql.Bit, importantEventPending)
       .query(query);
+  }
+
+  /**
+   * Count books that satisfy the minimum requirement for profile availability.
+   * Requirement: COMPLETED + ABANDONED >= 5
+   * @returns {Promise<number>}
+   */
+  async countBooksForProfileRequirement() {
+    const kpis = await this.bookRepository.calculateGlobalKPIs();
+    return (kpis.completed || 0) + (kpis.abandoned || 0);
+  }
+
+  /**
+   * Mark that a semantically important event happened after last profile refresh.
+   * This is only meaningful if profile already exists.
+   * @returns {Promise<boolean>} True when profile was marked, false when profile does not exist.
+   */
+  async markImportantEventPending() {
+    const pool = await this.mssqlClient.getConnection();
+
+    const query = `
+      UPDATE ReaderProfiles
+      SET important_event_pending = 1
+      WHERE id = 1
+    `;
+
+    const result = await pool.request().query(query);
+    return (result.rowsAffected?.[0] || 0) > 0;
   }
 
   /**
@@ -347,6 +380,7 @@ export class AIContextRepository {
       semanticSummary,
       reason,
       tokensUsed,
+      false,
     );
 
     return {

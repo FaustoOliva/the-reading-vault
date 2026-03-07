@@ -161,7 +161,6 @@ export class DIContainer {
 
     // Inject getReaderProfileService into services that need it
     reviewBookService.getReaderProfileService = getReaderProfileService;
-    reopenBookService.getReaderProfileService = getReaderProfileService;
 
     this.instances.set("getBooksService", getBooksService);
     this.instances.set("getBookByIdService", getBookByIdService);

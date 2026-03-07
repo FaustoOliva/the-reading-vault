@@ -8,7 +8,7 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { RecommendBooksService } from "../services/recommendBooksService.js";
-import { EmptyVaultError, InsufficientDataError } from "../errors/index.js";
+import { ReaderProfileMinimumBooksError } from "../errors/index.js";
 
 describe("RecommendBooksService", () => {
   let service;
@@ -20,6 +20,7 @@ describe("RecommendBooksService", () => {
 
     mockGetReaderProfileService = {
       execute: vi.fn(),
+      getMinimumRequirementStatus: vi.fn(),
     };
 
     mockOpenAIClient = {
@@ -84,6 +85,10 @@ describe("RecommendBooksService", () => {
 
       // Assert
       expect(mockGetReaderProfileService.execute).toHaveBeenCalledTimes(1);
+      expect(mockGetReaderProfileService.execute).toHaveBeenCalledWith({
+        createIfEligible: true,
+        refreshForRecommendations: true,
+      });
       expect(mockOpenAIClient.recommendBooks).toHaveBeenCalledWith({
         type: "semantic",
         summary: mockProfile.semanticSummary,
@@ -106,7 +111,7 @@ describe("RecommendBooksService", () => {
         profileData: {
           statistics: {
             completedBooks: 4,
-            readingBooks: 1,
+            abandonedBooks: 1,
             totalBooks: 8,
             avgScore: 7.8,
           },
@@ -148,19 +153,28 @@ describe("RecommendBooksService", () => {
       );
     });
 
-    it("should throw EmptyVaultError when profile does not exist", async () => {
+    it("should throw ReaderProfileMinimumBooksError when profile does not exist", async () => {
       // Arrange
       mockGetReaderProfileService.execute.mockResolvedValue(null);
+      mockGetReaderProfileService.getMinimumRequirementStatus.mockResolvedValue(
+        {
+          current: 2,
+          required: 5,
+          eligible: false,
+        },
+      );
 
       // Act & Assert
-      await expect(service.execute()).rejects.toThrow(EmptyVaultError);
       await expect(service.execute()).rejects.toThrow(
-        "Cannot generate recommendations without books in your vault",
+        ReaderProfileMinimumBooksError,
+      );
+      await expect(service.execute()).rejects.toThrow(
+        "Reader profile is not available yet. You need at least 5 completed or abandoned books (you have 2)",
       );
       expect(mockOpenAIClient.recommendBooks).not.toHaveBeenCalled();
     });
 
-    it("should throw EmptyVaultError when profileData is missing", async () => {
+    it("should throw ReaderProfileMinimumBooksError when profileData is missing", async () => {
       // Arrange
       const emptyProfile = {
         id: 1,
@@ -170,21 +184,30 @@ describe("RecommendBooksService", () => {
       };
 
       mockGetReaderProfileService.execute.mockResolvedValue(emptyProfile);
+      mockGetReaderProfileService.getMinimumRequirementStatus.mockResolvedValue(
+        {
+          current: 4,
+          required: 5,
+          eligible: false,
+        },
+      );
 
       // Act & Assert
-      await expect(service.execute()).rejects.toThrow(EmptyVaultError);
+      await expect(service.execute()).rejects.toThrow(
+        ReaderProfileMinimumBooksError,
+      );
       expect(mockOpenAIClient.recommendBooks).not.toHaveBeenCalled();
     });
 
-    it("should throw InsufficientDataError when less than 3 books total", async () => {
+    it("should throw ReaderProfileMinimumBooksError when less than 5 completed+abandoned books", async () => {
       // Arrange
       const mockProfile = {
         id: 1,
         version: 2,
         profileData: {
           statistics: {
-            completedBooks: 1,
-            readingBooks: 1,
+            completedBooks: 2,
+            abandonedBooks: 1,
             totalBooks: 2,
           },
         },
@@ -194,22 +217,24 @@ describe("RecommendBooksService", () => {
       mockGetReaderProfileService.execute.mockResolvedValue(mockProfile);
 
       // Act & Assert
-      await expect(service.execute()).rejects.toThrow(InsufficientDataError);
       await expect(service.execute()).rejects.toThrow(
-        "Need at least 3 books to generate recommendations (you have 2)",
+        ReaderProfileMinimumBooksError,
+      );
+      await expect(service.execute()).rejects.toThrow(
+        "Reader profile is not available yet. You need at least 5 completed or abandoned books (you have 3)",
       );
       expect(mockOpenAIClient.recommendBooks).not.toHaveBeenCalled();
     });
 
-    it("should throw InsufficientDataError with only completed books (no reading)", async () => {
+    it("should throw ReaderProfileMinimumBooksError when minimum rule is not met", async () => {
       // Arrange
       const mockProfile = {
         id: 1,
         version: 2,
         profileData: {
           statistics: {
-            completedBooks: 2,
-            readingBooks: 0,
+            completedBooks: 4,
+            abandonedBooks: 0,
             totalBooks: 5,
           },
         },
@@ -219,22 +244,24 @@ describe("RecommendBooksService", () => {
       mockGetReaderProfileService.execute.mockResolvedValue(mockProfile);
 
       // Act & Assert
-      await expect(service.execute()).rejects.toThrow(InsufficientDataError);
+      await expect(service.execute()).rejects.toThrow(
+        ReaderProfileMinimumBooksError,
+      );
       const error = await service.execute().catch((e) => e);
-      expect(error.current).toBe(2);
-      expect(error.required).toBe(3);
+      expect(error.current).toBe(4);
+      expect(error.required).toBe(5);
     });
 
-    it("should accept exactly 3 books as minimum threshold", async () => {
+    it("should accept exactly 5 books as minimum threshold", async () => {
       // Arrange
       const mockProfile = {
         id: 1,
         version: 3,
         profileData: {
           statistics: {
-            completedBooks: 2,
-            readingBooks: 1,
-            totalBooks: 3,
+            completedBooks: 3,
+            abandonedBooks: 2,
+            totalBooks: 5,
           },
         },
         semanticSummary: "Minimal profile",

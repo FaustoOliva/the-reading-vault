@@ -80,22 +80,6 @@ export class ReopenBookService {
       // Step 4: Return updated book
       const updatedBook = await this.bookRepository.getById(bookId);
 
-      // Step 5: Trigger profile refresh (non-blocking)
-      // Check if top authors changed (abandoned -> reading might affect ranking)
-      if (this.getReaderProfileService) {
-        this.getReaderProfileService
-          .refreshIfNeeded({
-            event: "book_status_changed",
-            bookId,
-          })
-          .catch((err) => {
-            console.warn(
-              "⚠️ Profile refresh failed (non-critical):",
-              err.message,
-            );
-          });
-      }
-
       return updatedBook;
     } catch (error) {
       await transaction.rollback();

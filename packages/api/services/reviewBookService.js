@@ -82,19 +82,13 @@ export class ReviewBookService {
       // Step 4: Return updated book
       const updatedBook = await this.bookRepository.getById(bookId);
 
-      // Step 5: Trigger profile refresh (non-blocking)
-      // Only refresh on book_completed or book_abandoned
+      // Step 5: Mark important profile event (non-blocking)
       if (this.getReaderProfileService) {
-        const event =
-          targetStatus === "COMPLETED" ? "book_completed" : "book_abandoned";
         this.getReaderProfileService
-          .refreshIfNeeded({
-            event,
-            bookId,
-          })
+          .markImportantEventPending()
           .catch((err) => {
             console.warn(
-              "⚠️ Profile refresh failed (non-critical):",
+              "⚠️ Profile event mark failed (non-critical):",
               err.message,
             );
           });

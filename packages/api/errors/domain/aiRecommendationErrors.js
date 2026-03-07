@@ -28,3 +28,23 @@ export class InsufficientDataError extends BadRequestError {
     this.required = required;
   }
 }
+
+/**
+ * ReaderProfileMinimumBooksError
+ * Thrown when profile/recommendations are unavailable because minimum completed+abandoned books were not reached.
+ * HTTP Status: 400 Bad Request
+ */
+export class ReaderProfileMinimumBooksError extends BadRequestError {
+  constructor(current, required) {
+    super(
+      `Reader profile is not available yet. You need at least ${required} completed or abandoned books (you have ${current})`,
+      {
+        code: "READER_PROFILE_MINIMUM_NOT_MET",
+        current,
+        required,
+      },
+    );
+    this.current = current;
+    this.required = required;
+  }
+}

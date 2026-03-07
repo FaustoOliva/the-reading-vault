@@ -12,15 +12,21 @@ export async function seedReaderProfile(getReaderProfileService) {
   try {
     console.log("📊 Checking reader profile...");
 
-    // This will auto-create profile if missing via execute()
-    const profile = await getReaderProfileService.execute();
+    // Create only if profile is missing and minimum requirement is met.
+    const profile = await getReaderProfileService.execute({
+      createIfEligible: true,
+    });
 
     if (profile) {
       console.log(
         `✅ Reader profile ready (version ${profile.version}, schema v${profile.schemaVersion})`,
       );
     } else {
-      console.log("✅ Reader profile initialized");
+      const requirement =
+        await getReaderProfileService.getMinimumRequirementStatus();
+      console.log(
+        `ℹ️ Reader profile not created yet (${requirement.current}/${requirement.required} completed or abandoned books).`,
+      );
     }
   } catch (error) {
     // Graceful degradation: seed failures don't prevent startup
