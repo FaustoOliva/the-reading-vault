@@ -21,10 +21,14 @@ Apply when working with AIContextRepository, OpenAIClient, GetReaderProfileServi
 
 **1. Dual Representation:** Maintain structured JSON (`profile_data`) + semantic text (`semantic_summary`)
 
-**2. Intelligent Refresh:** Only on semantically relevant events
+**2. Intelligent Refresh:** Deferred and condition-based
 
-- ✅ Always: `book_completed`, `book_abandoned`, `top_authors_changed`
-- ❌ Never: session logged, score updated, wishlist add
+- ✅ Important events: `book_completed`, `book_abandoned` (mark pending only)
+- ✅ Refresh execution: only when recommendations are requested and both conditions are true:
+  - Profile age > 24h
+  - `important_event_pending = true`
+- ❌ Never: immediate refresh on book events
+- ❌ Never: `top_authors_changed` trigger
 
 **3. Graceful Degradation:** System MUST work without OpenAI
 
@@ -79,6 +83,9 @@ ORDER BY bookCount DESC;
 
 ```javascript
 async saveReaderProfile(version, profileData, semanticSummary, reason, tokensUsed)
+
+async countBooksForProfileRequirement() // completed + abandoned
+async markImportantEventPending() // set important_event_pending = 1
 ```
 
 - Use `MERGE` for UPSERT (singleton pattern)
@@ -104,16 +111,13 @@ async refreshReaderProfile(reason)
 
 **Error handling:** If OpenAI fails, set `semanticSummary = null`, `tokensUsed = 0`, profile still saves.
 
-### Change Detection
+### Minimum Requirement Rule
 
-```javascript
-_detectTopAuthorsChange(previousProfile, newProfile) {
-  if (!previousProfile?.topAuthors) return true;
-  const prevTop3 = previousProfile.topAuthors.slice(0, 3).map(a => a.name);
-  const newTop3 = newProfile.topAuthors.slice(0, 3).map(a => a.name);
-  return !prevTop3.every((name, idx) => name === newTop3[idx]);
-}
-```
+Profile creation requires:
+
+- `completedBooks + abandonedBooks >= 5`
+
+Use `countBooksForProfileRequirement()` before creating an initial profile.
 
 ---
 
@@ -206,22 +210,18 @@ Análisis en español, 3ra persona, tono profesional.
 
 ```javascript
 async execute()
-// - Get current profile
-// - If missing: refresh with reason 'initial_profile'
-// - If stale (>24h): refresh with reason 'stale_profile'
-// - Return profile
+// options: { createIfEligible, refreshForRecommendations }
+// - If missing and eligible (>=5 completed+abandoned): create with reason 'initial_profile'
+// - For recommendations: refresh only if stale (>24h) and important_event_pending=true
+// - Return profile or null
+
+async markImportantEventPending()
+// - Set important_event_pending = true when profile exists
 
 async refreshIfNeeded(context)
-// context: { event: string, bookId?: number }
-// - Check _shouldRefreshProfile()
-// - For 'book_status_changed': check _detectTopAuthorsChange()
-// - Perform refresh if needed
-
-_shouldRefreshProfile({ event, currentProfile })
-// Critical events: 'book_completed', 'book_abandoned' → always refresh
-// 'book_status_changed' → check top authors
-// Stale (>24h) → refresh
-// Otherwise → skip
+// Backward-compatibility wrapper
+// - For book_completed/book_abandoned: only mark pending event
+// - Never refresh immediately
 
 _isProfileStale(profile)
 // Return true if profile null/undefined or last_updated > 24h
@@ -238,13 +238,10 @@ class ReviewBookService {
     // ... existing logic ...
 
     try {
-      await this.getReaderProfileService.refreshIfNeeded({
-        event: "book_completed",
-        bookId,
-      });
+      await this.getReaderProfileService.markImportantEventPending();
     } catch (error) {
-      console.warn("⚠️ Failed to refresh reader profile:", error.message);
-      // Never throw - profile refresh is non-critical
+      console.warn("⚠️ Failed to mark reader profile event:", error.message);
+      // Never throw - event marking is non-critical
     }
 
     return reviewedBook;
@@ -270,8 +267,9 @@ describe("AIContextRepository - MVP", () => {
 });
 
 describe("GetReaderProfileService", () => {
-  it("refreshes on book_completed");
-  it("does NOT refresh on session_logged");
+  it("marks pending event on book_completed");
+  it("refreshes only when stale and pending event exists");
+  it("does NOT create profile when completed+abandoned < 5");
   it("returns true for stale profile (>24h)");
 });
 
@@ -286,8 +284,11 @@ describe("OpenAIClient - MVP", () => {
 
 ```javascript
 describe("Reader Profile Integration - MVP", () => {
-  it("complete book → profile refreshes with incremented version");
-  it("abandon book → profile includes book in abandonedBooks array");
+  it(
+    "complete/abandon book → marks important_event_pending without immediate refresh",
+  );
+  it("recommendations request → refreshes only if stale + pending event");
+  it("profile creation blocked when completed+abandoned < 5");
   it("profile refresh succeeds even if OpenAI unavailable");
   it("profile contains schemaVersion=1 for MVP");
 });

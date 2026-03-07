@@ -258,7 +258,10 @@ See:
 
 **Pattern:** Repository + Service (No Domain Model)  
 **Storage:** Singleton table `ReaderProfiles` with computed aggregations  
-**Update Strategy:** Programmatic refresh on critical events
+**Update Strategy:**
+
+- Important events are recorded as pending (`important_event_pending = 1`)
+- Profile refresh happens only during recommendation requests when conditions are met
 
 ### Components
 
@@ -270,7 +273,7 @@ See:
 
 - Aggregate reader data from Books, Authors, Countries
 - Calculate profile statistics (MVP: simple counts, Phase 2: affinity scoring)
-- Detect semantic changes (top authors composition)
+- Track pending important events for deferred refresh
 - UPSERT profile with version increment
 - Coordinate OpenAI calls for semantic summary
 
@@ -279,7 +282,8 @@ See:
 - `getReaderProfile()` - Fetch current profile
 - `calculateReaderProfile()` - Compute structured data from books
 - `refreshReaderProfile(reason)` - Full refresh with OpenAI + save
-- `_detectTopAuthorsChange()` - Compare top 3 authors for semantic relevance
+- `countBooksForProfileRequirement()` - Count `COMPLETED + ABANDONED`
+- `markImportantEventPending()` - Mark pending refresh signal
 
 **Rules:**
 
@@ -323,14 +327,15 @@ See:
 **Responsibilities:**
 
 - Orchestrate profile retrieval and intelligent refresh
-- Decision logic for refresh triggers
+- Decision logic for startup profile creation
+- Decision logic for recommendation-time conditional refresh
 - Staleness detection (>24h check)
 
 **Key Methods:**
 
-- `execute()` - Get current profile, auto-refresh if missing/stale
-- `refreshIfNeeded(context)` - Called by other services after critical events
-- `_shouldRefreshProfile(context)` - Decision logic
+- `execute({ createIfEligible, refreshForRecommendations })`
+- `markImportantEventPending()` - Called by services after complete/abandon
+- `refreshIfNeeded(context)` - Backward-compatible wrapper that only marks events
 - `_isProfileStale(profile)` - Check if >24 hours old
 
 **Integration Pattern:**
@@ -338,13 +343,10 @@ See:
 ```javascript
 // In reviewBookService.js
 try {
-  await this.getReaderProfileService.refreshIfNeeded({
-    event: "book_completed",
-    bookId,
-  });
+  await this.getReaderProfileService.markImportantEventPending();
 } catch (error) {
-  console.warn("⚠️ Profile refresh failed:", error.message);
-  // Continue - profile refresh is non-critical
+  console.warn("⚠️ Failed to mark profile event:", error.message);
+  // Continue - profile event mark is non-critical
 }
 ```
 
@@ -364,11 +366,22 @@ AI Services (consume for recommendations)
 
 ### Refresh Lifecycle
 
-1. Critical event occurs (complete/abandon book, or top authors change)
-2. Service calls `refreshIfNeeded(context)`
-3. Decision logic evaluates semantic relevance
-4. If relevant: calculate → generate summary → increment version → save
-5. Profile available for AI services with latest data
+1. Important event occurs (`book_completed` or `book_abandoned`)
+2. Service marks `important_event_pending = 1`
+3. Recommendations are requested
+4. System verifies profile exists (or creates it if missing and minimum rule is met)
+5. Refresh executes only if both conditions are true:
+
+- Profile is stale (`last_updated > 24h`)
+- `important_event_pending = 1`
+
+6. On successful refresh: calculate → generate summary → increment version → save with `important_event_pending = 0`
+
+### Minimum Requirement Rule
+
+- Reader profile can exist only when `COMPLETED + ABANDONED >= 5`
+- Startup only creates profile if missing and the rule is met
+- Recommendations require an existing profile; if the rule is not met, API returns a domain error
 
 ### Schema Versioning
 

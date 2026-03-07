@@ -35,7 +35,7 @@
 | `title`                 | NVARCHAR(255) | NOT NULL                                                         |
 | `isbn`                  | NVARCHAR(20)  | NULL                                                             |
 | `total_pages`           | INT           | NULL                                                             |
-| `publication_year`      | INT           | NULL, CHECK (`publication_year` between 1000 and 9999)          |
+| `publication_year`      | INT           | NULL, CHECK (`publication_year` between 1000 and 9999)           |
 | `current_reading_cycle` | INT           | NOT NULL, DEFAULT 1                                              |
 | `status_id`             | INT           | Foreign Key (BookStatuses.id) — replaces textual `status` column |
 | `score`                 | DECIMAL(3,1)  | NULL (0.0 to 10.0)                                               |
@@ -75,16 +75,17 @@
 
 ### 6. ReaderProfiles (AI Context - Phase 4 MVP)
 
-| Column                | Type          | Constraints                                                        |
-| :-------------------- | :------------ | :----------------------------------------------------------------- |
-| `id`                  | INT           | Primary Key, DEFAULT 1 (singleton)                                 |
-| `version`             | INT           | NOT NULL, DEFAULT 1 (increments on each refresh)                   |
-| `schema_version`      | INT           | NOT NULL, DEFAULT 1 (1=MVP, 2=Complete for Phase 2)                |
-| `profile_data`        | NVARCHAR(MAX) | NOT NULL (JSON with statistics, top authors, countries, favorites) |
-| `semantic_summary`    | NVARCHAR(MAX) | NULL (OpenAI-generated narrative, null if API unavailable)         |
-| `last_updated`        | DATETIME2     | NOT NULL, DEFAULT GETDATE()                                        |
-| `last_refresh_reason` | NVARCHAR(100) | NULL ('book_completed', 'book_abandoned', 'top_authors_changed')   |
-| `tokens_used`         | INT           | NULL (tracks OpenAI API token consumption per refresh)             |
+| Column                    | Type          | Constraints                                                          |
+| :------------------------ | :------------ | :------------------------------------------------------------------- |
+| `id`                      | INT           | Primary Key, DEFAULT 1 (singleton)                                   |
+| `version`                 | INT           | NOT NULL, DEFAULT 1 (increments on each refresh)                     |
+| `schema_version`          | INT           | NOT NULL, DEFAULT 1 (1=MVP, 2=Complete for Phase 2)                  |
+| `profile_data`            | NVARCHAR(MAX) | NOT NULL (JSON with statistics, top authors, countries, favorites)   |
+| `semantic_summary`        | NVARCHAR(MAX) | NULL (OpenAI-generated narrative, null if API unavailable)           |
+| `last_updated`            | DATETIME2     | NOT NULL, DEFAULT GETDATE()                                          |
+| `last_refresh_reason`     | NVARCHAR(100) | NULL ('initial_profile', 'recommendations_sync', manual reasons)     |
+| `tokens_used`             | INT           | NULL (tracks OpenAI API token consumption per refresh)               |
+| `important_event_pending` | BIT           | NOT NULL, DEFAULT 0 (set to 1 on complete/abandon, reset on refresh) |
 
 **Notes:**
 

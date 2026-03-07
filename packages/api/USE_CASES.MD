@@ -897,7 +897,8 @@ Provides dual representation (structured + semantic) of reader preferences and p
   semantic_summary: string | null,          // OpenAI-generated narrative
   last_updated: Date,
   last_refresh_reason: string,              // Audit: event that triggered refresh
-  tokens_used: number | null                // OpenAI cost tracking
+  tokens_used: number | null,               // OpenAI cost tracking
+  important_event_pending: boolean          // True when complete/abandon happened after last refresh
 }
 
 // MVP Profile Structure (schema_version: 1)
@@ -961,7 +962,8 @@ ReaderProfile = {
 
 **Errors**
 
-- None (always returns profile, creates if missing)
+- None on profile query itself
+- For recommendations, profile unavailability due to minimum rule returns `ReaderProfileMinimumBooksError`
 
 **Transactional**
 
@@ -969,20 +971,35 @@ ReaderProfile = {
 
 **Refresh Strategy**
 
-**Always refreshes on:**
+**Important events (record only):**
 
 - Book completed (`book_completed` event)
 - Book abandoned (`book_abandoned` event)
-- Top 3 authors changed (`top_authors_changed` event)
 
-**Never refreshes on:**
+These events set `important_event_pending = true` and do not trigger immediate refresh.
 
-- Reading session logged
-- Book score updated (unless tied to completion)
-- Book added to wishlist
-- Comment edited
+**Refresh occurs only in recommendations flow if both are true:**
 
-**Staleness check:** Auto-refresh if `last_updated` > 24 hours ago when profile is requested.
+- `last_updated` > 24 hours
+- `important_event_pending = true`
+
+After refresh, `important_event_pending` is reset to `false`.
+
+**Removed trigger:** `top_authors_changed` is no longer an event trigger.
+
+### Profile Creation Preconditions
+
+- Profile can be created only when `completedBooks + abandonedBooks >= 5`
+- Startup behavior:
+  - If profile exists: do nothing
+  - If profile does not exist and minimum rule is met: create profile
+  - If profile does not exist and minimum rule is not met: do not create profile
+
+### Recommendation Preconditions
+
+- Recommendations require existing profile
+- If profile is missing and minimum rule is met, system creates profile on demand and continues
+- If minimum rule is not met, recommendations fail with clear domain error
 
 **OpenAI Integration**
 

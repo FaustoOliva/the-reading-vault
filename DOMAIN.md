@@ -1,6 +1,6 @@
 # 📐 Business Rules & Logic - The Reading Vault
 
-**Version:** 1.1 | **Last Updated:** March 7, 2026 | **Status:** Single Source of Truth
+**Version:** 1.2 | **Last Updated:** March 7, 2026 | **Status:** Single Source of Truth
 
 ---
 
@@ -14,6 +14,10 @@
 6. [Data Integrity & Validation (Zod Guards)](#data-integrity--validation-zod-guards)
 7. [Entity Management](#entity-management)
 8. [State Transition Tables](#state-transition-tables)
+9. [Error Handling & HTTP Responses](#9-error-handling--http-responses)
+10. [Reader Profile & AI Recommendations](#10-reader-profile--ai-recommendations)
+11. [Glossary](#11-glossary)
+12. [Revision History](#12-revision-history)
 
 ---
 
@@ -85,19 +89,19 @@
 
 ### 2.4 Author Entity
 
-| Field            | Type           | Constraints                | Notes                                                    |
-| ---------------- | -------------- | -------------------------- | -------------------------------------------------------- |
-| `id`             | INT            | Primary Key, IDENTITY(1,1) | System-generated                                         |
-| `name`           | String         | Unique, NOT NULL, Max 255  | Must validate duplicate before insert                    |
-| `nationality_id` | FK (Countries) | INT, NULL allowed          | References Countries table; NULL if unknown              |
+| Field            | Type           | Constraints                | Notes                                       |
+| ---------------- | -------------- | -------------------------- | ------------------------------------------- |
+| `id`             | INT            | Primary Key, IDENTITY(1,1) | System-generated                            |
+| `name`           | String         | Unique, NOT NULL, Max 255  | Must validate duplicate before insert       |
+| `nationality_id` | FK (Countries) | INT, NULL allowed          | References Countries table; NULL if unknown |
 
 ### 2.5 Country Entity
 
-| Field      | Type   | Constraints                       | Notes                                                |
-| ---------- | ------ | --------------------------------- | ---------------------------------------------------- |
-| `id`       | INT    | Primary Key, IDENTITY(1,1)        | System-generated                                     |
-| `name`     | String | Unique, NOT NULL, Max 40          | Human-readable country name                          |
-| `iso_code` | String | NOT NULL, UNIQUE, 2 chars (A-Z)   | ISO 3166-1 alpha-2 code used by frontend flag icons |
+| Field      | Type   | Constraints                     | Notes                                               |
+| ---------- | ------ | ------------------------------- | --------------------------------------------------- |
+| `id`       | INT    | Primary Key, IDENTITY(1,1)      | System-generated                                    |
+| `name`     | String | Unique, NOT NULL, Max 40        | Human-readable country name                         |
+| `iso_code` | String | NOT NULL, UNIQUE, 2 chars (A-Z) | ISO 3166-1 alpha-2 code used by frontend flag icons |
 
 ---
 
@@ -586,16 +590,17 @@ START: User logs reading session
 
 ### 9.1 Domain Exceptions
 
-| Exception                      | HTTP Code       | Message                                                                                         | Trigger                                   |
-| ------------------------------ | --------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `BookClosedException`          | 403 Forbidden   | "This book is abandoned and locked. Manually reopen to continue."                               | Logging session on ABANDONED book         |
-| `BookPendingReviewError`       | 403 Forbidden   | "Book requires review (score) before logging new sessions. Complete or abandon the book first." | Logging session on PENDING_SCORE book     |
-| `BookNotFoundException`        | 404 Not Found   | "Book with ID '...' not found."                                                                 | Invalid book_id reference                 |
-| `DuplicateISBNException`       | 409 Conflict    | "A book with ISBN '...' already exists in your library."                                        | ISBN uniqueness violation                 |
-| `ValidationException`          | 400 Bad Request | Field-specific error messages                                                                   | Input validation fails                    |
-| `ImmutableSessionException`    | 403 Forbidden   | "Cannot modify sessions in completed reading cycles."                                           | Attempt to edit/delete past cycle session |
-| `IntegrityConstraintViolation` | 409 Conflict    | "Cannot delete book with existing sessions."                                                    | Hard delete with FK references            |
-| `MissingScoreException`        | 400 Bad Request | "Score required when marking book as completed or abandoned."                                   | Missing score on transition               |
+| Exception                        | HTTP Code       | Message                                                                                              | Trigger                                            |
+| -------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `BookClosedException`            | 403 Forbidden   | "This book is abandoned and locked. Manually reopen to continue."                                    | Logging session on ABANDONED book                  |
+| `BookPendingReviewError`         | 403 Forbidden   | "Book requires review (score) before logging new sessions. Complete or abandon the book first."      | Logging session on PENDING_SCORE book              |
+| `BookNotFoundException`          | 404 Not Found   | "Book with ID '...' not found."                                                                      | Invalid book_id reference                          |
+| `DuplicateISBNException`         | 409 Conflict    | "A book with ISBN '...' already exists in your library."                                             | ISBN uniqueness violation                          |
+| `ValidationException`            | 400 Bad Request | Field-specific error messages                                                                        | Input validation fails                             |
+| `ImmutableSessionException`      | 403 Forbidden   | "Cannot modify sessions in completed reading cycles."                                                | Attempt to edit/delete past cycle session          |
+| `IntegrityConstraintViolation`   | 409 Conflict    | "Cannot delete book with existing sessions."                                                         | Hard delete with FK references                     |
+| `MissingScoreException`          | 400 Bad Request | "Score required when marking book as completed or abandoned."                                        | Missing score on transition                        |
+| `ReaderProfileMinimumBooksError` | 400 Bad Request | "Reader profile is not available yet. You need at least 5 completed or abandoned books (you have X)" | Recommendations requested before minimum threshold |
 
 ### 9.2 Success Response Format
 
@@ -628,6 +633,64 @@ LogSessionResponse {
 
 ---
 
+## 10. Reader Profile & AI Recommendations
+
+### 10.1 Minimum Requirement for Profile Existence
+
+**Rule:** Reader profile can exist only when:
+
+```
+completedBooks + abandonedBooks >= 5
+```
+
+If this requirement is not met, profile creation is blocked.
+
+### 10.2 Startup Behavior
+
+At server startup:
+
+1. If profile already exists: do nothing.
+2. If profile does not exist and minimum requirement is met: create initial profile.
+3. If profile does not exist and minimum requirement is not met: do not create profile.
+
+### 10.3 Recommendation Prerequisites
+
+Recommendations require reader profile availability.
+
+Flow when recommendations are requested:
+
+1. If profile exists: continue.
+2. If profile does not exist and minimum requirement is met: create profile and continue.
+3. If minimum requirement is not met: throw `ReaderProfileMinimumBooksError`.
+
+### 10.4 Refresh Rule (Deferred Refresh)
+
+Important events are:
+
+- `book_completed`
+- `book_abandoned`
+
+These events do **not** refresh profile immediately. They only set:
+
+```
+important_event_pending = true
+```
+
+Profile refresh happens only during recommendation requests and only when both conditions are true:
+
+1. Profile is stale (`last_updated > 24 hours`).
+2. `important_event_pending = true`.
+
+After a successful refresh:
+
+- `important_event_pending` must be reset to `false`.
+
+### 10.5 Explicitly Removed Trigger
+
+- `top_authors_changed` is **not** a refresh trigger.
+
+---
+
 ## 11. Glossary
 
 | Term               | Definition                                                                    |
@@ -644,6 +707,7 @@ LogSessionResponse {
 
 ## 12. Revision History
 
-| Date         | Version | Changes                                                                                                         |
-| ------------ | ------- | --------------------------------------------------------------------------------------------------------------- |
-| Jan 20, 2026 | 1.0     | Initial comprehensive SSOT document. Complete coverage of architectures, workflows, KPIs, and validation rules. |
+| Date         | Version | Changes                                                                                                                                                                                                |
+| ------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Mar 7, 2026  | 1.2     | Added Reader Profile and AI Recommendations rules: minimum threshold (5 completed/abandoned), startup behavior, deferred refresh by pending important events, and removed top_authors_changed trigger. |
+| Jan 20, 2026 | 1.0     | Initial comprehensive SSOT document. Complete coverage of architectures, workflows, KPIs, and validation rules.                                                                                        |
