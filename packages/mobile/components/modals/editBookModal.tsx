@@ -1,10 +1,11 @@
 /**
  * Edit Book Modal
- * Modal for editing book metadata (title, totalPages, score, comment)
+ * Modal for editing book metadata (title, totalPages, publicationYear, score, comment)
  * Does not change book status
  *
  * Design Rules:
  * - All fields are optional (partial updates)
+ * - Publication year range: 1000-9999
  * - Score range: 0-10
  * - Uses accessible colors from @/constants/colors
  */
@@ -42,6 +43,9 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
   const [totalPages, setTotalPages] = useState<string>(
     book.totalPages?.toString() || "",
   );
+  const [publicationYear, setPublicationYear] = useState<string>(
+    book.publicationYear?.toString() || "",
+  );
   const [score, setScore] = useState<string>(book.score?.toString() || "");
   const [comment, setComment] = useState<string>(book.comment || "");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -52,6 +56,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
   useEffect(() => {
     setTitle(book.title);
     setTotalPages(book.totalPages?.toString() || "");
+    setPublicationYear(book.publicationYear?.toString() || "");
     setScore(book.score?.toString() || "");
     setComment(book.comment || "");
     setErrors({});
@@ -61,6 +66,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
     const result = editBookSchema.safeParse({
       title,
       totalPages,
+      publicationYear,
       score,
       comment,
     });
@@ -82,6 +88,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
     const updates: {
       title?: string;
       totalPages?: number;
+      publicationYear?: number;
       score?: number;
       comment?: string;
     } = {};
@@ -94,6 +101,11 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
     const totalPagesNum = totalPages ? Number(totalPages) : null;
     if (totalPagesNum !== book.totalPages) {
       updates.totalPages = totalPagesNum || undefined;
+    }
+
+    const publicationYearNum = publicationYear ? Number(publicationYear) : null;
+    if (publicationYearNum !== book.publicationYear) {
+      updates.publicationYear = publicationYearNum || undefined;
     }
 
     const scoreNum = score ? Number(score) : null;
@@ -261,6 +273,53 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
                 }}
               >
                 {errors.totalPages}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Publication Year Field */}
+          <View style={{ gap: 6 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: TextColors.primary,
+              }}
+            >
+              Publication Year
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: errors.publicationYear
+                  ? Feedback.error.border
+                  : Border.default,
+                borderRadius: 8,
+                borderCurve: "continuous",
+                padding: 12,
+                fontSize: 16,
+                backgroundColor: Background.surface,
+                color: TextColors.primary,
+              }}
+              placeholder="e.g. 2020"
+              placeholderTextColor={TextColors.tertiary}
+              value={publicationYear}
+              onChangeText={(text) => {
+                setPublicationYear(text);
+                if (errors.publicationYear) {
+                  setErrors((prev) => ({ ...prev, publicationYear: "" }));
+                }
+              }}
+              keyboardType="number-pad"
+            />
+            {errors.publicationYear ? (
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: Feedback.error.text,
+                }}
+              >
+                {errors.publicationYear}
               </Text>
             ) : null}
           </View>

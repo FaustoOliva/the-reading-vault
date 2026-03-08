@@ -118,6 +118,7 @@ export type LogSessionFormData = z.infer<typeof logSessionSchema>;
  * - All fields are optional (partial update)
  * - Title must be non-empty if provided
  * - Total pages must be positive if provided
+ * - Publication year must be 1000-9999 if provided
  * - Score must be 0-10 if provided
  */
 export const editBookSchema = z.object({
@@ -126,6 +127,13 @@ export const editBookSchema = z.object({
     positive: true,
     integer: true,
     fieldName: "Total pages",
+    required: false,
+  }),
+  publicationYear: numericString({
+    min: 1000,
+    max: 9999,
+    integer: true,
+    fieldName: "Publication year",
     required: false,
   }),
   score: numericString({
