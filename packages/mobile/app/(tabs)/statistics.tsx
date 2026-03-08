@@ -1,20 +1,3 @@
-/**
- * Statistics Screen
- * Displays global reading KPIs and metrics
- *
- * Features:
- * - Global KPI cards
- * - Pull-to-refresh
- * - Loading/error states
- * - Scrollable grid layout
- *
- * Rules:
- * - Use ScrollView for simple layouts
- * - Use contentInsetAdjustmentBehavior for safe areas
- * - Use RefreshControl for pull-to-refresh
- * - Display metrics in a clear, scannable format
- */
-
 import {
   ScrollView,
   View,
@@ -23,13 +6,136 @@ import {
   RefreshControl,
 } from "react-native";
 import { useGlobalKPIs } from "@/hooks/useKPIs";
-import { KPICard } from "@/components/cards/kpiCard";
 import {
   Background,
   Text as TextColors,
   Interactive,
   Feedback,
+  Border,
 } from "@/constants/colors";
+
+type InsightCardProps = {
+  title: string;
+  primary: string;
+  secondary?: string;
+};
+
+function formatNumber(value: number) {
+  return value.toLocaleString();
+}
+
+function formatPercentFromRatio(value: number) {
+  return `${Math.round(value * 100)}%`;
+}
+
+function MetricCard({
+  label,
+  value,
+  suffix,
+}: {
+  label: string;
+  value: string;
+  suffix?: string;
+}) {
+  return (
+    <View
+      style={{
+        width: "48%",
+        backgroundColor: Background.surface,
+        borderWidth: 1,
+        borderColor: Border.default,
+        borderRadius: 14,
+        borderCurve: "continuous",
+        padding: 14,
+        gap: 6,
+      }}
+    >
+      <Text
+        selectable
+        style={{
+          fontSize: 26,
+          lineHeight: 30,
+          fontWeight: "800",
+          color: TextColors.primary,
+          fontVariant: ["tabular-nums"],
+        }}
+      >
+        {value}
+        {suffix ? (
+          <Text style={{ fontSize: 14, color: TextColors.secondary }}>
+            {" "}
+            {suffix}
+          </Text>
+        ) : null}
+      </Text>
+      <Text
+        style={{
+          fontSize: 12,
+          color: TextColors.tertiary,
+          textTransform: "uppercase",
+          letterSpacing: 0.6,
+        }}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function InsightCard({ title, primary, secondary }: InsightCardProps) {
+  return (
+    <View
+      style={{
+        backgroundColor: Background.surface,
+        borderWidth: 1,
+        borderColor: Border.default,
+        borderRadius: 14,
+        borderCurve: "continuous",
+        padding: 14,
+        gap: 6,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 12,
+          color: TextColors.tertiary,
+          textTransform: "uppercase",
+          letterSpacing: 0.6,
+        }}
+      >
+        {title}
+      </Text>
+      <Text
+        selectable
+        style={{ fontSize: 18, fontWeight: "700", color: TextColors.primary }}
+      >
+        {primary}
+      </Text>
+      {secondary ? (
+        <Text selectable style={{ fontSize: 13, color: TextColors.secondary }}>
+          {secondary}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function SectionTitle({ title, caption }: { title: string; caption?: string }) {
+  return (
+    <View style={{ gap: 4 }}>
+      <Text
+        style={{ fontSize: 18, fontWeight: "700", color: TextColors.primary }}
+      >
+        {title}
+      </Text>
+      {caption ? (
+        <Text style={{ fontSize: 13, color: TextColors.secondary }}>
+          {caption}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
 
 export default function StatisticsScreen() {
   const {
@@ -42,16 +148,6 @@ export default function StatisticsScreen() {
 
   const kpis = response?.kpis;
 
-  /**
-   * Handle pull-to-refresh
-   */
-  const handleRefresh = () => {
-    refetch();
-  };
-
-  /**
-   * Render loading state
-   */
   if (isLoading) {
     return (
       <View
@@ -67,15 +163,12 @@ export default function StatisticsScreen() {
         <Text
           style={{ marginTop: 12, fontSize: 15, color: TextColors.secondary }}
         >
-          Loading statistics...
+          Loading all-time statistics...
         </Text>
       </View>
     );
   }
 
-  /**
-   * Render error state
-   */
   if (error) {
     return (
       <ScrollView
@@ -85,7 +178,7 @@ export default function StatisticsScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
-            onRefresh={handleRefresh}
+            onRefresh={refetch}
             tintColor={Interactive.primary.default}
           />
         }
@@ -108,19 +201,16 @@ export default function StatisticsScreen() {
               color: Feedback.error.text,
             }}
           >
-            ❌ Error Loading Statistics
+            Error loading statistics
           </Text>
-          <Text style={{ fontSize: 14, color: Feedback.error.text }}>
-            {error.message || "Failed to load statistics. Pull to retry."}
+          <Text selectable style={{ fontSize: 14, color: Feedback.error.text }}>
+            {error.message || "Pull to refresh and try again."}
           </Text>
         </View>
       </ScrollView>
     );
   }
 
-  /**
-   * Render empty state
-   */
   if (!kpis) {
     return (
       <ScrollView
@@ -130,7 +220,7 @@ export default function StatisticsScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
-            onRefresh={handleRefresh}
+            onRefresh={refetch}
             tintColor={Interactive.primary.default}
           />
         }
@@ -153,246 +243,234 @@ export default function StatisticsScreen() {
               color: Feedback.info.text,
             }}
           >
-            📊 No Statistics Available
+            No statistics available
           </Text>
           <Text style={{ fontSize: 14, color: Feedback.info.text }}>
-            Start reading to see your statistics!
+            Complete books to unlock all-time insights.
           </Text>
         </View>
       </ScrollView>
     );
   }
 
-  /**
-   * Calculate completion percentage
-   */
-  const completionPercent =
+  const completionRate =
     kpis.total_books > 0
       ? Math.round((kpis.books_completed / kpis.total_books) * 100)
       : 0;
+
+  const insights = kpis.library_insights;
 
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: Background.primary }}
-      contentContainerStyle={{ padding: 16, gap: 12 }}
+      contentContainerStyle={{ padding: 16, gap: 18, paddingBottom: 28 }}
       refreshControl={
         <RefreshControl
           refreshing={isRefetching}
-          onRefresh={handleRefresh}
+          onRefresh={refetch}
           tintColor={Interactive.primary.default}
         />
       }
     >
-      {/* Header */}
-      <Text
-        style={{
-          fontSize: 28,
-          fontWeight: "700",
-          color: TextColors.primary,
-        }}
-      >
-        Your Reading Stats
-      </Text>
-      <Text
-        style={{
-          fontSize: 14,
-          color: TextColors.secondary,
-          paddingVertical: 4,
-        }}
-      >
-        A snapshot of your reading journey so far. Keep it up!
-      </Text>
-      {/* Volume Metrics */}
-      <Text
-        style={{
-          fontSize: 16,
-          fontWeight: "600",
-          color: TextColors.secondary,
-          marginTop: 8,
-        }}
-      >
-        Library Overview
-      </Text>
+      <View style={{ gap: 4 }}>
+        <Text
+          style={{ fontSize: 30, fontWeight: "800", color: TextColors.primary }}
+        >
+          Statistics
+        </Text>
+        <Text style={{ fontSize: 14, color: TextColors.secondary }}>
+          All-time dashboard based on completed books.
+        </Text>
+      </View>
+
+      <SectionTitle title="Library Overview" caption="Overall library state" />
       <View
         style={{
           flexDirection: "row",
           flexWrap: "wrap",
-          gap: 12,
+          gap: 10,
           justifyContent: "space-between",
         }}
       >
-        <View style={{ width: "48%" }}>
-          <KPICard title="Total Books" value={kpis.total_books} icon="📚" />
-        </View>
-        <View style={{ width: "48%" }}>
-          <KPICard
-            title="Completed"
-            value={kpis.books_completed}
-            icon="✅"
-            subtitle={`${completionPercent}%`}
-          />
-        </View>
-        <View style={{ width: "48%" }}>
-          <KPICard
-            title="In Progress"
-            value={kpis.books_in_progress}
-            icon="📖"
-          />
-        </View>
-        <View style={{ width: "48%" }}>
-          <KPICard title="Abandoned" value={kpis.books_abandoned} icon="⛔" />
-        </View>
+        <MetricCard
+          label="Total Books"
+          value={formatNumber(kpis.total_books)}
+        />
+        <MetricCard
+          label="Completed Books"
+          value={formatNumber(kpis.books_completed)}
+        />
+        <MetricCard
+          label="Abandoned Books"
+          value={formatNumber(kpis.books_abandoned)}
+        />
+        <MetricCard
+          label="Completion Rate"
+          value={formatNumber(completionRate)}
+          suffix="%"
+        />
       </View>
 
-      {/* Reading Activity */}
-      <Text
-        style={{
-          fontSize: 16,
-          fontWeight: "600",
-          color: TextColors.secondary,
-          marginTop: 16,
-        }}
-      >
-        Reading Activity
-      </Text>
+      <SectionTitle title="Reading Habits" caption="How you read over time" />
       <View
         style={{
           flexDirection: "row",
           flexWrap: "wrap",
-          gap: 12,
+          gap: 10,
           justifyContent: "space-between",
         }}
       >
-        <View style={{ width: "48%" }}>
-          <KPICard
-            title="Total Pages"
-            value={kpis.total_pages_read.toLocaleString()}
-            icon="📄"
-          />
-        </View>
-        <View style={{ width: "48%" }}>
-          <KPICard title="Sessions" value={kpis.total_sessions} icon="⏱️" />
-        </View>
-        <View style={{ width: "48%" }}>
-          <KPICard
-            title="Avg Pages/Session"
-            value={kpis.average_pages_per_session.toFixed(1)}
-            icon="📊"
-          />
-        </View>
-        <View style={{ width: "48%" }}>
-          <KPICard title="Reading Days" value={kpis.reading_days} icon="📅" />
-        </View>
+        <MetricCard
+          label="Total Pages Read"
+          value={formatNumber(kpis.total_pages_read)}
+        />
+        <MetricCard
+          label="Avg Pages per Session"
+          value={kpis.average_pages_per_session.toFixed(1)}
+        />
       </View>
 
-      {/* Velocity & Consistency */}
-      <Text
-        style={{
-          fontSize: 16,
-          fontWeight: "600",
-          color: TextColors.secondary,
-          marginTop: 16,
-        }}
-      >
-        Velocity & Streaks
-      </Text>
+      <SectionTitle
+        title="Reading Performance"
+        caption="Speed and consistency"
+      />
       <View
         style={{
           flexDirection: "row",
           flexWrap: "wrap",
-          gap: 12,
+          gap: 10,
           justifyContent: "space-between",
         }}
       >
-        <View style={{ width: "48%" }}>
-          <KPICard
-            title="Current Streak"
-            value={`${kpis.current_streak}d`}
-            icon="🔥"
-          />
-        </View>
-        <View style={{ width: "48%" }}>
-          <KPICard
-            title="Longest Streak"
-            value={`${kpis.longest_streak}d`}
-            icon="🏆"
-          />
-        </View>
-        <View style={{ width: "48%" }}>
-          <KPICard
-            title="Consistency"
-            value={`${Math.round(kpis.consistency_rate * 100)}%`}
-            icon="🎯"
-          />
-        </View>
-        <View style={{ width: "48%" }}>
-          <KPICard
-            title="Pages/Day"
-            value={kpis.average_pages_per_day.toFixed(1)}
-            icon="🚀"
-          />
-        </View>
+        <MetricCard
+          label="Avg Reading Speed"
+          value={kpis.average_pages_per_session.toFixed(1)}
+          suffix="pps"
+        />
+        <MetricCard
+          label="Current Streak"
+          value={formatNumber(kpis.current_streak)}
+          suffix="days"
+        />
+        <MetricCard
+          label="Longest Streak"
+          value={formatNumber(kpis.longest_streak)}
+          suffix="days"
+        />
+        <MetricCard
+          label="Reading Consistency"
+          value={formatPercentFromRatio(kpis.consistency_rate).replace("%", "")}
+          suffix="%"
+        />
+        <MetricCard
+          label="Avg Days to Finish"
+          value={
+            kpis.average_days_to_complete
+              ? formatNumber(kpis.average_days_to_complete)
+              : "-"
+          }
+          suffix={kpis.average_days_to_complete ? "days" : undefined}
+        />
       </View>
 
-      {/* Completion & Quality */}
-      {(kpis.average_days_to_complete || kpis.average_score !== null) && (
-        <>
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: "600",
-              color: TextColors.secondary,
-              marginTop: 16,
-            }}
-          >
-            Quality & Completion
-          </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              gap: 12,
-              justifyContent: "space-between",
-            }}
-          >
-            {kpis.average_days_to_complete && (
-              <View style={{ width: "48%" }}>
-                <KPICard
-                  title="Days to Complete"
-                  value={kpis.average_days_to_complete}
-                  icon="⏳"
-                />
-              </View>
-            )}
-            {kpis.average_score !== null && (
-              <View style={{ width: "48%" }}>
-                <KPICard
-                  title="Avg Score"
-                  value={kpis.average_score.toFixed(1)}
-                  icon="⭐"
-                  subtitle={`${kpis.books_rated} rated`}
-                />
-              </View>
-            )}
-          </View>
-        </>
-      )}
-
-      {/* Period Info */}
-      {response?.period && (
-        <View style={{ marginTop: 24, padding: 12, gap: 4 }}>
-          <Text
-            style={{
-              fontSize: 12,
-              color: TextColors.tertiary,
-              textAlign: "center",
-            }}
-          >
-            Statistics Period: {response.period.days} days
-          </Text>
-        </View>
-      )}
+      <SectionTitle
+        title="Library Insights"
+        caption="Highlights from completed books"
+      />
+      <View style={{ gap: 10 }}>
+        <InsightCard
+          title="Most Read Author"
+          primary={
+            insights.most_read_author
+              ? `${insights.most_read_author.author_name}`
+              : "No completed books yet"
+          }
+          secondary={
+            insights.most_read_author
+              ? `${insights.most_read_author.books_completed} books completed`
+              : undefined
+          }
+        />
+        <InsightCard
+          title="Fastest Book"
+          primary={
+            insights.fastest_book
+              ? `${insights.fastest_book.title}`
+              : "No completed books yet"
+          }
+          secondary={
+            insights.fastest_book
+              ? `${insights.fastest_book.total_pages ?? 0} pages in ${insights.fastest_book.days_to_finish} days`
+              : undefined
+          }
+        />
+        <InsightCard
+          title="Slowest Book"
+          primary={
+            insights.slowest_book
+              ? insights.slowest_book.title
+              : "No completed books yet"
+          }
+          secondary={
+            insights.slowest_book
+              ? `${insights.slowest_book.total_pages ?? 0} pages in ${insights.slowest_book.days_to_finish} days`
+              : undefined
+          }
+        />
+        <InsightCard
+          title="Longest Book"
+          primary={
+            insights.longest_book
+              ? insights.longest_book.title
+              : "No completed books yet"
+          }
+          secondary={
+            insights.longest_book
+              ? `${insights.longest_book.total_pages} pages`
+              : undefined
+          }
+        />
+        <InsightCard
+          title="Shortest Book"
+          primary={
+            insights.shortest_book
+              ? insights.shortest_book.title
+              : "No completed books yet"
+          }
+          secondary={
+            insights.shortest_book
+              ? `${insights.shortest_book.total_pages} pages`
+              : undefined
+          }
+        />
+        <InsightCard
+          title="Highest Rated Book"
+          primary={
+            insights.highest_rated_book
+              ? insights.highest_rated_book.title
+              : "No rated completed books"
+          }
+          secondary={
+            insights.highest_rated_book
+              ? `Score ${insights.highest_rated_book.score}`
+              : undefined
+          }
+        />
+        <InsightCard
+          title="Lowest Rated Book"
+          primary={
+            insights.lowest_rated_book
+              ? insights.lowest_rated_book.title
+              : "No rated completed books"
+          }
+          secondary={
+            insights.lowest_rated_book
+              ? `Score ${insights.lowest_rated_book.score}`
+              : undefined
+          }
+        />
+      </View>
     </ScrollView>
   );
 }

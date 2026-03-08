@@ -189,6 +189,31 @@ export class ReadingSessionRepository {
   }
 
   /**
+   * Calculate global reading session metrics for COMPLETED books only
+   * @returns {Promise<Object>} Global completed-book session statistics
+   */
+  async calculateCompletedBooksMetrics() {
+    const pool = await this.mssqlClient.getConnection();
+
+    const query = `
+      SELECT 
+        COUNT(*) as totalSessions,
+        ISNULL(SUM(rs.pages_read), 0) as totalPages,
+        COUNT(DISTINCT rs.book_id) as booksWithSessions,
+        MIN(rs.occurred_at) as firstSessionDate,
+        MAX(rs.occurred_at) as lastSessionDate,
+        COUNT(DISTINCT CAST(rs.occurred_at AS DATE)) as readingDays
+      FROM ReadingSessions rs
+      INNER JOIN Books b ON b.id = rs.book_id
+      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      WHERE bs.internal_code = 'COMPLETED'
+    `;
+
+    const result = await pool.request().query(query);
+    return result.recordset[0];
+  }
+
+  /**
    * Get all sessions ordered by date (for streak calculation)
    * @returns {Promise<Array>} Sessions with dates
    */
@@ -198,6 +223,26 @@ export class ReadingSessionRepository {
     const query = `
       SELECT DISTINCT CAST(occurred_at AS DATE) as session_date
       FROM ReadingSessions
+      ORDER BY session_date DESC
+    `;
+
+    const result = await pool.request().query(query);
+    return result.recordset.map((r) => r.session_date);
+  }
+
+  /**
+   * Get all session dates for COMPLETED books only (for streak calculation)
+   * @returns {Promise<Array<Date>>} Session dates sorted desc
+   */
+  async getCompletedSessionDates() {
+    const pool = await this.mssqlClient.getConnection();
+
+    const query = `
+      SELECT DISTINCT CAST(rs.occurred_at AS DATE) as session_date
+      FROM ReadingSessions rs
+      INNER JOIN Books b ON b.id = rs.book_id
+      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      WHERE bs.internal_code = 'COMPLETED'
       ORDER BY session_date DESC
     `;
 

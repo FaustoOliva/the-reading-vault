@@ -44,6 +44,54 @@ export interface GlobalReadingKPIs {
   // Score analytics
   average_score: number | null;
   books_rated: number;
+
+  // Completed-books insights
+  library_insights: {
+    most_read_author: {
+      author_name: string;
+      books_completed: number;
+    } | null;
+    fastest_book: {
+      id: number;
+      title: string;
+      author_name: string;
+      total_pages: number | null;
+      days_to_finish: number;
+      pages_per_day: number | null;
+    } | null;
+    slowest_book: {
+      id: number;
+      title: string;
+      author_name: string;
+      total_pages: number | null;
+      days_to_finish: number;
+      pages_per_day: number | null;
+    } | null;
+    longest_book: {
+      id: number;
+      title: string;
+      author_name: string;
+      total_pages: number;
+    } | null;
+    shortest_book: {
+      id: number;
+      title: string;
+      author_name: string;
+      total_pages: number;
+    } | null;
+    highest_rated_book: {
+      id: number;
+      title: string;
+      author_name: string;
+      score: number;
+    } | null;
+    lowest_rated_book: {
+      id: number;
+      title: string;
+      author_name: string;
+      score: number;
+    } | null;
+  };
 }
 
 export interface KPIResponse {
