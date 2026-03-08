@@ -59,12 +59,15 @@ export function InputWithSuggestions({
   }, []);
 
   // Filter suggestions based on current input
-  const filteredSuggestions = suggestions.filter((suggestion) =>
-    suggestion.toLowerCase().includes(value.toLowerCase())
-  ).slice(0, 10); // Limit to 10 suggestions
+  const filteredSuggestions = suggestions
+    .filter((suggestion) =>
+      suggestion.toLowerCase().includes(value.toLowerCase()),
+    )
+    .slice(0, 10); // Limit to 10 suggestions
 
   // Only show suggestions if user has typed something and there are matches
-  const showSuggestions = isFocused && value.trim().length > 0 && filteredSuggestions.length > 0;
+  const showSuggestions =
+    isFocused && value.trim().length > 0 && filteredSuggestions.length > 0;
 
   const handleSelectSuggestion = (suggestion: string) => {
     // Clear any pending blur timeout
@@ -72,7 +75,7 @@ export function InputWithSuggestions({
       clearTimeout(blurTimeoutRef.current);
       blurTimeoutRef.current = null;
     }
-    
+
     onChangeText(suggestion);
     setIsFocused(false);
   };

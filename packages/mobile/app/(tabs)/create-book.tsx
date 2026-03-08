@@ -225,11 +225,16 @@ export default function CreateBookScreen() {
     >
       {/* Header */}
       <View style={{ gap: 4, marginBottom: 8 }}>
-        <Text style={{ fontSize: 28, fontWeight: "700", color: TextColors.primary }}>
+        <Text
+          style={{ fontSize: 28, fontWeight: "700", color: TextColors.primary }}
+        >
           Add New Book
         </Text>
-        <Text style={{ fontSize: 14, color: TextColors.secondary, lineHeight: 20 }}>
-          Expand your library by adding a new book. Select from existing authors or create new ones.
+        <Text
+          style={{ fontSize: 14, color: TextColors.secondary, lineHeight: 20 }}
+        >
+          Expand your library by adding a new book. Select from existing authors
+          or create new ones.
         </Text>
       </View>
       <FormInput

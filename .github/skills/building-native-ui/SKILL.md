@@ -226,9 +226,7 @@ MUST use two-column structure for list items with metadata:
 ```tsx
 // ✅ Correct
 <View style={{ marginBottom: 20 }}>
-  <Pressable style={{ paddingVertical: 16 }}>
-    {/* Content */}
-  </Pressable>
+  <Pressable style={{ paddingVertical: 16 }}>{/* Content */}</Pressable>
   <View style={{ height: 1, backgroundColor: Border.focus, marginTop: 16 }} />
 </View>
 ```
@@ -244,42 +242,58 @@ MUST use two-column structure for list items with metadata:
 ```tsx
 const [isOpen, setIsOpen] = useState(false);
 
-<View style={{ gap: 8, position: 'relative', zIndex: 10 }}>
+<View style={{ gap: 8, position: "relative", zIndex: 10 }}>
   <Pressable
     onPress={() => setIsOpen(!isOpen)}
     style={{
-      flexDirection: 'row',
-      justifyContent: 'space-between',
+      flexDirection: "row",
+      justifyContent: "space-between",
       paddingHorizontal: 16,
       paddingVertical: 12,
       borderWidth: 1.5,
       borderColor: isOpen ? Interactive.primary.default : Border.default,
       borderRadius: 12,
-      borderCurve: 'continuous',
+      borderCurve: "continuous",
     }}
   >
     <Text>{selectedOption.label}</Text>
-    <Text style={{ transform: [{ rotate: isOpen ? '180deg' : '0deg' }] }}>▼</Text>
+    <Text style={{ transform: [{ rotate: isOpen ? "180deg" : "0deg" }] }}>
+      ▼
+    </Text>
   </Pressable>
-  
+
   {isOpen && (
     <>
-      <Pressable 
-        style={{ position: 'absolute', top: -16, left: -16, right: -16, bottom: -16, zIndex: 999 }}
-        onPress={() => setIsOpen(false)} 
+      <Pressable
+        style={{
+          position: "absolute",
+          top: -16,
+          left: -16,
+          right: -16,
+          bottom: -16,
+          zIndex: 999,
+        }}
+        onPress={() => setIsOpen(false)}
       />
-      <View style={{ 
-        position: 'absolute',
-        top: 70,
-        backgroundColor: Background.surface,
-        borderRadius: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        zIndex: 1000,
-      }}>
+      <View
+        style={{
+          position: "absolute",
+          top: 70,
+          backgroundColor: Background.surface,
+          borderRadius: 12,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          zIndex: 1000,
+        }}
+      >
         {options.map((option) => (
-          <Pressable onPress={() => { handleSelect(option); setIsOpen(false); }}>
+          <Pressable
+            onPress={() => {
+              handleSelect(option);
+              setIsOpen(false);
+            }}
+          >
             <Text>{option.label}</Text>
             {isSelected && <Text>✓</Text>}
           </Pressable>
@@ -287,10 +301,11 @@ const [isOpen, setIsOpen] = useState(false);
       </View>
     </>
   )}
-</View>
+</View>;
 ```
 
 **Required features:**
+
 - Border color changes to primary when open
 - Down arrow rotates 180° when open
 - Selected option shows checkmark (✓)
@@ -317,17 +332,21 @@ const [isOpen, setIsOpen] = useState(false);
           paddingHorizontal: 12,
           paddingVertical: 6,
           borderRadius: 16,
-          backgroundColor: isActive ? Interactive.primary.default : Background.surface,
+          backgroundColor: isActive
+            ? Interactive.primary.default
+            : Background.surface,
           borderWidth: 1,
           borderColor: isActive ? Interactive.primary.default : Border.default,
-          borderCurve: 'continuous',
+          borderCurve: "continuous",
         }}
       >
-        <Text style={{
-          fontSize: 13,
-          fontWeight: '600',
-          color: isActive ? Interactive.primary.text : Text.primary,
-        }}>
+        <Text
+          style={{
+            fontSize: 13,
+            fontWeight: "600",
+            color: isActive ? Interactive.primary.text : Text.primary,
+          }}
+        >
           {status.label}
         </Text>
       </Pressable>
@@ -337,9 +356,9 @@ const [isOpen, setIsOpen] = useState(false);
 ```
 
 **Rules:**
+
 - MUST be horizontally scrollable
 - MUST hide scroll indicator
 - Active chip: primary background + white text
 - Inactive chip: surface background + border
 - Compact padding: 12px horizontal, 6px vertical
-

@@ -10,11 +10,7 @@ import { Book, BookStatus } from "@/types/book";
 import { BookStatusBadge } from "@/components/ui/bookStatusBadge";
 import { useBookStats } from "@/hooks/useBookStats";
 import { FadeInView } from "@/components/ui/animated";
-import {
-  Text as TextColors,
-  Border,
-  Interactive,
-} from "@/constants/colors";
+import { Text as TextColors, Border, Interactive } from "@/constants/colors";
 
 interface BookListItemProps {
   book: Book;
@@ -25,9 +21,13 @@ const BookListItemComponent = ({ book }: BookListItemProps) => {
   const { data: readingStats } = useBookStats(isReading ? book.id : undefined);
 
   const pagesRead = readingStats?.current_cycle_stats?.pages_read ?? 0;
-  const hasTotalPages = typeof book.totalPages === "number" && book.totalPages > 0;
+  const hasTotalPages =
+    typeof book.totalPages === "number" && book.totalPages > 0;
   const progressPercent = hasTotalPages
-    ? Math.max(0, Math.min(100, (pagesRead / (book.totalPages as number)) * 100))
+    ? Math.max(
+        0,
+        Math.min(100, (pagesRead / (book.totalPages as number)) * 100),
+      )
     : null;
 
   const metadataParts: string[] = [];
@@ -48,7 +48,9 @@ const BookListItemComponent = ({ book }: BookListItemProps) => {
               paddingTop: 16,
               paddingBottom: 16,
               paddingHorizontal: 4,
-              backgroundColor: pressed ? Interactive.secondary.hover : "transparent",
+              backgroundColor: pressed
+                ? Interactive.secondary.hover
+                : "transparent",
             })}
           >
             <View style={{ flexDirection: "row", gap: 12 }}>

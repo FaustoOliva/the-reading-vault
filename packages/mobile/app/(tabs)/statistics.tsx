@@ -189,7 +189,7 @@ export default function StatisticsScreen() {
         style={{
           fontSize: 28,
           fontWeight: "700",
-          color: TextColors.primary
+          color: TextColors.primary,
         }}
       >
         Your Reading Stats

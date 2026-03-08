@@ -64,7 +64,9 @@ export function DatePicker({
 
     return (
       <View style={{ gap: 8 }}>
-        <Text style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}>
+        <Text
+          style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}
+        >
           {label}
         </Text>
         <input
@@ -111,7 +113,9 @@ export function DatePicker({
   // Native implementation using @react-native-community/datetimepicker
   return (
     <View style={{ gap: 8 }}>
-      <Text style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}>
+      <Text
+        style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}
+      >
         {label}
       </Text>
       <Pressable

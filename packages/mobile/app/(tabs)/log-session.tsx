@@ -193,11 +193,16 @@ export default function LogSessionScreen() {
     >
       {/* Header */}
       <View style={{ gap: 4, marginBottom: 8 }}>
-        <Text style={{ fontSize: 28, fontWeight: "700", color: TextColors.primary }}>
+        <Text
+          style={{ fontSize: 28, fontWeight: "700", color: TextColors.primary }}
+        >
           Log Reading Session
         </Text>
-        <Text style={{ fontSize: 14, color: TextColors.secondary, lineHeight: 20 }}>
-          Track your reading progress by logging completed sessions for books in your wish list or currently reading.
+        <Text
+          style={{ fontSize: 14, color: TextColors.secondary, lineHeight: 20 }}
+        >
+          Track your reading progress by logging completed sessions for books in
+          your wish list or currently reading.
         </Text>
       </View>
 
@@ -205,14 +210,26 @@ export default function LogSessionScreen() {
       <View style={{ gap: 8, position: "relative", zIndex: 20 }}>
         {booksLoading ? (
           <>
-            <Text style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "600",
+                color: TextColors.primary,
+              }}
+            >
               Book *
             </Text>
             <ActivityIndicator color={Interactive.primary.default} />
           </>
         ) : books.length === 0 ? (
           <>
-            <Text style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "600",
+                color: TextColors.primary,
+              }}
+            >
               Book *
             </Text>
             <Text
@@ -234,7 +251,9 @@ export default function LogSessionScreen() {
           <CustomDropdown
             label="Book *"
             value={selectedBookId ?? 0}
-            onValueChange={(value) => setSelectedBookId(value === 0 ? null : value)}
+            onValueChange={(value) =>
+              setSelectedBookId(value === 0 ? null : value)
+            }
             options={[
               { label: "Select a book to log session", value: 0 },
               ...bookOptions,
@@ -272,14 +291,18 @@ export default function LogSessionScreen() {
 
       {/* Pages Read Input */}
       <View style={{ gap: 8 }}>
-        <Text style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}>
+        <Text
+          style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}
+        >
           Pages Read *
         </Text>
         <TextInput
           style={{
             height: 50,
             borderWidth: 1.5,
-            borderColor: validationErrors.pagesRead ? Feedback.error.border : Border.default,
+            borderColor: validationErrors.pagesRead
+              ? Feedback.error.border
+              : Border.default,
             borderRadius: 12,
             borderCurve: "continuous",
             paddingHorizontal: 16,
@@ -325,14 +348,18 @@ export default function LogSessionScreen() {
 
       {/* Duration Input */}
       <View style={{ gap: 8 }}>
-        <Text style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}>
+        <Text
+          style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}
+        >
           Duration (optional)
         </Text>
         <TextInput
           style={{
             height: 50,
             borderWidth: 1.5,
-            borderColor: validationErrors.duration ? Feedback.error.border : Border.default,
+            borderColor: validationErrors.duration
+              ? Feedback.error.border
+              : Border.default,
             borderRadius: 12,
             borderCurve: "continuous",
             paddingHorizontal: 16,
@@ -478,4 +505,3 @@ export default function LogSessionScreen() {
     </ScrollView>
   );
 }
-

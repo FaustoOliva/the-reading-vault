@@ -53,7 +53,11 @@ export function CustomDropdown<T extends string | number>({
   accessibilityHint,
 }: CustomDropdownProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [menuPosition, setMenuPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
   const triggerRef = useRef<View>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
@@ -169,7 +173,8 @@ export function CustomDropdown<T extends string | number>({
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel || label}
         accessibilityHint={
-          accessibilityHint || `Currently ${selectedOption?.label}. Tap to change.`
+          accessibilityHint ||
+          `Currently ${selectedOption?.label}. Tap to change.`
         }
         style={({ pressed }) => ({
           flexDirection: "row",
@@ -261,7 +266,13 @@ export function CustomDropdown<T extends string | number>({
         >
           <View style={{ flex: 1 }}>
             <Pressable
-              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+              }}
               onPress={() => setIsOpen(false)}
             />
             <View
