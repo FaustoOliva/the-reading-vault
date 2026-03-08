@@ -28,12 +28,14 @@ interface VelocityChartProps {
   currentVelocity: number | null; // pages/day
   targetVelocity?: number | null;
   label?: string;
+  subtitle?: string;
 }
 
 export function VelocityChart({
   currentVelocity,
   targetVelocity = null,
   label = "Reading Velocity",
+  subtitle,
 }: VelocityChartProps) {
   const velocity = currentVelocity || 0;
   const target = targetVelocity || velocity * 1.2; // Default target: 20% more
@@ -45,14 +47,7 @@ export function VelocityChart({
 
   return (
     <View style={{ gap: 6 }}>
-      {/* Label and Value */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "baseline",
-        }}
-      >
+      <View style={{ gap: 2 }}>
         <Text
           style={{
             fontSize: 13,
@@ -65,7 +60,7 @@ export function VelocityChart({
         <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4 }}>
           <Text
             style={{
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: "700",
               color: isOnTarget ? Feedback.success.text : TextColors.primary,
               fontVariant: ["tabular-nums"],
@@ -76,6 +71,11 @@ export function VelocityChart({
           <Text style={{ fontSize: 13, color: TextColors.secondary }}>
             pages/day
           </Text>
+          {subtitle && (
+            <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
+              {subtitle}
+            </Text>
+          )}
         </View>
       </View>
 

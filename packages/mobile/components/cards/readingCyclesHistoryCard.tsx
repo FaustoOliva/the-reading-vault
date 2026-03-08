@@ -23,17 +23,10 @@
  * - Sort cycles in reverse order (most recent first)
  */
 
-import { useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
 import { ReadingCycle } from "@/types/book";
 import { BookStatusBadge } from "@/components/ui/bookStatusBadge";
-import {
-  Background,
-  Text as TextColors,
-  Border,
-  Feedback,
-  Interactive,
-} from "@/constants/colors";
+import { Background, Text as TextColors, Border } from "@/constants/colors";
 
 interface ReadingCyclesHistoryCardProps {
   cycles: ReadingCycle[];
@@ -56,28 +49,20 @@ function formatShortDate(date: Date | null): string {
 /**
  * Single cycle item component
  */
-function CycleItem({
-  cycle,
-  isCurrent,
-}: {
-  cycle: ReadingCycle;
-  isCurrent: boolean;
-}) {
+function CycleItem({ cycle }: { cycle: ReadingCycle }) {
   return (
     <View
       style={{
         padding: 12,
         borderRadius: 10,
-        backgroundColor: isCurrent
-          ? Feedback.info.background
-          : Background.primary,
+        backgroundColor: Background.primary,
         borderWidth: 1,
-        borderColor: isCurrent ? Feedback.info.border : Border.default,
+        borderColor: Border.default,
         gap: 10,
         borderCurve: "continuous",
       }}
     >
-      {/* Header: Cycle number + Status + Current badge */}
+      {/* Header: Cycle number + status */}
       <View
         style={{
           flexDirection: "row",
@@ -98,32 +83,10 @@ function CycleItem({
         </Text>
 
         <BookStatusBadge status={cycle?.status ?? "WISH_LIST"} />
-
-        {isCurrent && (
-          <View
-            style={{
-              paddingHorizontal: 8,
-              paddingVertical: 4,
-              borderRadius: 8,
-              backgroundColor: Feedback.info.text,
-              borderCurve: "continuous",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 11,
-                fontWeight: "700",
-                color: "#FFFFFF",
-              }}
-            >
-              CURRENT
-            </Text>
-          </View>
-        )}
       </View>
 
       {/* Stats Row */}
-      <View style={{ flexDirection: "row", gap: 12 }}>
+      <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-end" }}>
         {/* Sessions */}
         <View style={{ flex: 1, gap: 2 }}>
           <Text
@@ -137,8 +100,8 @@ function CycleItem({
           </Text>
           <Text
             style={{
-              fontSize: 15,
-              fontWeight: "600",
+              fontSize: 20,
+              fontWeight: "700",
               fontVariant: ["tabular-nums"],
               color: TextColors.primary,
             }}
@@ -160,8 +123,8 @@ function CycleItem({
           </Text>
           <Text
             style={{
-              fontSize: 15,
-              fontWeight: "600",
+              fontSize: 20,
+              fontWeight: "700",
               fontVariant: ["tabular-nums"],
               color: TextColors.primary,
             }}
@@ -184,7 +147,7 @@ function CycleItem({
             Period
           </Text>
           <Text style={{ fontSize: 13, color: TextColors.secondary }}>
-            {formatShortDate(cycle?.first_session ?? null)} →{" "}
+            {formatShortDate(cycle?.first_session ?? null)} -{" "}
             {formatShortDate(cycle?.last_session ?? null)}
           </Text>
         </View>
@@ -196,17 +159,9 @@ function CycleItem({
 export function ReadingCyclesHistoryCard({
   cycles,
 }: ReadingCyclesHistoryCardProps) {
-  // Sort cycles in reverse order (most recent first)
   const sortedCycles = [...(cycles ?? [])].sort(
-    (a, b) => (b?.cycle_number ?? 0) - (a?.cycle_number ?? 0),
+    (a, b) => (a?.cycle_number ?? 0) - (b?.cycle_number ?? 0),
   );
-
-  // Separate current cycle (last in the array) from previous cycles
-  const currentCycle = sortedCycles.length > 0 ? sortedCycles[0] : null;
-  const previousCycles = sortedCycles.slice(1);
-
-  // State for collapsing previous cycles
-  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <View
@@ -222,9 +177,9 @@ export function ReadingCyclesHistoryCard({
     >
       {/* Section Title */}
       <Text
-        style={{ fontSize: 16, fontWeight: "700", color: TextColors.primary }}
+        style={{ fontSize: 18, fontWeight: "700", color: TextColors.primary }}
       >
-        📖 Reading Cycles
+        Reading Cycles
       </Text>
 
       {/* Total Cycles Count */}
@@ -265,57 +220,9 @@ export function ReadingCyclesHistoryCard({
         </Text>
       ) : (
         <View style={{ gap: 12 }}>
-          {/* Current Cycle - Always Visible */}
-          {currentCycle && <CycleItem cycle={currentCycle} isCurrent={true} />}
-
-          {/* Previous Cycles - Collapsible */}
-          {previousCycles.length > 0 && (
-            <>
-              {/* Toggle Button */}
-              <Pressable
-                onPress={() => setIsExpanded(!isExpanded)}
-                style={({ pressed }) => ({
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  borderRadius: 8,
-                  backgroundColor: pressed
-                    ? Interactive.secondary.pressed
-                    : Interactive.secondary.default,
-                  borderWidth: 1,
-                  borderColor: Interactive.secondary.border,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  borderCurve: "continuous",
-                })}
-              >
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "600",
-                    color: Interactive.secondary.text,
-                  }}
-                >
-                  Previous Cycles ({previousCycles.length})
-                </Text>
-                <Text
-                  style={{ fontSize: 16, color: Interactive.secondary.text }}
-                >
-                  {isExpanded ? "▼" : "▶"}
-                </Text>
-              </Pressable>
-
-              {/* Previous Cycles List */}
-              {isExpanded &&
-                previousCycles.map((cycle) => (
-                  <CycleItem
-                    key={`cycle-${cycle.cycle_number}`}
-                    cycle={cycle}
-                    isCurrent={false}
-                  />
-                ))}
-            </>
-          )}
+          {sortedCycles.map((cycle) => (
+            <CycleItem key={`cycle-${cycle.cycle_number}`} cycle={cycle} />
+          ))}
         </View>
       )}
     </View>

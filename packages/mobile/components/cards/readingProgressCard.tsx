@@ -65,23 +65,21 @@ export function ReadingProgressCard({
     <View
       style={{
         backgroundColor: Background.surface,
-        padding: 16,
+        padding: 18,
         borderRadius: 12,
-        gap: 16,
+        gap: 18,
         borderWidth: 1,
         borderColor: Border.default,
         borderCurve: "continuous",
       }}
     >
-      {/* Section Title */}
       <Text
-        style={{ fontSize: 16, fontWeight: "700", color: TextColors.primary }}
+        style={{ fontSize: 18, fontWeight: "700", color: TextColors.primary }}
       >
-        📈 Reading Progress
+        Reading Progress
       </Text>
 
       {!hasData ? (
-        /* No sessions yet */
         <View
           style={{
             padding: 16,
@@ -97,34 +95,34 @@ export function ReadingProgressCard({
               fontSize: 14,
               color: Feedback.info.text,
               textAlign: "center",
+              lineHeight: 20,
             }}
           >
-            No reading sessions logged yet. Start reading to see your progress!
+            No reading sessions logged yet. Log your first session to track your
+            progress.
           </Text>
         </View>
       ) : (
         <>
-          {/* Progress Bar */}
+          {/* Completion is the primary metric. */}
           {totalPages !== null && (
             <ProgressBar progress={progressPercent} label="Book Completion" />
           )}
 
-          {/* Velocity Chart */}
           <VelocityChart
             currentVelocity={stats?.velocity ?? null}
-            label="Current Velocity"
+            label="Average reading speed"
+            subtitle="(this cycle)"
           />
 
-          {/* Key Metrics Grid */}
           <View
             style={{
               flexDirection: "row",
               flexWrap: "wrap",
               gap: 12,
-              marginTop: 8,
+              marginTop: 2,
             }}
           >
-            {/* Sessions Count */}
             <View
               style={{
                 flex: 1,
@@ -135,16 +133,17 @@ export function ReadingProgressCard({
             >
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: "600",
                   color: TextColors.tertiary,
+                  textTransform: "uppercase",
                 }}
               >
                 Sessions
               </Text>
               <Text
                 style={{
-                  fontSize: 24,
+                  fontSize: 28,
                   fontWeight: "700",
                   fontVariant: ["tabular-nums"],
                   color: TextColors.primary,
@@ -154,7 +153,6 @@ export function ReadingProgressCard({
               </Text>
             </View>
 
-            {/* Days Elapsed */}
             <View
               style={{
                 flex: 1,
@@ -165,16 +163,17 @@ export function ReadingProgressCard({
             >
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: "600",
                   color: TextColors.tertiary,
+                  textTransform: "uppercase",
                 }}
               >
                 Days Elapsed
               </Text>
               <Text
                 style={{
-                  fontSize: 24,
+                  fontSize: 28,
                   fontWeight: "700",
                   fontVariant: ["tabular-nums"],
                   color: TextColors.primary,
@@ -184,7 +183,6 @@ export function ReadingProgressCard({
               </Text>
             </View>
 
-            {/* Pages Read */}
             <View
               style={{
                 flex: 1,
@@ -195,16 +193,17 @@ export function ReadingProgressCard({
             >
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: "600",
                   color: TextColors.tertiary,
+                  textTransform: "uppercase",
                 }}
               >
                 Pages Read
               </Text>
               <Text
                 style={{
-                  fontSize: 24,
+                  fontSize: 28,
                   fontWeight: "700",
                   fontVariant: ["tabular-nums"],
                   color: TextColors.primary,
@@ -215,7 +214,11 @@ export function ReadingProgressCard({
             </View>
           </View>
 
-          {/* Date Range */}
+          <Text style={{ fontSize: 13, color: TextColors.secondary }}>
+            {stats?.sessions_count ?? 0} sessions • {stats?.days_elapsed ?? 0}{" "}
+            days • {pagesReadInCycle.toLocaleString()} pages
+          </Text>
+
           <View
             style={{
               flexDirection: "row",
@@ -256,7 +259,6 @@ export function ReadingProgressCard({
             </View>
           </View>
 
-          {/* Estimated Completion - Only for READING status and future dates */}
           {bookStatus === "READING" &&
             stats?.estimated_completion &&
             new Date(stats.estimated_completion) > new Date() && (

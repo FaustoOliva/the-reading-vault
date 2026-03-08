@@ -25,6 +25,8 @@ import {
 import { BookDetailHero } from "@/components/ui/bookDetailHero";
 import { ReadingProgressCard } from "@/components/cards/readingProgressCard";
 import { ReadingCyclesHistoryCard } from "@/components/cards/readingCyclesHistoryCard";
+import { ReviewCard } from "@/components/cards/reviewCard";
+import { BookDetailsCard } from "@/components/cards/bookDetailsCard";
 import { ReviewBookModal } from "@/components/modals/reviewBookModal";
 import { EditBookModal } from "@/components/modals/editBookModal";
 import { SkeletonBookDetail } from "@/components/ui/skeletonBookDetail";
@@ -139,6 +141,13 @@ export default function BookDetailScreen() {
   }
 
   const { book, current_cycle_stats, reading_cycles } = bookDetails;
+  const hasMultipleCycles = (reading_cycles?.length ?? 0) > 1;
+  const shouldShowReview =
+    book.status === BookStatus.PENDING_SCORE ||
+    book.status === BookStatus.COMPLETED ||
+    book.status === BookStatus.ABANDONED ||
+    book.score !== null ||
+    !!book.comment;
 
   /**
    * Action Handlers
@@ -192,20 +201,19 @@ export default function BookDetailScreen() {
             onRefresh={() => refetch()}
           />
         }
-        contentContainerStyle={{ padding: 16, gap: 16 }}
+        contentContainerStyle={{ padding: 16, gap: 20 }}
         contentInsetAdjustmentBehavior="automatic"
       >
-        {/* Hero Section: Book metadata + action buttons */}
+        {/* Title + status context */}
         <BookDetailHero
           book={book}
-          onEdit={() => setEditModalVisible(true)}
           onReview={() => setReviewModalVisible(true)}
           onRequestReview={handleRequestReview}
           onReopen={handleReopen}
           isActionPending={isActionPending}
         />
 
-        {/* Reading Progress: Visual charts + current cycle stats */}
+        {/* Reading Progress */}
         {book.status !== BookStatus.WISH_LIST && (
           <ReadingProgressCard
             stats={current_cycle_stats}
@@ -215,8 +223,22 @@ export default function BookDetailScreen() {
           />
         )}
 
-        {/* Reading Cycles: Current expanded, previous collapsed */}
-        <ReadingCyclesHistoryCard cycles={reading_cycles ?? []} />
+        {/* Review */}
+        {shouldShowReview && (
+          <ReviewCard score={book.score} comment={book.comment} />
+        )}
+
+        {/* Reading Cycles (only useful when there is history) */}
+        {hasMultipleCycles && (
+          <ReadingCyclesHistoryCard cycles={reading_cycles ?? []} />
+        )}
+
+        {/* Book Details */}
+        <BookDetailsCard
+          book={book}
+          onEdit={() => setEditModalVisible(true)}
+          isActionPending={isActionPending}
+        />
       </ScrollView>
 
       {/* Review Modal */}
