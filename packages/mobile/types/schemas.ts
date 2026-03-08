@@ -48,6 +48,13 @@ export const createBookSchema = z.object({
     fieldName: "Total pages",
     required: false,
   }),
+  publicationYear: numericString({
+    min: 1000,
+    max: 9999,
+    integer: true,
+    fieldName: "Publication year",
+    required: false,
+  }),
   status: bookStatusSchema.default(BookStatus.WISH_LIST),
   score: numericString({
     min: 0,

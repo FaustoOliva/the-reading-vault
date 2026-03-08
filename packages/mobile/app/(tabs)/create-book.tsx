@@ -74,6 +74,7 @@ export default function CreateBookScreen() {
   const [countryName, setCountryName] = useState("");
   const [isbn, setIsbn] = useState("");
   const [totalPages, setTotalPages] = useState("");
+  const [publicationYear, setPublicationYear] = useState("");
   const [status, setStatus] = useState<BookStatus>(BookStatus.WISH_LIST);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -125,6 +126,7 @@ export default function CreateBookScreen() {
       countryName,
       isbn,
       totalPages,
+      publicationYear,
       status,
     });
 
@@ -156,6 +158,7 @@ export default function CreateBookScreen() {
       title: title.trim(),
       isbn: isbn.trim() || undefined,
       totalPages: totalPages ? Number(totalPages) : undefined,
+      publicationYear: publicationYear ? Number(publicationYear) : undefined,
       status: status,
       author: {
         name: authorName.trim(),
@@ -177,6 +180,7 @@ export default function CreateBookScreen() {
         setCountryName("");
         setIsbn("");
         setTotalPages("");
+        setPublicationYear("");
         setStatus(BookStatus.WISH_LIST);
         setErrors({});
 
@@ -318,6 +322,17 @@ export default function CreateBookScreen() {
         error={errors.totalPages}
         accessibilityLabel="Total pages, optional"
         accessibilityHint="Enter the total number of pages in the book"
+      />
+
+      <FormInput
+        label="Publication Year"
+        value={publicationYear}
+        onChangeText={setPublicationYear}
+        placeholder="e.g. 2020 (optional)"
+        keyboardType="numeric"
+        error={errors.publicationYear}
+        accessibilityLabel="Publication year, optional"
+        accessibilityHint="Enter the year the book was published"
       />
 
       <Pressable
