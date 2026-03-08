@@ -324,22 +324,30 @@ export class BookRepository {
 
   /**
    * Create a new book
-   * @param {Object} data - { title, isbn, authorId, totalPages, statusId }
+   * @param {Object} data - { title, isbn, authorId, totalPages, publicationYear, statusId, score?, comment? }
    * @param {sql.Transaction} transaction - Required transaction
    * @returns {Promise<Book>} Created book entity
    */
   async create(data, transaction) {
-    const { title, isbn, authorId, totalPages, publicationYear, statusId } =
-      data;
+    const {
+      title,
+      isbn,
+      authorId,
+      totalPages,
+      publicationYear,
+      statusId,
+      score,
+      comment,
+    } = data;
 
     const request = new sql.Request(transaction);
 
     const query = `
-      INSERT INTO Books (title, isbn, author_id, total_pages, publication_year, status_id, current_reading_cycle)
+      INSERT INTO Books (title, isbn, author_id, total_pages, publication_year, status_id, current_reading_cycle, score, comment)
       OUTPUT INSERTED.id, INSERTED.title, INSERTED.isbn, INSERTED.author_id, 
              INSERTED.total_pages, INSERTED.publication_year, INSERTED.current_reading_cycle, 
              INSERTED.score, INSERTED.comment
-      VALUES (@title, @isbn, @authorId, @totalPages, @publicationYear, @statusId, 1)
+      VALUES (@title, @isbn, @authorId, @totalPages, @publicationYear, @statusId, 1, @score, @comment)
     `;
 
     const result = await request
@@ -349,6 +357,8 @@ export class BookRepository {
       .input("totalPages", sql.Int, totalPages || null)
       .input("publicationYear", sql.Int, publicationYear || null)
       .input("statusId", sql.Int, statusId)
+      .input("score", sql.Decimal(3, 1), score ?? null)
+      .input("comment", sql.NVarChar, comment || null)
       .query(query);
 
     const insertedRecord = result.recordset[0];
@@ -436,5 +446,143 @@ export class BookRepository {
 
     const result = await pool.request().query(query);
     return result.recordset[0].average_days || null;
+  }
+
+  /**
+   * Get library insights based on COMPLETED books only
+   * @returns {Promise<Object>} Completed-books insights
+   */
+  async getCompletedLibraryInsights() {
+    const pool = await this.mssqlClient.getConnection();
+
+    const [mostReadAuthorResult, speedResult, lengthResult, ratingResult] =
+      await Promise.all([
+        pool.request().query(`
+          SELECT TOP 1
+            a.name as author_name,
+            COUNT(*) as books_completed
+          FROM Books b
+          INNER JOIN Authors a ON b.author_id = a.id
+          INNER JOIN BookStatuses bs ON b.status_id = bs.id
+          WHERE bs.internal_code = 'COMPLETED'
+          GROUP BY a.name
+          ORDER BY books_completed DESC, a.name ASC
+        `),
+        pool.request().query(`
+          SELECT
+            b.id,
+            b.title,
+            a.name as author_name,
+            ISNULL(b.total_pages, stats.total_pages_read) as total_pages,
+            stats.days_to_finish,
+            stats.pages_per_day
+          FROM Books b
+          INNER JOIN Authors a ON b.author_id = a.id
+          INNER JOIN BookStatuses bs ON b.status_id = bs.id
+          INNER JOIN (
+            SELECT
+              rs.book_id,
+              SUM(rs.pages_read) as total_pages_read,
+              DATEDIFF(DAY, MIN(rs.occurred_at), MAX(rs.occurred_at)) + 1 as days_to_finish,
+              CAST(SUM(rs.pages_read) AS FLOAT) /
+                NULLIF(DATEDIFF(DAY, MIN(rs.occurred_at), MAX(rs.occurred_at)) + 1, 0) as pages_per_day
+            FROM ReadingSessions rs
+            GROUP BY rs.book_id
+          ) stats ON stats.book_id = b.id
+          WHERE bs.internal_code = 'COMPLETED'
+          ORDER BY stats.pages_per_day DESC, b.title ASC
+        `),
+        pool.request().query(`
+          SELECT
+            b.id,
+            b.title,
+            a.name as author_name,
+            b.total_pages
+          FROM Books b
+          INNER JOIN Authors a ON b.author_id = a.id
+          INNER JOIN BookStatuses bs ON b.status_id = bs.id
+          WHERE bs.internal_code = 'COMPLETED' AND b.total_pages IS NOT NULL
+          ORDER BY b.total_pages DESC, b.title ASC
+        `),
+        pool.request().query(`
+          SELECT
+            b.id,
+            b.title,
+            a.name as author_name,
+            b.score
+          FROM Books b
+          INNER JOIN Authors a ON b.author_id = a.id
+          INNER JOIN BookStatuses bs ON b.status_id = bs.id
+          WHERE bs.internal_code = 'COMPLETED' AND b.score IS NOT NULL
+          ORDER BY b.score DESC, b.title ASC
+        `),
+      ]);
+
+    const mostReadAuthorRow = mostReadAuthorResult.recordset[0];
+    const speedRows = speedResult.recordset;
+    const lengthRows = lengthResult.recordset;
+    const ratingRows = ratingResult.recordset;
+
+    const fastestBookRow = speedRows[0];
+    const slowestBookRow =
+      speedRows.length > 0 ? speedRows[speedRows.length - 1] : null;
+    const longestBookRow = lengthRows[0];
+    const shortestBookRow =
+      lengthRows.length > 0 ? lengthRows[lengthRows.length - 1] : null;
+    const highestRatedBookRow = ratingRows[0];
+    const lowestRatedBookRow =
+      ratingRows.length > 0 ? ratingRows[ratingRows.length - 1] : null;
+
+    const mapSpeedBook = (row) => {
+      if (!row) return null;
+
+      return {
+        id: row.id,
+        title: row.title,
+        author_name: row.author_name,
+        total_pages: row.total_pages,
+        days_to_finish: row.days_to_finish,
+        pages_per_day: row.pages_per_day
+          ? Math.round(row.pages_per_day * 100) / 100
+          : null,
+      };
+    };
+
+    const mapLengthBook = (row) => {
+      if (!row) return null;
+
+      return {
+        id: row.id,
+        title: row.title,
+        author_name: row.author_name,
+        total_pages: row.total_pages,
+      };
+    };
+
+    const mapRatedBook = (row) => {
+      if (!row) return null;
+
+      return {
+        id: row.id,
+        title: row.title,
+        author_name: row.author_name,
+        score: row.score,
+      };
+    };
+
+    return {
+      most_read_author: mostReadAuthorRow
+        ? {
+            author_name: mostReadAuthorRow.author_name,
+            books_completed: mostReadAuthorRow.books_completed,
+          }
+        : null,
+      fastest_book: mapSpeedBook(fastestBookRow),
+      slowest_book: mapSpeedBook(slowestBookRow),
+      longest_book: mapLengthBook(longestBookRow),
+      shortest_book: mapLengthBook(shortestBookRow),
+      highest_rated_book: mapRatedBook(highestRatedBookRow),
+      lowest_rated_book: mapRatedBook(lowestRatedBookRow),
+    };
   }
 }

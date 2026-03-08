@@ -38,7 +38,6 @@ import {
   Text,
   ScrollView,
   Pressable,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -75,8 +74,13 @@ export default function CreateBookScreen() {
   const [isbn, setIsbn] = useState("");
   const [totalPages, setTotalPages] = useState("");
   const [publicationYear, setPublicationYear] = useState("");
+  const [score, setScore] = useState("");
+  const [comment, setComment] = useState("");
   const [status, setStatus] = useState<BookStatus>(BookStatus.WISH_LIST);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const requiresReviewFields =
+    status === BookStatus.COMPLETED || status === BookStatus.ABANDONED;
 
   // Pre-fill form when coming from AI recommendations
   useEffect(() => {
@@ -120,14 +124,23 @@ export default function CreateBookScreen() {
    * Returns true if valid, false otherwise
    */
   const validateForm = (): boolean => {
+    const normalizedCountryName = countryName.trim() || undefined;
+    const normalizedIsbn = isbn.trim() || undefined;
+    const normalizedTotalPages = totalPages.trim() || undefined;
+    const normalizedPublicationYear = publicationYear.trim() || undefined;
+    const normalizedScore = score.trim() || undefined;
+    const normalizedComment = comment.trim() || undefined;
+
     const result = createBookSchema.safeParse({
       title,
       authorName,
-      countryName,
-      isbn,
-      totalPages,
-      publicationYear,
+      countryName: normalizedCountryName,
+      isbn: normalizedIsbn,
+      totalPages: normalizedTotalPages,
+      publicationYear: normalizedPublicationYear,
       status,
+      score: normalizedScore,
+      comment: normalizedComment,
     });
 
     if (!result.success) {
@@ -157,9 +170,13 @@ export default function CreateBookScreen() {
     const bookData = {
       title: title.trim(),
       isbn: isbn.trim() || undefined,
-      totalPages: totalPages ? Number(totalPages) : undefined,
-      publicationYear: publicationYear ? Number(publicationYear) : undefined,
+      totalPages: totalPages.trim() ? Number(totalPages) : undefined,
+      publicationYear: publicationYear.trim()
+        ? Number(publicationYear)
+        : undefined,
       status: status,
+      score: score.trim() ? Number(score) : undefined,
+      comment: comment.trim() || undefined,
       author: {
         name: authorName.trim(),
         // Only include nationality if creating a new author
@@ -181,6 +198,8 @@ export default function CreateBookScreen() {
         setIsbn("");
         setTotalPages("");
         setPublicationYear("");
+        setScore("");
+        setComment("");
         setStatus(BookStatus.WISH_LIST);
         setErrors({});
 
@@ -302,6 +321,34 @@ export default function CreateBookScreen() {
         accessibilityLabel="Initial book status"
         accessibilityHint="Select the starting status for this book. Defaults to Wish List"
       />
+
+      {requiresReviewFields && (
+        <>
+          <FormInput
+            label="Score *"
+            value={score}
+            onChangeText={setScore}
+            placeholder="Enter score (0 to 10, step 0.5)"
+            keyboardType="decimal-pad"
+            error={errors.score}
+            accessibilityLabel="Book score, required for completed or abandoned"
+            accessibilityHint="Enter a score from 0 to 10 in increments of 0.5"
+          />
+
+          <FormInput
+            label="Comment"
+            value={comment}
+            onChangeText={setComment}
+            placeholder="Write an optional comment"
+            error={errors.comment}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+            accessibilityLabel="Book comment, optional"
+            accessibilityHint="Write an optional review comment"
+          />
+        </>
+      )}
 
       <FormInput
         label="ISBN"

@@ -42,7 +42,16 @@ export class CreateBookService {
    * @returns {Promise<Book>}
    */
   async execute(input) {
-    const { title, isbn, totalPages, publicationYear, status, author } = input;
+    const {
+      title,
+      isbn,
+      totalPages,
+      publicationYear,
+      status,
+      score,
+      comment,
+      author,
+    } = input;
 
     // Step 1: Check if ISBN already exists (outside transaction)
     if (isbn) {
@@ -119,6 +128,8 @@ export class CreateBookService {
           totalPages,
           publicationYear,
           statusId,
+          ...(score !== undefined ? { score } : {}),
+          ...(comment !== undefined ? { comment } : {}),
         },
         transaction,
       );

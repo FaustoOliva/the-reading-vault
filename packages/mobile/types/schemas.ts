@@ -37,34 +37,50 @@ import { numericString, asFormDate } from "../adapters/formSchemas";
  * - Status defaults to WISH_LIST
  * - Nationality is required only when creating new author
  */
-export const createBookSchema = z.object({
-  title: titleSchema,
-  authorName: authorNameSchema,
-  countryName: countryNameSchema.optional(),
-  isbn: z.string().optional(),
-  totalPages: numericString({
-    positive: true,
-    integer: true,
-    fieldName: "Total pages",
-    required: false,
-  }),
-  publicationYear: numericString({
-    min: 1000,
-    max: 9999,
-    integer: true,
-    fieldName: "Publication year",
-    required: false,
-  }),
-  status: bookStatusSchema.default(BookStatus.WISH_LIST),
-  score: numericString({
-    min: 0,
-    max: 10,
-    multipleOf: 0.5,
-    fieldName: "Score",
-    required: false,
-  }),
-  comment: commentSchema,
-});
+export const createBookSchema = z
+  .object({
+    title: titleSchema,
+    authorName: authorNameSchema,
+    countryName: countryNameSchema.optional(),
+    isbn: z.string().optional(),
+    totalPages: numericString({
+      positive: true,
+      integer: true,
+      fieldName: "Total pages",
+      required: false,
+    }),
+    publicationYear: numericString({
+      min: 1000,
+      max: 9999,
+      integer: true,
+      fieldName: "Publication year",
+      required: false,
+    }),
+    status: bookStatusSchema.default(BookStatus.WISH_LIST),
+    score: numericString({
+      min: 0,
+      max: 10,
+      multipleOf: 0.5,
+      fieldName: "Score",
+      required: false,
+    }),
+    comment: commentSchema,
+  })
+  .refine(
+    (data) => {
+      if (
+        data.status === BookStatus.COMPLETED ||
+        data.status === BookStatus.ABANDONED
+      ) {
+        return data.score !== undefined;
+      }
+      return true;
+    },
+    {
+      message: "Score is required for completed or abandoned books",
+      path: ["score"],
+    },
+  );
 
 export type CreateBookFormData = z.infer<typeof createBookSchema>;
 
