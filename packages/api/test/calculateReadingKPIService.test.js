@@ -16,8 +16,8 @@ describe("CalculateReadingKPIService", () => {
     };
 
     mockReadingSessionRepository = {
-      calculateCompletedBooksMetrics: vi.fn(),
-      getCompletedSessionDates: vi.fn(),
+      calculateGlobalMetrics: vi.fn(),
+      getAllSessionDates: vi.fn(),
     };
 
     service = new CalculateReadingKPIService(
@@ -38,16 +38,14 @@ describe("CalculateReadingKPIService", () => {
       booksRated: 6,
     });
 
-    mockReadingSessionRepository.calculateCompletedBooksMetrics.mockResolvedValue(
-      {
-        totalSessions: 35,
-        totalPages: 5600,
-        readingDays: 25,
-        firstSessionDate: new Date("2025-01-01T00:00:00.000Z"),
-      },
-    );
+    mockReadingSessionRepository.calculateGlobalMetrics.mockResolvedValue({
+      totalSessions: 35,
+      totalPages: 5600,
+      readingDays: 25,
+      firstSessionDate: new Date("2025-01-01T00:00:00.000Z"),
+    });
 
-    mockReadingSessionRepository.getCompletedSessionDates.mockResolvedValue([
+    mockReadingSessionRepository.getAllSessionDates.mockResolvedValue([
       new Date("2026-03-07T00:00:00.000Z"),
       new Date("2026-03-06T00:00:00.000Z"),
       new Date("2026-03-05T00:00:00.000Z"),
@@ -106,10 +104,10 @@ describe("CalculateReadingKPIService", () => {
     const result = await service.execute();
 
     expect(
-      mockReadingSessionRepository.calculateCompletedBooksMetrics,
+      mockReadingSessionRepository.calculateGlobalMetrics,
     ).toHaveBeenCalledTimes(1);
     expect(
-      mockReadingSessionRepository.getCompletedSessionDates,
+      mockReadingSessionRepository.getAllSessionDates,
     ).toHaveBeenCalledTimes(1);
     expect(
       mockBookRepository.getCompletedLibraryInsights,
@@ -139,16 +137,14 @@ describe("CalculateReadingKPIService", () => {
       booksRated: 0,
     });
 
-    mockReadingSessionRepository.calculateCompletedBooksMetrics.mockResolvedValue(
-      {
-        totalSessions: 0,
-        totalPages: 0,
-        readingDays: 0,
-        firstSessionDate: null,
-      },
-    );
+    mockReadingSessionRepository.calculateGlobalMetrics.mockResolvedValue({
+      totalSessions: 0,
+      totalPages: 0,
+      readingDays: 0,
+      firstSessionDate: null,
+    });
 
-    mockReadingSessionRepository.getCompletedSessionDates.mockResolvedValue([]);
+    mockReadingSessionRepository.getAllSessionDates.mockResolvedValue([]);
     mockBookRepository.getAverageDaysToComplete.mockResolvedValue(null);
     mockBookRepository.getCompletedLibraryInsights.mockResolvedValue({
       most_read_author: null,
@@ -166,6 +162,99 @@ describe("CalculateReadingKPIService", () => {
     expect(result.kpis.current_streak).toBe(0);
     expect(result.kpis.longest_streak).toBe(0);
     expect(result.kpis.reading_days).toBe(0);
+    expect(result.kpis.library_insights.fastest_book).toBeNull();
+  });
+
+  it("counts current streak from yesterday when there is no session today", async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const twoDaysAgo = new Date(today);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+    mockBookRepository.calculateGlobalKPIs.mockResolvedValue({
+      total: 3,
+      completed: 1,
+      abandoned: 0,
+      reading: 2,
+      pendingScore: 0,
+      wishList: 0,
+      avgScore: null,
+      booksRated: 0,
+    });
+
+    mockReadingSessionRepository.calculateGlobalMetrics.mockResolvedValue({
+      totalSessions: 2,
+      totalPages: 40,
+      readingDays: 2,
+      firstSessionDate: twoDaysAgo,
+    });
+
+    mockReadingSessionRepository.getAllSessionDates.mockResolvedValue([
+      yesterday,
+      twoDaysAgo,
+    ]);
+
+    mockBookRepository.getAverageDaysToComplete.mockResolvedValue(null);
+    mockBookRepository.getCompletedLibraryInsights.mockResolvedValue({
+      most_read_author: null,
+      fastest_book: null,
+      slowest_book: null,
+      longest_book: null,
+      shortest_book: null,
+      highest_rated_book: null,
+      lowest_rated_book: null,
+    });
+
+    const result = await service.execute();
+
+    expect(result.kpis.current_streak).toBe(2);
+  });
+
+  it("uses all-session metrics for reading activity while keeping completed insights", async () => {
+    mockBookRepository.calculateGlobalKPIs.mockResolvedValue({
+      total: 10,
+      completed: 2,
+      abandoned: 1,
+      reading: 6,
+      pendingScore: 1,
+      wishList: 0,
+      avgScore: 7.5,
+      booksRated: 3,
+    });
+
+    // Activity metrics include all reading sessions (not only completed books).
+    mockReadingSessionRepository.calculateGlobalMetrics.mockResolvedValue({
+      totalSessions: 40,
+      totalPages: 1200,
+      readingDays: 20,
+      firstSessionDate: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    mockReadingSessionRepository.getAllSessionDates.mockResolvedValue([
+      new Date("2026-03-10T00:00:00.000Z"),
+      new Date("2026-03-09T00:00:00.000Z"),
+    ]);
+
+    mockBookRepository.getAverageDaysToComplete.mockResolvedValue(12);
+    mockBookRepository.getCompletedLibraryInsights.mockResolvedValue({
+      most_read_author: null,
+      fastest_book: null,
+      slowest_book: null,
+      longest_book: null,
+      shortest_book: null,
+      highest_rated_book: null,
+      lowest_rated_book: null,
+    });
+
+    const result = await service.execute();
+
+    expect(result.kpis.total_sessions).toBe(40);
+    expect(result.kpis.total_pages_read).toBe(1200);
+    expect(result.kpis.reading_days).toBe(20);
     expect(result.kpis.library_insights.fastest_book).toBeNull();
   });
 });

@@ -409,8 +409,8 @@ export class BookRepository {
         SUM(CASE WHEN bs.internal_code = 'READING' THEN 1 ELSE 0 END) as reading,
         SUM(CASE WHEN bs.internal_code = 'PENDING_SCORE' THEN 1 ELSE 0 END) as pendingScore,
         SUM(CASE WHEN bs.internal_code = 'WISH_LIST' THEN 1 ELSE 0 END) as wishList,
-        AVG(CASE WHEN b.score IS NOT NULL THEN b.score ELSE NULL END) as avgScore,
-        COUNT(CASE WHEN b.score IS NOT NULL THEN 1 END) as booksRated
+        AVG(CASE WHEN bs.internal_code IN ('COMPLETED', 'ABANDONED') AND b.score IS NOT NULL THEN b.score ELSE NULL END) as avgScore,
+        COUNT(CASE WHEN bs.internal_code IN ('COMPLETED', 'ABANDONED') AND b.score IS NOT NULL THEN 1 END) as booksRated
       FROM Books b
       INNER JOIN BookStatuses bs ON b.status_id = bs.id
     `;

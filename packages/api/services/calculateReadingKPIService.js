@@ -29,41 +29,41 @@ export class CalculateReadingKPIService {
     // Get aggregated data from repositories
     const [
       bookStats,
-      completedSessionStats,
-      completedSessionDates,
+      sessionStats,
+      allSessionDates,
       avgDaysToComplete,
       completedInsights,
     ] = await Promise.all([
       this.bookRepository.calculateGlobalKPIs(),
-      this.readingSessionRepository.calculateCompletedBooksMetrics(),
-      this.readingSessionRepository.getCompletedSessionDates(),
+      this.readingSessionRepository.calculateGlobalMetrics(),
+      this.readingSessionRepository.getAllSessionDates(),
       this.bookRepository.getAverageDaysToComplete(),
       this.bookRepository.getCompletedLibraryInsights(),
     ]);
 
     // Calculate period
     const period = this._calculatePeriod(
-      completedSessionStats.firstSessionDate,
+      sessionStats.firstSessionDate,
       filters,
     );
 
     // Calculate derived metrics
-    const currentStreak = this._calculateCurrentStreak(completedSessionDates);
-    const longestStreak = this._calculateLongestStreak(completedSessionDates);
+    const currentStreak = this._calculateCurrentStreak(allSessionDates);
+    const longestStreak = this._calculateLongestStreak(allSessionDates);
 
     const averagePagesPerSession =
-      completedSessionStats.totalSessions > 0
-        ? completedSessionStats.totalPages / completedSessionStats.totalSessions
+      sessionStats.totalSessions > 0
+        ? sessionStats.totalPages / sessionStats.totalSessions
         : 0;
 
     const averageSessionsPerDay =
-      period.days > 0 ? completedSessionStats.totalSessions / period.days : 0;
+      period.days > 0 ? sessionStats.totalSessions / period.days : 0;
 
     const averagePagesPerDay =
-      period.days > 0 ? completedSessionStats.totalPages / period.days : 0;
+      period.days > 0 ? sessionStats.totalPages / period.days : 0;
 
     const consistencyRate =
-      period.days > 0 ? completedSessionStats.readingDays / period.days : 0;
+      period.days > 0 ? sessionStats.readingDays / period.days : 0;
 
     // Calculate completion rate (excludes WISH_LIST books)
     const booksStarted = bookStats.total - bookStats.wishList;
@@ -79,8 +79,8 @@ export class CalculateReadingKPIService {
         books_abandoned: bookStats.abandoned,
 
         // Reading activity
-        total_sessions: completedSessionStats.totalSessions,
-        total_pages_read: completedSessionStats.totalPages,
+        total_sessions: sessionStats.totalSessions,
+        total_pages_read: sessionStats.totalPages,
 
         // Averages
         average_pages_per_session: Math.round(averagePagesPerSession * 10) / 10,
@@ -90,7 +90,7 @@ export class CalculateReadingKPIService {
         // Velocity & consistency
         current_streak: currentStreak,
         longest_streak: longestStreak,
-        reading_days: completedSessionStats.readingDays,
+        reading_days: sessionStats.readingDays,
         consistency_rate: Math.round(consistencyRate * 1000) / 1000,
 
         // Completion metrics
@@ -156,13 +156,16 @@ export class CalculateReadingKPIService {
       return 0; // Streak broken
     }
 
+    // If last session was yesterday, streak starts from yesterday (not today).
+    const startOffset = daysDiff === 1 ? 1 : 0;
+
     // Count consecutive days backwards
     for (let i = 0; i < sessionDates.length; i++) {
       const currentDate = new Date(sessionDates[i]);
       currentDate.setHours(0, 0, 0, 0);
 
       const expectedDate = new Date(today);
-      expectedDate.setDate(expectedDate.getDate() - streak);
+      expectedDate.setDate(expectedDate.getDate() - (startOffset + streak));
       expectedDate.setHours(0, 0, 0, 0);
 
       if (currentDate.getTime() === expectedDate.getTime()) {

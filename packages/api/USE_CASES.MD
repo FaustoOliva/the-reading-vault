@@ -735,8 +735,8 @@ GlobalReadingKPIs = {
   books_abandoned: number,             // Books with status = ABANDONED
 
   // Reading activity
-  total_sessions: number,              // Total reading sessions
-  total_pages_read: number,            // Cumulative pages across all books
+  total_sessions: number,              // Total reading sessions (all books/statuses)
+  total_pages_read: number,            // Cumulative pages across all sessions
 
   // Averages
   average_pages_per_session: number,   // total_pages_read / total_sessions
@@ -744,7 +744,7 @@ GlobalReadingKPIs = {
   average_pages_per_day: number,       // total_pages_read / period.days
 
   // Velocity & consistency
-  current_streak: number,              // Consecutive days with at least 1 session
+  current_streak: number,              // Consecutive days with at least 1 session (all books/statuses)
   longest_streak: number,              // Max consecutive days in period
   reading_days: number,                // Days with at least 1 session
   consistency_rate: number,            // reading_days / period.days (0.0-1.0)
@@ -754,10 +754,16 @@ GlobalReadingKPIs = {
   average_days_to_complete: number,    // Average cycle duration for completed books
 
   // Score analytics
-  average_score: number | null,        // Average score across rated books
-  books_rated: number                  // Books with non-null score
+  average_score: number | null,        // Average score across rated COMPLETED + ABANDONED books
+  books_rated: number                  // Count of rated COMPLETED + ABANDONED books
 }
 ```
+
+**Metric Scope Rules (Mandatory)**
+
+- Reading activity metrics (`total_sessions`, `total_pages_read`, `average_pages_per_session`, `average_sessions_per_day`, `average_pages_per_day`, `current_streak`, `longest_streak`, `reading_days`, `consistency_rate`) MUST use all reading sessions, regardless of current book status.
+- Completion metrics and insights (`books_completed`, `completion_rate`, `average_days_to_complete`, `library_insights`) MUST use COMPLETED books semantics.
+- Score analytics (`average_score`, `books_rated`) MUST use rated books in status COMPLETED or ABANDONED only.
 
 **Models Involved**
 
