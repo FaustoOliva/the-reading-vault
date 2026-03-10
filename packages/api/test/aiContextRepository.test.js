@@ -16,6 +16,8 @@ describe("AIContextRepository - MVP", () => {
   let mockRequest;
   let mockBookRepository;
 
+  let mockMSSQLClient;
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -28,11 +30,15 @@ describe("AIContextRepository - MVP", () => {
       request: vi.fn().mockReturnValue(mockRequest),
     };
 
+    mockMSSQLClient = {
+      getConnection: vi.fn().mockResolvedValue(mockPool),
+    };
+
     mockBookRepository = {
       calculateGlobalKPIs: vi.fn(),
     };
 
-    repository = new AIContextRepository(mockPool, mockBookRepository);
+    repository = new AIContextRepository(mockMSSQLClient, mockBookRepository);
   });
 
   describe("getReaderProfile", () => {
@@ -46,7 +52,20 @@ describe("AIContextRepository - MVP", () => {
       // Assert
       expect(result).toBeNull();
       expect(mockRequest.query).toHaveBeenCalledWith(
-        "SELECT id, version, schema_version, profile_data, semantic_summary, last_updated, last_refresh_reason, tokens_used FROM ReaderProfiles WHERE id = 1",
+        `
+      SELECT 
+        id,
+        version,
+        schema_version,
+        profile_data,
+        semantic_summary,
+        last_updated,
+        last_refresh_reason,
+        tokens_used,
+        important_event_pending
+      FROM ReaderProfiles
+      WHERE id = 1
+    `,
       );
     });
 
@@ -65,6 +84,7 @@ describe("AIContextRepository - MVP", () => {
         last_updated: new Date("2026-02-22T10:00:00Z"),
         last_refresh_reason: "book_completed",
         tokens_used: 250,
+        important_event_pending: false,
       };
 
       mockRequest.query.mockResolvedValue({ recordset: [mockProfile] });
@@ -73,7 +93,17 @@ describe("AIContextRepository - MVP", () => {
       const result = await repository.getReaderProfile();
 
       // Assert
-      expect(result).toEqual(mockProfile);
+      expect(result).toEqual({
+        id: 1,
+        version: 5,
+        schemaVersion: 1,
+        profileData: JSON.parse(mockProfile.profile_data),
+        semanticSummary: "Test summary",
+        lastUpdated: mockProfile.last_updated,
+        lastRefreshReason: "book_completed",
+        tokensUsed: 250,
+        importantEventPending: false,
+      });
     });
 
     it("should parse profile_data as JSON correctly", async () => {
@@ -94,6 +124,7 @@ describe("AIContextRepository - MVP", () => {
         last_updated: new Date(),
         last_refresh_reason: "initial_profile",
         tokens_used: 0,
+        important_event_pending: false,
       };
 
       mockRequest.query.mockResolvedValue({ recordset: [mockProfile] });
@@ -102,8 +133,8 @@ describe("AIContextRepository - MVP", () => {
       const result = await repository.getReaderProfile();
 
       // Assert
-      expect(JSON.parse(result.profile_data)).toEqual(profileData);
-      expect(result.schema_version).toBe(1);
+      expect(result.profileData).toEqual(profileData);
+      expect(result.schemaVersion).toBe(1);
     });
   });
 
@@ -111,6 +142,7 @@ describe("AIContextRepository - MVP", () => {
     it("should insert first profile correctly", async () => {
       // Arrange
       const version = 1;
+      const schemaVersion = 1;
       const profileData = { statistics: { totalBooks: 0 } };
       const semanticSummary = "Empty vault profile";
       const reason = "initial_seed";
@@ -121,6 +153,7 @@ describe("AIContextRepository - MVP", () => {
       // Act
       await repository.saveReaderProfile(
         version,
+        schemaVersion,
         profileData,
         semanticSummary,
         reason,
@@ -134,24 +167,34 @@ describe("AIContextRepository - MVP", () => {
         version,
       );
       expect(mockRequest.input).toHaveBeenCalledWith(
-        "profile_data",
+        "schemaVersion",
+        expect.anything(),
+        schemaVersion,
+      );
+      expect(mockRequest.input).toHaveBeenCalledWith(
+        "profileData",
         expect.anything(),
         JSON.stringify(profileData),
       );
       expect(mockRequest.input).toHaveBeenCalledWith(
-        "semantic_summary",
+        "semanticSummary",
         expect.anything(),
         semanticSummary,
       );
       expect(mockRequest.input).toHaveBeenCalledWith(
-        "last_refresh_reason",
+        "reason",
         expect.anything(),
         reason,
       );
       expect(mockRequest.input).toHaveBeenCalledWith(
-        "tokens_used",
+        "tokensUsed",
         expect.anything(),
         tokensUsed,
+      );
+      expect(mockRequest.input).toHaveBeenCalledWith(
+        "importantEventPending",
+        expect.anything(),
+        false,
       );
       expect(mockRequest.query).toHaveBeenCalled();
     });
@@ -159,6 +202,7 @@ describe("AIContextRepository - MVP", () => {
     it("should update existing profile with incremented version", async () => {
       // Arrange
       const version = 3;
+      const schemaVersion = 1;
       const profileData = { statistics: { totalBooks: 15 } };
       const semanticSummary = "Updated profile";
       const reason = "book_completed";
@@ -169,6 +213,7 @@ describe("AIContextRepository - MVP", () => {
       // Act
       await repository.saveReaderProfile(
         version,
+        schemaVersion,
         profileData,
         semanticSummary,
         reason,
@@ -186,6 +231,7 @@ describe("AIContextRepository - MVP", () => {
     it("should handle null semantic_summary gracefully", async () => {
       // Arrange
       const version = 2;
+      const schemaVersion = 1;
       const profileData = { statistics: { totalBooks: 5 } };
       const semanticSummary = null; // OpenAI unavailable
       const reason = "book_abandoned";
@@ -196,6 +242,7 @@ describe("AIContextRepository - MVP", () => {
       // Act
       await repository.saveReaderProfile(
         version,
+        schemaVersion,
         profileData,
         semanticSummary,
         reason,
@@ -204,14 +251,14 @@ describe("AIContextRepository - MVP", () => {
 
       // Assert
       expect(mockRequest.input).toHaveBeenCalledWith(
-        "semantic_summary",
+        "semanticSummary",
         expect.anything(),
         null,
       );
       expect(mockRequest.input).toHaveBeenCalledWith(
-        "tokens_used",
+        "tokensUsed",
         expect.anything(),
-        0,
+        null,
       );
     });
   });
@@ -220,12 +267,11 @@ describe("AIContextRepository - MVP", () => {
     it("should compute all statistics from books", async () => {
       // Arrange
       const mockKPIs = {
-        totalBooks: 23,
-        completedBooks: 15,
-        booksInProgress: 3,
-        abandonedBooks: 5,
-        wishListBooks: 0,
-        completionRate: 0.65,
+        total: 23,
+        completed: 15,
+        reading: 3,
+        abandoned: 5,
+        wishList: 0,
         booksRated: 15,
         avgScore: 7.8,
       };
@@ -244,19 +290,27 @@ describe("AIContextRepository - MVP", () => {
 
       // Assert
       expect(mockBookRepository.calculateGlobalKPIs).toHaveBeenCalled();
-      expect(result.statistics).toEqual(mockKPIs);
+      expect(result.statistics).toEqual({
+        totalBooks: 23,
+        completedBooks: 15,
+        readingBooks: 3,
+        abandonedBooks: 5,
+        wishlistBooks: 0,
+        completionRate: 65.22,
+        booksRated: 15,
+        avgScore: 7.8,
+      });
       expect(result.schemaVersion).toBe(1);
     });
 
     it("should handle empty vault gracefully", async () => {
       // Arrange
       const emptyKPIs = {
-        totalBooks: 0,
-        completedBooks: 0,
-        booksInProgress: 0,
-        abandonedBooks: 0,
-        wishListBooks: 0,
-        completionRate: 0,
+        total: 0,
+        completed: 0,
+        reading: 0,
+        abandoned: 0,
+        wishList: 0,
         booksRated: 0,
         avgScore: null,
       };
@@ -828,129 +882,7 @@ describe("AIContextRepository - MVP", () => {
     });
   });
 
-  describe("Top Authors Change Detection", () => {
-    it("should detect when top 3 authors change order", async () => {
-      // Arrange
-      const previousProfile = {
-        topAuthors: [
-          { name: "Author A", bookCount: 5 },
-          { name: "Author B", bookCount: 4 },
-          { name: "Author C", bookCount: 3 },
-        ],
-      };
 
-      const newProfile = {
-        topAuthors: [
-          { name: "Author B", bookCount: 6 },
-          { name: "Author A", bookCount: 5 },
-          { name: "Author C", bookCount: 3 },
-        ],
-      };
-
-      // Act
-      const changed = repository._detectTopAuthorsChange(
-        previousProfile,
-        newProfile,
-      );
-
-      // Assert
-      expect(changed).toBe(true);
-    });
-
-    it("should detect when new author enters top 3", async () => {
-      // Arrange
-      const previousProfile = {
-        topAuthors: [
-          { name: "Author A", bookCount: 5 },
-          { name: "Author B", bookCount: 4 },
-          { name: "Author C", bookCount: 3 },
-        ],
-      };
-
-      const newProfile = {
-        topAuthors: [
-          { name: "Author A", bookCount: 5 },
-          { name: "Author D", bookCount: 4 },
-          { name: "Author B", bookCount: 4 },
-        ],
-      };
-
-      // Act
-      const changed = repository._detectTopAuthorsChange(
-        previousProfile,
-        newProfile,
-      );
-
-      // Assert
-      expect(changed).toBe(true);
-    });
-
-    it("should return false when top 3 unchanged", async () => {
-      // Arrange
-      const previousProfile = {
-        topAuthors: [
-          { name: "Author A", bookCount: 5 },
-          { name: "Author B", bookCount: 4 },
-          { name: "Author C", bookCount: 3 },
-        ],
-      };
-
-      const newProfile = {
-        topAuthors: [
-          { name: "Author A", bookCount: 6 },
-          { name: "Author B", bookCount: 5 },
-          { name: "Author C", bookCount: 4 },
-        ],
-      };
-
-      // Act
-      const changed = repository._detectTopAuthorsChange(
-        previousProfile,
-        newProfile,
-      );
-
-      // Assert
-      expect(changed).toBe(false);
-    });
-
-    it("should handle null previousProfile", async () => {
-      // Arrange
-      const previousProfile = null;
-
-      const newProfile = {
-        topAuthors: [{ name: "Author A", bookCount: 1 }],
-      };
-
-      // Act
-      const changed = repository._detectTopAuthorsChange(
-        previousProfile,
-        newProfile,
-      );
-
-      // Assert
-      expect(changed).toBe(true);
-    });
-
-    it("should handle empty topAuthors array", async () => {
-      // Arrange
-      const previousProfile = {
-        topAuthors: [],
-      };
-
-      const newProfile = {
-        topAuthors: [{ name: "Author A", bookCount: 1 }],
-      };
-
-      // Act
-      const changed = repository._detectTopAuthorsChange(
-        previousProfile,
-        newProfile,
-      );
-
-      // Assert
-      expect(changed).toBe(true);
-    });
-  });
 
   describe("refreshReaderProfile", () => {
     it("should increment version on each refresh", async () => {
@@ -1012,12 +944,11 @@ describe("AIContextRepository - MVP", () => {
         .mockResolvedValueOnce({ recordset: [] });
 
       mockBookRepository.calculateGlobalKPIs.mockResolvedValue({
-        totalBooks: 1,
-        completedBooks: 1,
-        booksInProgress: 0,
-        abandonedBooks: 0,
-        wishListBooks: 0,
-        completionRate: 1.0,
+        total: 1,
+        completed: 1,
+        reading: 0,
+        abandoned: 0,
+        wishList: 0,
         booksRated: 1,
         avgScore: 9.0,
       });
@@ -1036,7 +967,7 @@ describe("AIContextRepository - MVP", () => {
 
       // Assert
       expect(mockRequest.input).toHaveBeenCalledWith(
-        "last_refresh_reason",
+        "reason",
         expect.anything(),
         "book_abandoned",
       );
@@ -1094,30 +1025,23 @@ describe("AIContextRepository - MVP", () => {
         .mockResolvedValueOnce({ recordset: [] });
 
       mockBookRepository.calculateGlobalKPIs.mockResolvedValue({
-        totalBooks: 5,
-        completedBooks: 3,
-        booksInProgress: 1,
-        abandonedBooks: 1,
-        wishListBooks: 0,
-        completionRate: 0.6,
+        total: 5,
+        completed: 3,
+        reading: 1,
+        abandoned: 1,
+        wishList: 0,
         booksRated: 3,
         avgScore: 7.5,
       });
 
-      const mockOpenAIClient = {
-        generateProfileSummary: vi.fn().mockResolvedValue({
-          summary: "Generated semantic summary",
-          tokensUsed: 287,
-        }),
-      };
-
-      repository.openAIClient = mockOpenAIClient;
-
       // Act
-      const result = await repository.refreshReaderProfile("book_completed");
+      const result = await repository.refreshReaderProfile(
+        "book_completed",
+        "Generated semantic summary",
+        287,
+      );
 
       // Assert
-      expect(mockOpenAIClient.generateProfileSummary).toHaveBeenCalled();
       expect(result.semanticSummary).toBe("Generated semantic summary");
       expect(result.tokensUsed).toBe(287);
     });
@@ -1133,32 +1057,27 @@ describe("AIContextRepository - MVP", () => {
         .mockResolvedValueOnce({ recordset: [] });
 
       mockBookRepository.calculateGlobalKPIs.mockResolvedValue({
-        totalBooks: 5,
-        completedBooks: 3,
-        booksInProgress: 1,
-        abandonedBooks: 1,
-        wishListBooks: 0,
-        completionRate: 0.6,
+        total: 5,
+        completed: 3,
+        reading: 1,
+        abandoned: 1,
+        wishList: 0,
         booksRated: 3,
         avgScore: 7.5,
       });
 
-      const mockOpenAIClient = {
-        generateProfileSummary: vi
-          .fn()
-          .mockRejectedValue(new Error("OpenAI unavailable")),
-      };
-
-      repository.openAIClient = mockOpenAIClient;
-
       // Act
-      const result = await repository.refreshReaderProfile("book_completed");
+      const result = await repository.refreshReaderProfile(
+        "book_completed",
+        null,
+        0,
+      );
 
       // Assert
       expect(result.semanticSummary).toBeNull();
       expect(result.tokensUsed).toBe(0);
       expect(mockRequest.input).toHaveBeenCalledWith(
-        "semantic_summary",
+        "semanticSummary",
         expect.anything(),
         null,
       );
@@ -1175,34 +1094,29 @@ describe("AIContextRepository - MVP", () => {
         .mockResolvedValueOnce({ recordset: [] });
 
       mockBookRepository.calculateGlobalKPIs.mockResolvedValue({
-        totalBooks: 10,
-        completedBooks: 7,
-        booksInProgress: 2,
-        abandonedBooks: 1,
-        wishListBooks: 0,
-        completionRate: 0.7,
+        total: 10,
+        completed: 7,
+        reading: 2,
+        abandoned: 1,
+        wishList: 0,
         booksRated: 7,
         avgScore: 8.2,
       });
 
-      const mockOpenAIClient = {
-        generateProfileSummary: vi.fn().mockResolvedValue({
-          summary: "Test summary",
-          tokensUsed: 314,
-        }),
-      };
-
-      repository.openAIClient = mockOpenAIClient;
-
       // Act
-      await repository.refreshReaderProfile("book_completed");
+      const result = await repository.refreshReaderProfile(
+        "book_completed",
+        "Test summary",
+        314,
+      );
 
       // Assert
       expect(mockRequest.input).toHaveBeenCalledWith(
-        "tokens_used",
+        "tokensUsed",
         expect.anything(),
         314,
       );
+      expect(result.tokensUsed).toBe(314);
     });
   });
 });

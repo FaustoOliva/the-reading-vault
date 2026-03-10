@@ -331,28 +331,6 @@ export class AIContextRepository {
   }
 
   /**
-   * Detect if top 3 authors have changed (triggers semantic refresh)
-   * @param {Object|null} previousProfile - Previous profile data
-   * @param {Object} newProfile - New profile data
-   * @returns {boolean} True if top 3 authors changed
-   */
-  detectTopAuthorsChange(previousProfile, newProfile) {
-    if (
-      !previousProfile?.topAuthors ||
-      previousProfile.topAuthors.length === 0
-    ) {
-      return true; // First time or empty profile
-    }
-
-    const prevTop3 = previousProfile.topAuthors.slice(0, 3).map((a) => a.name);
-
-    const newTop3 = newProfile.topAuthors.slice(0, 3).map((a) => a.name);
-
-    // Check if names match in same order
-    return !prevTop3.every((name, idx) => name === newTop3[idx]);
-  }
-
-  /**
    * Refresh reader profile with new data and semantic summary
    * Increments version and saves to database
    * @param {string} reason - Reason for refresh

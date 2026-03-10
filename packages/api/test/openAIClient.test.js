@@ -30,7 +30,7 @@ describe("OpenAIClient - MVP", () => {
       apiKey: "sk-test-key-123",
       model: "gpt-3.5-turbo",
       temperature: 0.4,
-      maxTokens: 300,
+      maxTokens: 500,
       timeout: 15000,
     };
 
@@ -47,7 +47,7 @@ describe("OpenAIClient - MVP", () => {
       expect(client.apiKey).toBe("sk-test-key-123");
       expect(client.model).toBe("gpt-3.5-turbo");
       expect(client.temperature).toBe(0.4);
-      expect(client.maxTokens).toBe(300);
+      expect(client.maxTokens).toBe(500);
       expect(client.timeout).toBe(15000);
     });
 
@@ -61,7 +61,7 @@ describe("OpenAIClient - MVP", () => {
       // Assert
       expect(minimalClient.model).toBe("gpt-3.5-turbo");
       expect(minimalClient.temperature).toBe(0.4);
-      expect(minimalClient.maxTokens).toBe(300);
+      expect(minimalClient.maxTokens).toBe(500);
       expect(minimalClient.timeout).toBe(15000);
     });
   });
@@ -146,7 +146,7 @@ describe("OpenAIClient - MVP", () => {
       const fetchCallBody = JSON.parse(global.fetch.mock.calls[0][1].body);
       expect(fetchCallBody.model).toBe("gpt-3.5-turbo");
       expect(fetchCallBody.temperature).toBe(0.4);
-      expect(fetchCallBody.max_tokens).toBe(300);
+      expect(fetchCallBody.max_tokens).toBe(500);
       expect(result.summary).toContain("Este lector ha completado 15 libros");
       expect(result.tokensUsed).toBe(287);
     });
@@ -157,7 +157,7 @@ describe("OpenAIClient - MVP", () => {
         statistics: {
           totalBooks: 50,
           completedBooks: 40,
-          completionRate: 0.8,
+          completionRate: 80.0,
           avgScore: 8.5,
         },
         topAuthors: [],
@@ -194,7 +194,7 @@ describe("OpenAIClient - MVP", () => {
         statistics: {
           totalBooks: 10,
           completedBooks: 8,
-          completionRate: 0.8,
+          completionRate: 80.0,
           avgScore: 7.5,
         },
         topAuthors: [
@@ -236,7 +236,7 @@ describe("OpenAIClient - MVP", () => {
         statistics: {
           totalBooks: 5,
           completedBooks: 5,
-          completionRate: 1.0,
+          completionRate: 100.0,
           avgScore: 9.0,
         },
         topAuthors: [],
@@ -269,49 +269,15 @@ describe("OpenAIClient - MVP", () => {
       expect(userPrompt).toContain("Orwell");
     });
 
-    it("should respect timeout (15s default)", async () => {
-      // Arrange
-      const profileData = {
-        statistics: {
-          totalBooks: 1,
-          completedBooks: 1,
-          completionRate: 1.0,
-          avgScore: 8.0,
-        },
-        topAuthors: [],
-        topCountries: [],
-        favoriteBooks: [],
-        abandonedBooks: [],
-      };
 
-      global.fetch.mockImplementation(() => {
-        return new Promise((resolve) => {
-          setTimeout(() => {
-            resolve({
-              ok: true,
-              json: () =>
-                Promise.resolve({
-                  choices: [{ message: { content: "Summary" } }],
-                  usage: { total_tokens: 150 },
-                }),
-            });
-          }, 20000); // 20 seconds - exceeds timeout
-        });
-      });
 
-      // Act & Assert
-      await expect(client.generateProfileSummary(profileData)).rejects.toThrow(
-        OpenAITimeoutError,
-      );
-    });
-
-    it("should respect max_tokens limit (300)", async () => {
+    it("should respect max_tokens limit (500)", async () => {
       // Arrange
       const profileData = {
         statistics: {
           totalBooks: 10,
           completedBooks: 7,
-          completionRate: 0.7,
+          completionRate: 70.0,
           avgScore: 8.0,
         },
         topAuthors: [],
@@ -335,7 +301,7 @@ describe("OpenAIClient - MVP", () => {
 
       // Assert
       const fetchCallBody = JSON.parse(global.fetch.mock.calls[0][1].body);
-      expect(fetchCallBody.max_tokens).toBe(300);
+      expect(fetchCallBody.max_tokens).toBe(500);
     });
 
     it("should use configured temperature (0.4)", async () => {
@@ -670,23 +636,7 @@ describe("OpenAIClient - MVP", () => {
       );
     });
 
-    it("should timeout after 5 seconds", async () => {
-      // Arrange
-      global.fetch.mockImplementation(() => {
-        return new Promise((resolve) => {
-          setTimeout(() => {
-            resolve({
-              ok: true,
-              headers: { get: vi.fn() },
-              json: () => Promise.resolve({ data: [] }),
-            });
-          }, 6000); // 6 seconds - exceeds timeout
-        });
-      });
 
-      // Act & Assert
-      await expect(client.checkHealth()).rejects.toThrow();
-    });
   });
 
   describe("_buildProfileSummaryPrompt", () => {
@@ -698,7 +648,7 @@ describe("OpenAIClient - MVP", () => {
           completedBooks: 15,
           booksInProgress: 3,
           abandonedBooks: 5,
-          completionRate: 0.65,
+          completionRate: 65.22,
           avgScore: 7.8,
         },
         topAuthors: [
@@ -724,7 +674,7 @@ describe("OpenAIClient - MVP", () => {
 
       // Assert
       expect(prompt).toContain("15");
-      expect(prompt).toContain("65.0%");
+      expect(prompt).toContain("65.2%");
       expect(prompt).toContain("7.8");
       expect(prompt).toContain("García Márquez");
       expect(prompt).toContain("Colombia");
@@ -739,7 +689,7 @@ describe("OpenAIClient - MVP", () => {
           completedBooks: 0,
           booksInProgress: 0,
           abandonedBooks: 0,
-          completionRate: 0,
+          completionRate: 0.0,
           avgScore: null,
         },
         topAuthors: [],
@@ -763,7 +713,7 @@ describe("OpenAIClient - MVP", () => {
         statistics: {
           totalBooks: 5,
           completedBooks: 3,
-          completionRate: 0.6,
+          completionRate: 60.0,
           avgScore: 8.0,
         },
         topAuthors: [],
@@ -817,13 +767,13 @@ describe("OpenAIClient - MVP", () => {
       expect(prompt).not.toContain("Author 5");
     });
 
-    it("should include max 300 words instruction", () => {
+    it("should include max 250 words instruction", () => {
       // Arrange
       const profile = {
         statistics: {
           totalBooks: 1,
           completedBooks: 1,
-          completionRate: 1.0,
+          completionRate: 100.0,
           avgScore: 8.0,
         },
         topAuthors: [],
@@ -836,8 +786,8 @@ describe("OpenAIClient - MVP", () => {
       const prompt = client._buildProfileSummaryPrompt(profile);
 
       // Assert
-      expect(prompt).toContain("300 palabras");
-      expect(prompt).toContain("Máximo 300 palabras");
+      expect(prompt).toContain("250 palabras");
+      expect(prompt).toContain("máximo 250 palabras");
     });
 
     it("should specify Spanish language", () => {

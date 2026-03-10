@@ -295,7 +295,8 @@ describe("GetBookByIdService", () => {
         mockCycleHistory,
       );
 
-      // Act
+      // Act - freeze time for deterministic test
+      vi.setSystemTime(new Date("2026-02-21T10:00:00Z"));
       const result = await service.execute(bookId);
 
       // Assert
@@ -304,23 +305,24 @@ describe("GetBookByIdService", () => {
 
       // Remaining pages: 464 - 100 = 364
       // Days to complete: ceil(364 / 10) = 37
-      // Days since last session: from 2026-01-10 to today (test runs ~2026-02-21) ≈ 42 days
-      // Expected completion: TODAY + 42 (inactivity penalty) + 37 (days to complete) ≈ 79 days from today
-      // This means estimated date should be in late April/early May
+      // Days since last session: from 2026-01-10 to 2026-02-21 = 42 days
+      // Expected completion: 2026-02-21 + 42 (inactivity) + 37 (to complete) = ~79-80 days
       const estimatedDate = new Date(
         result.current_cycle_stats.estimated_completion,
       );
-      const today = new Date();
+      const today = new Date("2026-02-21T10:00:00Z");
 
       // Verify estimated completion is in the future
       expect(estimatedDate.getTime()).toBeGreaterThan(today.getTime());
 
-      // Verify it's roughly 79 days from today (allow some tolerance)
+      // Verify it's roughly 79-80 days from frozen date
       const daysDifference = Math.ceil(
         (estimatedDate - today) / (1000 * 60 * 60 * 24),
       );
-      expect(daysDifference).toBeGreaterThanOrEqual(75);
-      expect(daysDifference).toBeLessThanOrEqual(85);
+      expect(daysDifference).toBeGreaterThanOrEqual(78);
+      expect(daysDifference).toBeLessThanOrEqual(80);
+      
+      vi.useRealTimers();
     });
 
     it("should handle completed book with score and comment", async () => {
