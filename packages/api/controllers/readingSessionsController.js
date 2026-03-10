@@ -28,8 +28,9 @@ const logSessionBodySchema = forBodyParams(
 );
 
 export class ReadingSessionsController {
-  constructor(logReadingSessionService) {
+  constructor(logReadingSessionService, getRecentReadingSessionService) {
     this.logReadingSessionService = logReadingSessionService;
+    this.getRecentReadingSessionService = getRecentReadingSessionService;
   }
 
   /**
@@ -56,6 +57,24 @@ export class ReadingSessionsController {
       res.status(201).json({
         success: true,
         data: session.toJSON(),
+      });
+    } catch (error) {
+      // Forward to global error middleware
+      next(error);
+    }
+  }
+
+  /**
+   * GET /reading-sessions/recent
+   * Gets the most recent reading session with book information
+   */
+  async getRecent(req, res, next) {
+    try {
+      const recent = await this.getRecentReadingSessionService.execute();
+
+      res.status(200).json({
+        success: true,
+        data: recent,
       });
     } catch (error) {
       // Forward to global error middleware

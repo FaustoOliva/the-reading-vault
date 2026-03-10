@@ -306,4 +306,45 @@ export class ReadingSessionRepository {
 
     return result.recordset[0];
   }
+
+  /**
+   * Get the most recent reading session with book information
+   * @returns {Promise<Object|null>} Latest session with book data or null
+   */
+  async getRecentWithBookInfo() {
+    const pool = await this.mssqlClient.getConnection();
+
+    const query = `
+      SELECT TOP 1
+        rs.id,
+        rs.book_id,
+        rs.reading_cycle,
+        rs.pages_read,
+        rs.occurred_at,
+        rs.created_at,
+        b.title as book_title,
+        a.name as author_name
+      FROM ReadingSessions rs
+      INNER JOIN Books b ON b.id = rs.book_id
+      INNER JOIN Authors a ON b.author_id = a.id
+      ORDER BY rs.occurred_at DESC
+    `;
+
+    const result = await pool.request().query(query);
+
+    if (!result.recordset[0]) {
+      return null;
+    }
+
+    const record = result.recordset[0];
+
+    return {
+      session: ReadingSession.fromDatabase(record),
+      book: {
+        id: record.book_id,
+        title: record.book_title,
+        authorName: record.author_name,
+      },
+    };
+  }
 }

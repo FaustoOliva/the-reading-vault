@@ -90,19 +90,23 @@ export type CreateBookFormData = z.infer<typeof createBookSchema>;
  *
  * Rules:
  * - Book ID is required
- * - Pages read must be positive integer
- * - Pages read cannot exceed remaining pages
+ * - Ending page must be positive integer
  * - Session date cannot be in the future
  * - Duration is optional, must be positive if provided
+ *
+ * Additional validations (per-book context):
+ * - Ending page cannot be less than last recorded ending page
+ * - Ending page cannot exceed total pages of the book
+ * - Mobile calculates pagesRead from endingPage difference
  */
 export const logSessionSchema = z.object({
   bookId: z.number({
     message: "Please select a book",
   }),
-  pagesRead: numericString({
+  endingPage: numericString({
     positive: true,
     integer: true,
-    fieldName: "Pages read",
+    fieldName: "Ending page",
     required: true,
   }),
   sessionDate: asFormDate({
@@ -118,15 +122,19 @@ export const logSessionSchema = z.object({
 });
 
 /**
- * Dynamic validation for pages read based on remaining pages
- * Call this separately after schema validation
+ * Dynamic validation for ending page based on book context
+ * Call this separately after schema validation with book details
  */
-export const validatePagesAgainstRemaining = (
-  pagesRead: number,
-  remainingPages: number | null,
+export const validateEndingPageAgainstBook = (
+  endingPage: number,
+  totalPages: number | null,
+  lastEndingPage: number,
 ): string | null => {
-  if (remainingPages !== null && pagesRead > remainingPages) {
-    return `Cannot exceed ${remainingPages} remaining pages`;
+  if (endingPage < lastEndingPage) {
+    return `Ending page cannot be less than ${lastEndingPage} (last recorded page)`;
+  }
+  if (totalPages !== null && endingPage > totalPages) {
+    return `Ending page cannot exceed ${totalPages} total pages`;
   }
   return null;
 };

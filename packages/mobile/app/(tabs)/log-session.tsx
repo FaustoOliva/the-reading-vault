@@ -1,6 +1,13 @@
 /**
  * Log Reading Session Screen
  * Form to create reading sessions for books in WISH_LIST or READING status
+ *
+ * Workflow:
+ * - Show last reading session globally
+ * - User selects a book
+ * - User enters ending page (not pages read)
+ * - Mobile calculates pagesRead from: endingPage - lastEndingPage
+ * - API receives: { bookId, pagesRead, occurredAt, duration }
  */
 
 import { useState, useMemo } from "react";
@@ -16,12 +23,13 @@ import {
 import * as Haptics from "expo-haptics";
 import { DatePicker } from "@/components/date-picker";
 import { CustomDropdown } from "@/components/forms/customDropdown";
+import { LastReadingSessionCard } from "@/components/lastReadingSessionCard";
 import { useBooks, useBookDetails } from "@/hooks/useBooks";
 import { useCreateReadingSession } from "@/hooks/useReadingSessions";
 import { BookStatus } from "@/types/book";
 import {
   logSessionSchema,
-  validatePagesAgainstRemaining,
+  validateEndingPageAgainstBook,
   getZodErrors,
 } from "@/types/schemas";
 import {
@@ -35,7 +43,7 @@ import {
 export default function LogSessionScreen() {
   // Form state
   const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
-  const [pagesRead, setPagesRead] = useState("");
+  const [endingPage, setEndingPage] = useState("");
   const [sessionDate, setSessionDate] = useState(new Date());
   const [duration, setDuration] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -71,21 +79,34 @@ export default function LogSessionScreen() {
     }));
   }, [books]);
 
-  // Calculate pages read in current cycle
-  // The API already provides this value in bookDetails.book.pages_read_in_current_cycle
-  const calculatePagesReadInCycle = (): number => {
-    if (!bookDetails?.book) return 0;
-    return bookDetails.book.pages_read_in_current_cycle;
+  /**
+   * Get the last recorded ending page for the selected book
+   * Uses pages_read_in_current_cycle as the effective "ending page"
+   * (i.e., where the reader left off in the current reading cycle)
+   * If no reading data exists, returns 0.
+   *
+   * Note: This is an approximation based on cycle stats.
+   * More precise data would require querying the last session directly.
+   */
+  const getLastEndingPage = (): number => {
+    if (!bookDetails?.book) {
+      return 0;
+    }
+    // Use the pages already read in current cycle as the de facto ending page
+    return bookDetails.book.pages_read_in_current_cycle || 0;
   };
 
-  // Calculate remaining pages
-  const getRemainingPages = (): number | null => {
-    if (!bookDetails?.book.total_pages) return null;
-    const pagesReadInCycle = calculatePagesReadInCycle();
-    return bookDetails.book.total_pages - pagesReadInCycle;
+  /**
+   * Calculate pagesRead: endingPage - lastEndingPage
+   */
+  const calculatePagesRead = (endingPageValue: number): number => {
+    const lastEnding = getLastEndingPage();
+    return Math.max(0, endingPageValue - lastEnding);
   };
 
-  // Validation using Zod schema
+  /**
+   * Validation using Zod schema + dynamic book-based validation
+   */
   const validateForm = (): boolean => {
     if (selectedBookId === null) {
       setValidationErrors({ bookId: "Please select a book" });
@@ -94,7 +115,7 @@ export default function LogSessionScreen() {
 
     const result = logSessionSchema.safeParse({
       bookId: selectedBookId,
-      pagesRead,
+      endingPage,
       sessionDate,
       duration,
     });
@@ -104,13 +125,19 @@ export default function LogSessionScreen() {
       return false;
     }
 
-    // Additional validation: pages against remaining
-    const pagesNumeric = Number(pagesRead);
-    const remaining = getRemainingPages();
-    const pagesError = validatePagesAgainstRemaining(pagesNumeric, remaining);
+    // Additional validation: ending page against book context
+    const endingPageNumeric = Number(endingPage);
+    const totalPages = bookDetails?.book.total_pages ?? null;
+    const lastEnding = getLastEndingPage();
 
-    if (pagesError) {
-      setValidationErrors({ pagesRead: pagesError });
+    const endingPageError = validateEndingPageAgainstBook(
+      endingPageNumeric,
+      totalPages,
+      lastEnding,
+    );
+
+    if (endingPageError) {
+      setValidationErrors({ endingPage: endingPageError });
       return false;
     }
 
@@ -121,23 +148,29 @@ export default function LogSessionScreen() {
   const isFormValid = (): boolean => {
     return (
       selectedBookId !== null &&
-      pagesRead.trim().length > 0 &&
-      !isNaN(Number(pagesRead)) &&
-      Number(pagesRead) > 0
+      endingPage.trim().length > 0 &&
+      !isNaN(Number(endingPage)) &&
+      Number(endingPage) > 0
     );
   };
 
-  // Handle form submission
+  /**
+   * Handle form submission
+   * Mobile calculates pagesRead from endingPage
+   */
   const handleSubmit = async () => {
-    if (!isFormValid() || !selectedBookId) return;
+    if (!validateForm() || !selectedBookId) return;
 
     setErrorMessage("");
     setSuccessMessage("");
 
     try {
+      const endingPageNumeric = parseInt(endingPage, 10);
+      const pagesRead = calculatePagesRead(endingPageNumeric);
+
       await createSession.mutateAsync({
         bookId: selectedBookId,
-        pagesRead: parseInt(pagesRead, 10),
+        pagesRead,
         occurredAt: sessionDate.toISOString(),
         duration: duration ? parseInt(duration, 10) : undefined,
       });
@@ -151,7 +184,7 @@ export default function LogSessionScreen() {
 
       // Clear form
       setSelectedBookId(null);
-      setPagesRead("");
+      setEndingPage("");
       setDuration("");
       setSessionDate(new Date());
       setValidationErrors({});
@@ -183,7 +216,8 @@ export default function LogSessionScreen() {
     }
   };
 
-  const remaining = getRemainingPages();
+  const lastEnding = getLastEndingPage();
+  const totalPages = bookDetails?.book.total_pages;
 
   return (
     <ScrollView
@@ -205,6 +239,9 @@ export default function LogSessionScreen() {
           your wish list or currently reading.
         </Text>
       </View>
+
+      {/* Last Reading Session Card */}
+      <LastReadingSessionCard />
 
       {/* Book Selector */}
       <View style={{ gap: 8, position: "relative", zIndex: 20 }}>
@@ -265,7 +302,7 @@ export default function LogSessionScreen() {
         )}
       </View>
 
-      {/* Pages Info */}
+      {/* Book Info */}
       {selectedBookId && detailsLoading && (
         <ActivityIndicator
           style={{ marginTop: -12 }}
@@ -273,34 +310,49 @@ export default function LogSessionScreen() {
         />
       )}
       {selectedBookId && !detailsLoading && bookDetails && (
-        <Text
-          style={{
-            fontSize: 14,
-            marginTop: -12,
-            marginLeft: 4,
-            color: TextColors.secondary,
-          }}
-          selectable
-          accessibilityRole="text"
-        >
-          {remaining !== null
-            ? `Remaining: ${remaining} pages`
-            : "No page limit (legacy book)"}
-        </Text>
+        <View style={{ gap: 6 }}>
+          <Text
+            style={{
+              fontSize: 14,
+              marginLeft: 4,
+              color: TextColors.secondary,
+            }}
+            selectable
+            accessibilityRole="text"
+          >
+            Last page: {lastEnding}
+            {totalPages ? ` / ${totalPages}` : ""}
+          </Text>
+          {endingPage &&
+            !isNaN(Number(endingPage)) &&
+            Number(endingPage) > 0 && (
+              <Text
+                style={{
+                  fontSize: 14,
+                  marginLeft: 4,
+                  color: TextColors.secondary,
+                  fontWeight: "500",
+                }}
+                selectable
+              >
+                Pages to read: {calculatePagesRead(Number(endingPage))}
+              </Text>
+            )}
+        </View>
       )}
 
-      {/* Pages Read Input */}
+      {/* Ending Page Input */}
       <View style={{ gap: 8 }}>
         <Text
           style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}
         >
-          Pages Read *
+          Ending Page *
         </Text>
         <TextInput
           style={{
             height: 50,
             borderWidth: 1.5,
-            borderColor: validationErrors.pagesRead
+            borderColor: validationErrors.endingPage
               ? Feedback.error.border
               : Border.default,
             borderRadius: 12,
@@ -310,16 +362,16 @@ export default function LogSessionScreen() {
             backgroundColor: Background.surface,
             color: TextColors.primary,
           }}
-          value={pagesRead}
-          onChangeText={setPagesRead}
+          value={endingPage}
+          onChangeText={setEndingPage}
           keyboardType="numeric"
-          placeholder="e.g., 45"
+          placeholder="Page where you stopped reading"
           placeholderTextColor={TextColors.tertiary}
-          accessibilityLabel="Pages read"
-          accessibilityHint="Enter the number of pages you read in this session"
+          accessibilityLabel="Ending page"
+          accessibilityHint="Enter the page number where you stopped reading"
           accessibilityRole="spinbutton"
         />
-        {validationErrors.pagesRead && (
+        {validationErrors.endingPage && (
           <Text
             style={{
               fontSize: 14,
@@ -331,7 +383,7 @@ export default function LogSessionScreen() {
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
           >
-            {validationErrors.pagesRead}
+            {validationErrors.endingPage}
           </Text>
         )}
       </View>
@@ -340,7 +392,7 @@ export default function LogSessionScreen() {
       <DatePicker
         value={sessionDate}
         onChange={setSessionDate}
-        label="Session Date *"
+        label="Reading Date *"
         maximumDate={new Date()}
         error={validationErrors.sessionDate}
         accessibilityHint="Select the date when this reading session occurred"

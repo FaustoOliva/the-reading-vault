@@ -22,6 +22,14 @@ export default function readingSessionRoutes(getController) {
   router.use(loggerMiddleware);
 
   /**
+   * GET /reading-sessions/recent
+   * Gets the most recent reading session with book information
+   */
+  router.get("/reading-sessions/recent", (req, res, next) =>
+    getController(ReadingSessionsController).getRecent(req, res, next),
+  );
+
+  /**
    * POST /reading-sessions
    * Logs a new reading session for a book
    * Body: { bookId, pagesRead, occurredAt? }

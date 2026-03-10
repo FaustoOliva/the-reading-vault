@@ -38,6 +38,9 @@ export function useCreateReadingSession() {
       queryClient.invalidateQueries({
         queryKey: bookStatsKeys.detail(variables.bookId),
       });
+
+      // Invalidate last reading session (new session was created)
+      queryClient.invalidateQueries({ queryKey: ["lastReadingSession"] });
     },
   });
 }

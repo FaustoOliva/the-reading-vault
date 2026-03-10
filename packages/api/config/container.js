@@ -23,6 +23,7 @@ import { GetBooksService } from "../services/getBooksService.js";
 import { GetBookByIdService } from "../services/getBookByIdService.js";
 import { CreateBookService } from "../services/createBookService.js";
 import { LogReadingSessionService } from "../services/logReadingSessionService.js";
+import { GetRecentReadingSessionService } from "../services/getRecentReadingSessionService.js";
 import { UpdateBookService } from "../services/updateBookService.js";
 import { ReviewBookService } from "../services/reviewBookService.js";
 import { ReopenBookService } from "../services/reopenBookService.js";
@@ -118,6 +119,9 @@ export class DIContainer {
       readingSessionRepository,
       bookStatusHistoryRepository,
     );
+    const getRecentReadingSessionService = new GetRecentReadingSessionService(
+      readingSessionRepository,
+    );
     const updateBookService = new UpdateBookService(
       mssqlClient,
       bookRepository,
@@ -166,6 +170,10 @@ export class DIContainer {
     this.instances.set("getBookByIdService", getBookByIdService);
     this.instances.set("createBookService", createBookService);
     this.instances.set("logReadingSessionService", logReadingSessionService);
+    this.instances.set(
+      "getRecentReadingSessionService",
+      getRecentReadingSessionService,
+    );
     this.instances.set("updateBookService", updateBookService);
     this.instances.set("reviewBookService", reviewBookService);
     this.instances.set("reopenBookService", reopenBookService);
@@ -198,6 +206,9 @@ export class DIContainer {
     const logReadingSessionService = this.instances.get(
       "logReadingSessionService",
     );
+    const getRecentReadingSessionService = this.instances.get(
+      "getRecentReadingSessionService",
+    );
     const getAuthorsService = this.instances.get("getAuthorsService");
     const getCountriesService = this.instances.get("getCountriesService");
     const calculateReadingKPIService = this.instances.get(
@@ -228,7 +239,10 @@ export class DIContainer {
     );
     this.instances.set(
       "readingSessionsController",
-      new ReadingSessionsController(logReadingSessionService),
+      new ReadingSessionsController(
+        logReadingSessionService,
+        getRecentReadingSessionService,
+      ),
     );
     this.instances.set(
       "authorsController",
