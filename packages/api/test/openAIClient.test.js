@@ -269,8 +269,6 @@ describe("OpenAIClient - MVP", () => {
       expect(userPrompt).toContain("Orwell");
     });
 
-
-
     it("should respect max_tokens limit (500)", async () => {
       // Arrange
       const profileData = {
@@ -635,8 +633,6 @@ describe("OpenAIClient - MVP", () => {
         OpenAIUnavailableError,
       );
     });
-
-
   });
 
   describe("_buildProfileSummaryPrompt", () => {

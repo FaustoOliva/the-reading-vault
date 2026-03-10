@@ -321,7 +321,7 @@ describe("GetBookByIdService", () => {
       );
       expect(daysDifference).toBeGreaterThanOrEqual(78);
       expect(daysDifference).toBeLessThanOrEqual(80);
-      
+
       vi.useRealTimers();
     });
 

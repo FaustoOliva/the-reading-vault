@@ -882,8 +882,6 @@ describe("AIContextRepository - MVP", () => {
     });
   });
 
-
-
   describe("refreshReaderProfile", () => {
     it("should increment version on each refresh", async () => {
       // Arrange
