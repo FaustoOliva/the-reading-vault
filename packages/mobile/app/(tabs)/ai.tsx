@@ -62,6 +62,7 @@ export default function AIScreen() {
         params: {
           prefillTitle: encodeURIComponent(recommendation.title || ""),
           prefillAuthor: encodeURIComponent(recommendation.author || ""),
+          prefillSynopsis: encodeURIComponent(recommendation.synopsis || ""),
         },
       });
     } catch (error) {

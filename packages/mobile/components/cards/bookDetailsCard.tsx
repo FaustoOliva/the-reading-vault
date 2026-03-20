@@ -72,6 +72,26 @@ export function BookDetailsCard({
         </Text>
       )}
 
+      {book.bookType && (
+        <Text style={{ fontSize: 13, color: TextColors.secondary }}>
+          Type: {book.bookType}
+        </Text>
+      )}
+
+      {book.genres && book.genres.length > 0 && (
+        <Text style={{ fontSize: 13, color: TextColors.secondary }}>
+          Genres: {book.genres.join(", ")}
+        </Text>
+      )}
+
+      {book.synopsis && (
+        <Text
+          style={{ fontSize: 13, color: TextColors.secondary, lineHeight: 20 }}
+        >
+          {book.synopsis}
+        </Text>
+      )}
+
       {onEdit && (
         <Pressable
           onPress={onEdit}

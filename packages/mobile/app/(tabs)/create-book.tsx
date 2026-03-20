@@ -44,13 +44,18 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useCreateBook } from "@/hooks/useBooks";
 import { useAuthors } from "@/hooks/useAuthors";
 import { useCountries } from "@/hooks/useCountries";
+import { useBookTypes } from "@/hooks/useBookTypes";
 import { FormInput } from "@/components/forms/formInput";
 import { InputWithSuggestions } from "@/components/forms/inputWithSuggestions";
 import { CustomDropdown } from "@/components/forms/customDropdown";
 import { showToast } from "@/components/ui/toast";
 import { BookStatus } from "@/types/book";
 import { BOOK_STATUS_LABELS } from "@/constants/bookStatus";
-import { createBookSchema, getZodErrors } from "@/types/schemas";
+import {
+  createBookSchema,
+  getZodErrors,
+  parseGenresInput,
+} from "@/types/schemas";
 import {
   Interactive,
   Background,
@@ -62,16 +67,21 @@ export default function CreateBookScreen() {
   const params = useLocalSearchParams<{
     prefillTitle?: string;
     prefillAuthor?: string;
+    prefillSynopsis?: string;
   }>();
   const { mutate: createBook, isPending } = useCreateBook();
   const { data: authors, isLoading: isLoadingAuthors } = useAuthors();
   const { data: countries, isLoading: isLoadingCountries } = useCountries();
+  const { data: bookTypes, isLoading: isLoadingBookTypes } = useBookTypes();
 
   // Form state
   const [title, setTitle] = useState("");
   const [authorName, setAuthorName] = useState("");
   const [countryName, setCountryName] = useState("");
   const [isbn, setIsbn] = useState("");
+  const [bookType, setBookType] = useState("");
+  const [genresInput, setGenresInput] = useState("");
+  const [synopsis, setSynopsis] = useState("");
   const [totalPages, setTotalPages] = useState("");
   const [publicationYear, setPublicationYear] = useState("");
   const [score, setScore] = useState("");
@@ -102,11 +112,22 @@ export default function CreateBookScreen() {
         setAuthorName(params.prefillAuthor); // Fallback to raw value
       }
     }
-  }, [params.prefillTitle, params.prefillAuthor]);
+
+    if (params.prefillSynopsis) {
+      try {
+        const decodedSynopsis = decodeURIComponent(params.prefillSynopsis);
+        setSynopsis(decodedSynopsis);
+      } catch (error) {
+        console.error("Error decoding synopsis:", error);
+        setSynopsis(params.prefillSynopsis);
+      }
+    }
+  }, [params.prefillTitle, params.prefillAuthor, params.prefillSynopsis]);
 
   // Transform authors and countries to simple string arrays
   const authorSuggestions = authors?.map((a) => a.name) || [];
   const countrySuggestions = countries?.map((c) => c.name) || [];
+  const bookTypeSuggestions = bookTypes?.map((bt) => bt.name) || [];
 
   // Check if the current author name matches an existing author
   const existingAuthor = useMemo(() => {
@@ -126,6 +147,9 @@ export default function CreateBookScreen() {
   const validateForm = (): boolean => {
     const normalizedCountryName = countryName.trim() || undefined;
     const normalizedIsbn = isbn.trim() || undefined;
+    const normalizedBookType = bookType.trim() || undefined;
+    const normalizedGenresInput = genresInput.trim() || undefined;
+    const normalizedSynopsis = synopsis.trim() || undefined;
     const normalizedTotalPages = totalPages.trim() || undefined;
     const normalizedPublicationYear = publicationYear.trim() || undefined;
     const normalizedScore = score.trim() || undefined;
@@ -136,6 +160,9 @@ export default function CreateBookScreen() {
       authorName,
       countryName: normalizedCountryName,
       isbn: normalizedIsbn,
+      bookType: normalizedBookType,
+      genresInput: normalizedGenresInput,
+      synopsis: normalizedSynopsis,
       totalPages: normalizedTotalPages,
       publicationYear: normalizedPublicationYear,
       status,
@@ -170,6 +197,9 @@ export default function CreateBookScreen() {
     const bookData = {
       title: title.trim(),
       isbn: isbn.trim() || undefined,
+      bookType: bookType.trim() || undefined,
+      genres: parseGenresInput(genresInput),
+      synopsis: synopsis.trim() || undefined,
       totalPages: totalPages.trim() ? Number(totalPages) : undefined,
       publicationYear: publicationYear.trim()
         ? Number(publicationYear)
@@ -196,6 +226,9 @@ export default function CreateBookScreen() {
         setAuthorName("");
         setCountryName("");
         setIsbn("");
+        setBookType("");
+        setGenresInput("");
+        setSynopsis("");
         setTotalPages("");
         setPublicationYear("");
         setScore("");
@@ -215,8 +248,8 @@ export default function CreateBookScreen() {
     });
   };
 
-  // Show loading state while fetching authors/countries
-  if (isLoadingAuthors || isLoadingCountries) {
+  // Show loading state while fetching authors/countries/bookTypes
+  if (isLoadingAuthors || isLoadingCountries || isLoadingBookTypes) {
     return (
       <View
         style={{
@@ -359,6 +392,52 @@ export default function CreateBookScreen() {
         accessibilityLabel="ISBN, optional"
         accessibilityHint="Enter the book's ISBN number if available"
       />
+
+      <InputWithSuggestions
+        label="Book Type (Optional)"
+        value={bookType}
+        onChangeText={setBookType}
+        suggestions={bookTypeSuggestions}
+        placeholder="Type book type..."
+        error={errors.bookType}
+        accessibilityLabel="Book type, optional"
+        accessibilityHint="Select from predefined types (Novel, Memoir, Anthology, etc.) or type a custom value"
+      />
+
+      <FormInput
+        label="Genres"
+        value={genresInput}
+        onChangeText={setGenresInput}
+        placeholder="e.g. Fantasy, Historical Fiction"
+        error={errors.genresInput}
+        accessibilityLabel="Genres, optional"
+        accessibilityHint="Enter one or more genres separated by commas"
+      />
+
+      <FormInput
+        label="Synopsis"
+        value={synopsis}
+        onChangeText={setSynopsis}
+        placeholder="Short description of the book (optional)"
+        error={errors.synopsis}
+        multiline
+        numberOfLines={4}
+        textAlignVertical="top"
+        maxLength={4000}
+        accessibilityLabel="Synopsis, optional"
+        accessibilityHint="Enter a short synopsis, up to 4000 characters"
+      />
+
+      <Text
+        style={{
+          fontSize: 13,
+          color: TextColors.tertiary,
+          textAlign: "right",
+          marginTop: -12,
+        }}
+      >
+        {synopsis.length}/4000
+      </Text>
 
       <FormInput
         label="Total Pages"

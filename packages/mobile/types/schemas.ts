@@ -21,8 +21,33 @@ import {
   isbnOptionalSchema,
   commentSchema,
   bookStatusSchema,
+  bookTypeOptionalSchema,
+  synopsisOptionalSchema,
 } from "@reading-vault/common";
 import { numericString, asFormDate } from "../adapters/formSchemas";
+
+/**
+ * Parse comma-separated genre input into a normalized array
+ */
+export const parseGenresInput = (value?: string): string[] | undefined => {
+  if (!value || !value.trim()) {
+    return undefined;
+  }
+
+  const uniqueGenres = new Map<string, string>();
+
+  for (const rawGenre of value.split(",")) {
+    const trimmedGenre = rawGenre.trim();
+    if (!trimmedGenre) continue;
+
+    const key = trimmedGenre.toLowerCase();
+    if (!uniqueGenres.has(key)) {
+      uniqueGenres.set(key, trimmedGenre);
+    }
+  }
+
+  return Array.from(uniqueGenres.values());
+};
 
 /**
  * Create Book Schema
@@ -43,6 +68,9 @@ export const createBookSchema = z
     authorName: authorNameSchema,
     countryName: countryNameSchema.optional(),
     isbn: z.string().optional(),
+    bookType: z.string().optional(),
+    genresInput: z.string().optional(),
+    synopsis: z.string().optional(),
     totalPages: numericString({
       positive: true,
       integer: true,
@@ -66,6 +94,49 @@ export const createBookSchema = z
     }),
     comment: commentSchema,
   })
+  .refine(
+    (data) => {
+      if (data.bookType === undefined || data.bookType.trim() === "") {
+        return true;
+      }
+
+      return bookTypeOptionalSchema.safeParse(data.bookType.trim()).success;
+    },
+    {
+      message: "Book type must be at most 100 characters",
+      path: ["bookType"],
+    },
+  )
+  .refine(
+    (data) => {
+      const parsedGenres = parseGenresInput(data.genresInput);
+      if (!parsedGenres) return true;
+
+      if (parsedGenres.length > 20) {
+        return false;
+      }
+
+      return parsedGenres.every((genre) => genre.length <= 100);
+    },
+    {
+      message:
+        "Genres must have at most 20 values and each genre at most 100 characters",
+      path: ["genresInput"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.synopsis === undefined || data.synopsis.trim() === "") {
+        return true;
+      }
+
+      return synopsisOptionalSchema.safeParse(data.synopsis.trim()).success;
+    },
+    {
+      message: "Synopsis must be at most 4000 characters",
+      path: ["synopsis"],
+    },
+  )
   .refine(
     (data) => {
       if (
@@ -152,30 +223,77 @@ export type LogSessionFormData = z.infer<typeof logSessionSchema>;
  * - Publication year must be 1000-9999 if provided
  * - Score must be 0-10 if provided
  */
-export const editBookSchema = z.object({
-  title: titleSchema.optional(),
-  totalPages: numericString({
-    positive: true,
-    integer: true,
-    fieldName: "Total pages",
-    required: false,
-  }),
-  publicationYear: numericString({
-    min: 1000,
-    max: 9999,
-    integer: true,
-    fieldName: "Publication year",
-    required: false,
-  }),
-  score: numericString({
-    min: 0,
-    max: 10,
-    multipleOf: 0.5,
-    fieldName: "Score",
-    required: false,
-  }),
-  comment: commentSchema,
-});
+export const editBookSchema = z
+  .object({
+    title: titleSchema.optional(),
+    bookType: z.string().optional(),
+    genresInput: z.string().optional(),
+    synopsis: z.string().optional(),
+    totalPages: numericString({
+      positive: true,
+      integer: true,
+      fieldName: "Total pages",
+      required: false,
+    }),
+    publicationYear: numericString({
+      min: 1000,
+      max: 9999,
+      integer: true,
+      fieldName: "Publication year",
+      required: false,
+    }),
+    score: numericString({
+      min: 0,
+      max: 10,
+      multipleOf: 0.5,
+      fieldName: "Score",
+      required: false,
+    }),
+    comment: commentSchema,
+  })
+  .refine(
+    (data) => {
+      if (data.bookType === undefined || data.bookType.trim() === "") {
+        return true;
+      }
+
+      return bookTypeOptionalSchema.safeParse(data.bookType.trim()).success;
+    },
+    {
+      message: "Book type must be at most 100 characters",
+      path: ["bookType"],
+    },
+  )
+  .refine(
+    (data) => {
+      const parsedGenres = parseGenresInput(data.genresInput);
+      if (!parsedGenres) return true;
+
+      if (parsedGenres.length > 20) {
+        return false;
+      }
+
+      return parsedGenres.every((genre) => genre.length <= 100);
+    },
+    {
+      message:
+        "Genres must have at most 20 values and each genre at most 100 characters",
+      path: ["genresInput"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.synopsis === undefined || data.synopsis.trim() === "") {
+        return true;
+      }
+
+      return synopsisOptionalSchema.safeParse(data.synopsis.trim()).success;
+    },
+    {
+      message: "Synopsis must be at most 4000 characters",
+      path: ["synopsis"],
+    },
+  );
 
 export type EditBookFormData = z.infer<typeof editBookSchema>;
 

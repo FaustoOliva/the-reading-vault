@@ -21,8 +21,14 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useUpdateBook } from "@/hooks/useBooks";
+import { useBookTypes } from "@/hooks/useBookTypes";
 import { Book } from "@/types/book";
-import { editBookSchema, getZodErrors } from "@/types/schemas";
+import {
+  editBookSchema,
+  getZodErrors,
+  parseGenresInput,
+} from "@/types/schemas";
+import { InputWithSuggestions } from "@/components/forms/inputWithSuggestions";
 import { showToast } from "@/components/ui/toast";
 import {
   Background,
@@ -40,6 +46,11 @@ interface EditBookModalProps {
 
 export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
   const [title, setTitle] = useState<string>(book.title);
+  const [bookType, setBookType] = useState<string>(book.bookType || "");
+  const [genresInput, setGenresInput] = useState<string>(
+    book.genres?.join(", ") || "",
+  );
+  const [synopsis, setSynopsis] = useState<string>(book.synopsis || "");
   const [totalPages, setTotalPages] = useState<string>(
     book.totalPages?.toString() || "",
   );
@@ -51,10 +62,15 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const updateMutation = useUpdateBook();
+  const { data: bookTypes, isLoading: isLoadingBookTypes } = useBookTypes();
+  const bookTypeSuggestions = bookTypes?.map((bt) => bt.name) || [];
 
   // Reset form when book changes
   useEffect(() => {
     setTitle(book.title);
+    setBookType(book.bookType || "");
+    setGenresInput(book.genres?.join(", ") || "");
+    setSynopsis(book.synopsis || "");
     setTotalPages(book.totalPages?.toString() || "");
     setPublicationYear(book.publicationYear?.toString() || "");
     setScore(book.score?.toString() || "");
@@ -65,6 +81,9 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
   const validate = (): boolean => {
     const result = editBookSchema.safeParse({
       title,
+      bookType,
+      genresInput,
+      synopsis,
       totalPages,
       publicationYear,
       score,
@@ -87,6 +106,9 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
 
     const updates: {
       title?: string;
+      bookType?: string;
+      genres?: string[];
+      synopsis?: string;
       totalPages?: number;
       publicationYear?: number;
       score?: number;
@@ -96,6 +118,20 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
     // Only include changed fields
     if (title.trim() !== book.title) {
       updates.title = title.trim();
+    }
+
+    if (bookType.trim() !== (book.bookType || "")) {
+      updates.bookType = bookType.trim() || undefined;
+    }
+
+    const nextGenres = parseGenresInput(genresInput) || [];
+    const currentGenres = book.genres || [];
+    if (JSON.stringify(nextGenres) !== JSON.stringify(currentGenres)) {
+      updates.genres = nextGenres.length > 0 ? nextGenres : undefined;
+    }
+
+    if (synopsis.trim() !== (book.synopsis || "")) {
+      updates.synopsis = synopsis.trim() || undefined;
     }
 
     const totalPagesNum = totalPages ? Number(totalPages) : null;
@@ -228,6 +264,126 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
                 {errors.title}
               </Text>
             ) : null}
+          </View>
+
+          {/* Book Type Field */}
+          <InputWithSuggestions
+            label="Book Type (Optional)"
+            value={bookType}
+            onChangeText={(text) => {
+              setBookType(text);
+              if (errors.bookType) {
+                setErrors((prev) => ({ ...prev, bookType: "" }));
+              }
+            }}
+            suggestions={bookTypeSuggestions}
+            placeholder="Type book type..."
+            error={errors.bookType}
+            accessibilityLabel="Book type, optional"
+            accessibilityHint="Select from predefined types (Novel, Memoir, Anthology, etc.) or type a custom value"
+          />
+
+          <View style={{ gap: 6 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: TextColors.primary,
+              }}
+            >
+              Genres
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: errors.genresInput
+                  ? Feedback.error.border
+                  : Border.default,
+                borderRadius: 8,
+                borderCurve: "continuous",
+                padding: 12,
+                fontSize: 16,
+                backgroundColor: Background.surface,
+                color: TextColors.primary,
+              }}
+              placeholder="e.g. Fantasy, Historical Fiction"
+              placeholderTextColor={TextColors.tertiary}
+              value={genresInput}
+              onChangeText={(text) => {
+                setGenresInput(text);
+                if (errors.genresInput) {
+                  setErrors((prev) => ({ ...prev, genresInput: "" }));
+                }
+              }}
+            />
+            {errors.genresInput ? (
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: Feedback.error.text,
+                }}
+              >
+                {errors.genresInput}
+              </Text>
+            ) : null}
+          </View>
+
+          <View style={{ gap: 6 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: TextColors.primary,
+              }}
+            >
+              Synopsis
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: errors.synopsis
+                  ? Feedback.error.border
+                  : Border.default,
+                borderRadius: 8,
+                borderCurve: "continuous",
+                padding: 12,
+                fontSize: 16,
+                backgroundColor: Background.surface,
+                color: TextColors.primary,
+                minHeight: 100,
+                textAlignVertical: "top",
+              }}
+              placeholder="Short description of the book..."
+              placeholderTextColor={TextColors.tertiary}
+              value={synopsis}
+              onChangeText={(text) => {
+                setSynopsis(text);
+                if (errors.synopsis) {
+                  setErrors((prev) => ({ ...prev, synopsis: "" }));
+                }
+              }}
+              multiline
+              maxLength={4000}
+            />
+            {errors.synopsis ? (
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: Feedback.error.text,
+                }}
+              >
+                {errors.synopsis}
+              </Text>
+            ) : null}
+            <Text
+              style={{
+                fontSize: 13,
+                color: TextColors.tertiary,
+                textAlign: "right",
+              }}
+            >
+              {synopsis.length}/4000
+            </Text>
           </View>
 
           {/* Total Pages Field */}
@@ -435,13 +591,14 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
           {/* Save Button */}
           <Pressable
             onPress={handleSave}
-            disabled={updateMutation.isPending}
+            disabled={updateMutation.isPending || isLoadingBookTypes}
             style={({ pressed }) => ({
-              backgroundColor: updateMutation.isPending
-                ? Interactive.primary.disabled
-                : pressed
-                  ? Interactive.primary.pressed
-                  : Interactive.primary.default,
+              backgroundColor:
+                updateMutation.isPending || isLoadingBookTypes
+                  ? Interactive.primary.disabled
+                  : pressed
+                    ? Interactive.primary.pressed
+                    : Interactive.primary.default,
               padding: 16,
               borderRadius: 8,
               borderCurve: "continuous",
@@ -451,7 +608,7 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
               gap: 8,
             })}
           >
-            {updateMutation.isPending ? (
+            {updateMutation.isPending || isLoadingBookTypes ? (
               <ActivityIndicator color={Interactive.primary.text} />
             ) : null}
             <Text
