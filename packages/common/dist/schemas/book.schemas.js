@@ -33,6 +33,34 @@ export const isbnSchema = z.string().trim().min(1).max(100);
  */
 export const isbnOptionalSchema = isbnSchema.optional();
 /**
+ * Book type validation
+ */
+export const bookTypeSchema = z.string().trim().min(1).max(100);
+/**
+ * Optional book type
+ */
+export const bookTypeOptionalSchema = bookTypeSchema.optional();
+/**
+ * Book genre validation
+ */
+export const genreSchema = z.string().trim().min(1).max(100);
+/**
+ * Genres validation
+ */
+export const genresSchema = z.array(genreSchema).max(20);
+/**
+ * Optional genres
+ */
+export const genresOptionalSchema = genresSchema.optional();
+/**
+ * Book synopsis validation
+ */
+export const synopsisSchema = z.string().trim().min(1).max(4000);
+/**
+ * Optional synopsis
+ */
+export const synopsisOptionalSchema = synopsisSchema.optional();
+/**
  * Book title validation
  */
 export const titleSchema = z.string().trim().min(1).max(200);
@@ -68,6 +96,9 @@ export const updateBookBaseSchema = z.object({
   title: titleOptionalSchema,
   totalPages: pagesOptionalSchema,
   publicationYear: publicationYearOptionalSchema,
+  bookType: bookTypeOptionalSchema,
+  genres: genresOptionalSchema,
+  synopsis: synopsisOptionalSchema,
   score: scoreOptionalSchema,
   comment: commentSchema,
 });

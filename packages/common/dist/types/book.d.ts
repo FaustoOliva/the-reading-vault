@@ -32,6 +32,9 @@ export interface Book {
     countryIsoCode?: string | null;
   };
   isbn: string | null;
+  bookType: string | null;
+  genres: string[] | null;
+  synopsis: string | null;
   totalPages: number | null;
   publicationYear: number | null;
   status: BookStatus;
@@ -72,6 +75,9 @@ export interface BookDetails {
     id: number;
     title: string;
     isbn: string | null;
+    bookType: string | null;
+    genres: string[] | null;
+    synopsis: string | null;
     publicationYear: number | null;
     author: {
       id: number;
@@ -99,6 +105,9 @@ export interface CreateBookInput {
   isbn?: string;
   totalPages?: number;
   publicationYear?: number;
+  bookType?: string;
+  genres?: string[];
+  synopsis?: string;
   status?: BookStatus;
   score?: number;
   comment?: string;
@@ -114,6 +123,9 @@ export interface UpdateBookInput {
   title?: string;
   totalPages?: number;
   publicationYear?: number;
+  bookType?: string;
+  genres?: string[];
+  synopsis?: string;
   score?: number;
   comment?: string;
 }

@@ -38,6 +38,36 @@ export declare const isbnSchema: z.ZodString;
  */
 export declare const isbnOptionalSchema: z.ZodOptional<z.ZodString>;
 /**
+ * Book type validation
+ */
+export declare const bookTypeSchema: z.ZodString;
+/**
+ * Optional book type
+ */
+export declare const bookTypeOptionalSchema: z.ZodOptional<z.ZodString>;
+/**
+ * Book genre validation
+ */
+export declare const genreSchema: z.ZodString;
+/**
+ * Genres validation
+ */
+export declare const genresSchema: z.ZodArray<z.ZodString>;
+/**
+ * Optional genres
+ */
+export declare const genresOptionalSchema: z.ZodOptional<
+  z.ZodArray<z.ZodString>
+>;
+/**
+ * Book synopsis validation
+ */
+export declare const synopsisSchema: z.ZodString;
+/**
+ * Optional synopsis
+ */
+export declare const synopsisOptionalSchema: z.ZodOptional<z.ZodString>;
+/**
  * Book title validation
  */
 export declare const titleSchema: z.ZodString;
@@ -74,6 +104,9 @@ export declare const updateBookBaseSchema: z.ZodObject<
     title: z.ZodOptional<z.ZodString>;
     totalPages: z.ZodOptional<z.ZodNumber>;
     publicationYear: z.ZodOptional<z.ZodNumber>;
+    bookType: z.ZodOptional<z.ZodString>;
+    genres: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    synopsis: z.ZodOptional<z.ZodString>;
     score: z.ZodOptional<z.ZodNumber>;
     comment: z.ZodOptional<z.ZodString>;
   },
