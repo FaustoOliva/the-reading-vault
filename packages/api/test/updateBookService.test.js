@@ -95,6 +95,10 @@ describe("UpdateBookService", () => {
         id: 1,
         title: "Updated Title",
         totalPages: 500,
+        publicationYear: 1998,
+        bookType: "Anthology",
+        genres: ["Short Stories", "Fantasy"],
+        synopsis: "A curated set of speculative fiction stories.",
         score: 9.5,
         comment: "Great book!",
         status: BookStatus.COMPLETED,
@@ -108,12 +112,30 @@ describe("UpdateBookService", () => {
       const result = await service.execute(1, {
         title: "Updated Title",
         totalPages: 500,
+        publicationYear: 1998,
+        bookType: "Anthology",
+        genres: ["Short Stories", "Fantasy"],
+        synopsis: "A curated set of speculative fiction stories.",
         score: 9.5,
         comment: "Great book!",
       });
 
       // Assert
       expect(result).toEqual(updatedBook);
+      expect(mockBookRepository.updateMetadata).toHaveBeenCalledWith(
+        1,
+        {
+          title: "Updated Title",
+          totalPages: 500,
+          publicationYear: 1998,
+          bookType: "Anthology",
+          genres: ["Short Stories", "Fantasy"],
+          synopsis: "A curated set of speculative fiction stories.",
+          score: 9.5,
+          comment: "Great book!",
+        },
+        mockTransaction,
+      );
       expect(mockTransaction.commit).toHaveBeenCalled();
     });
   });

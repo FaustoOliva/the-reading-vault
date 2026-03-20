@@ -19,6 +19,9 @@ export class Book {
     id,
     title,
     isbn,
+    bookType,
+    genres,
+    synopsis,
     authorId,
     authorName,
     authorNationality,
@@ -33,6 +36,9 @@ export class Book {
     this.id = id;
     this.title = title;
     this.isbn = isbn;
+    this.bookType = bookType;
+    this.genres = genres;
+    this.synopsis = synopsis;
     this.authorId = authorId;
     this.authorName = authorName;
     this.authorNationality = authorNationality;
@@ -53,6 +59,9 @@ export class Book {
       id: record.id,
       title: record.title,
       isbn: record.isbn,
+      bookType: record.book_type,
+      genres: Book.parseGenres(record.genres),
+      synopsis: record.synopsis,
       authorId: record.author_id,
       authorName: record.author_name,
       authorNationality: record.author_nationality,
@@ -74,6 +83,9 @@ export class Book {
       id: this.id,
       title: this.title,
       isbn: this.isbn,
+      bookType: this.bookType,
+      genres: this.genres,
+      synopsis: this.synopsis,
       author: {
         id: this.authorId,
         name: this.authorName,
@@ -87,6 +99,33 @@ export class Book {
       score: this.score,
       comment: this.comment,
     };
+  }
+
+  static parseGenres(rawGenres) {
+    if (!rawGenres) {
+      return null;
+    }
+
+    if (Array.isArray(rawGenres)) {
+      return rawGenres;
+    }
+
+    if (typeof rawGenres === "string" && rawGenres.includes("||")) {
+      const parsedFromJoin = rawGenres
+        .split("||")
+        .map((genre) => genre.trim())
+        .filter(Boolean);
+
+      return parsedFromJoin.length > 0 ? parsedFromJoin : null;
+    }
+
+    try {
+      const parsedGenres = JSON.parse(rawGenres);
+      return Array.isArray(parsedGenres) ? parsedGenres : null;
+    } catch {
+      const singleGenre = String(rawGenres).trim();
+      return singleGenre ? [singleGenre] : null;
+    }
   }
 
   /**

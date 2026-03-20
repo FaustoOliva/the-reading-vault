@@ -122,6 +122,9 @@ export class BookRepository {
         b.id,
         b.title,
         b.isbn,
+        bt.name as book_type,
+        genre_data.genres,
+        b.synopsis,
         b.author_id,
         a.name as author_name,
         c.name as author_nationality,
@@ -136,6 +139,13 @@ export class BookRepository {
       INNER JOIN Authors a ON b.author_id = a.id
       LEFT JOIN Countries c ON a.nationality_id = c.id
       INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      LEFT JOIN BookTypes bt ON b.book_type_id = bt.id
+      OUTER APPLY (
+        SELECT STRING_AGG(g.name, '||') as genres
+        FROM BookGenres bg
+        INNER JOIN Genres g ON g.id = bg.genre_id
+        WHERE bg.book_id = b.id
+      ) genre_data
       WHERE b.id = @bookId
     `;
 
@@ -176,9 +186,9 @@ export class BookRepository {
   }
 
   /**
-   * Update book metadata (title, totalPages, score, comment) - does NOT change status
+   * Update book metadata (title, pages, enriched metadata, score, comment) - does NOT change status
    * @param {number} bookId - Book ID
-   * @param {Object} data - Partial update data { title?, totalPages?, publicationYear?, score?, comment? }
+   * @param {Object} data - Partial update data { title?, totalPages?, publicationYear?, bookType?, genres?, synopsis?, score?, comment? }
    * @param {sql.Transaction} transaction - Active transaction
    * @returns {Promise<Book>} Updated book entity
    */
@@ -199,6 +209,17 @@ export class BookRepository {
     if (data.publicationYear !== undefined) {
       updates.push("publication_year = @publicationYear");
       request.input("publicationYear", sql.Int, data.publicationYear || null);
+    }
+
+    if (data.bookType !== undefined) {
+      const bookTypeId = await this.getBookTypeId(data.bookType, transaction);
+      updates.push("book_type_id = @bookTypeId");
+      request.input("bookTypeId", sql.Int, bookTypeId || null);
+    }
+
+    if (data.synopsis !== undefined) {
+      updates.push("synopsis = @synopsis");
+      request.input("synopsis", sql.NVarChar, data.synopsis || null);
     }
 
     if (data.score !== undefined) {
@@ -222,12 +243,19 @@ export class BookRepository {
       await request.input("bookId", sql.Int, bookId).query(query);
     }
 
+    if (data.genres !== undefined) {
+      await this.replaceBookGenres(bookId, data.genres, transaction);
+    }
+
     // Fetch updated book within the same transaction
     const selectQuery = `
       SELECT 
         b.id,
         b.title,
         b.isbn,
+        bt.name as book_type,
+        genre_data.genres,
+        b.synopsis,
         b.author_id,
         a.name as author_name,
         c.name as author_nationality,
@@ -242,6 +270,13 @@ export class BookRepository {
       INNER JOIN Authors a ON b.author_id = a.id
       LEFT JOIN Countries c ON a.nationality_id = c.id
       INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      LEFT JOIN BookTypes bt ON b.book_type_id = bt.id
+      OUTER APPLY (
+        SELECT STRING_AGG(g.name, '||') as genres
+        FROM BookGenres bg
+        INNER JOIN Genres g ON g.id = bg.genre_id
+        WHERE bg.book_id = b.id
+      ) genre_data
       WHERE b.id = @bookIdSelect
     `;
 
@@ -293,6 +328,9 @@ export class BookRepository {
         b.id,
         b.title,
         b.isbn,
+        bt.name as book_type,
+        genre_data.genres,
+        b.synopsis,
         b.author_id,
         a.name as author_name,
         c.name as author_nationality,
@@ -307,6 +345,13 @@ export class BookRepository {
       INNER JOIN Authors a ON b.author_id = a.id
       LEFT JOIN Countries c ON a.nationality_id = c.id
       INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      LEFT JOIN BookTypes bt ON b.book_type_id = bt.id
+      OUTER APPLY (
+        SELECT STRING_AGG(g.name, '||') as genres
+        FROM BookGenres bg
+        INNER JOIN Genres g ON g.id = bg.genre_id
+        WHERE bg.book_id = b.id
+      ) genre_data
       WHERE b.isbn = @isbn
     `;
 
@@ -324,7 +369,7 @@ export class BookRepository {
 
   /**
    * Create a new book
-   * @param {Object} data - { title, isbn, authorId, totalPages, publicationYear, statusId, score?, comment? }
+   * @param {Object} data - { title, isbn, authorId, totalPages, publicationYear, bookType, genres, synopsis, statusId, score?, comment? }
    * @param {sql.Transaction} transaction - Required transaction
    * @returns {Promise<Book>} Created book entity
    */
@@ -335,19 +380,25 @@ export class BookRepository {
       authorId,
       totalPages,
       publicationYear,
+      bookType,
+      genres,
+      synopsis,
       statusId,
       score,
       comment,
     } = data;
 
+    // Normalize bookType to bookTypeId (predefined lookup)
+    const bookTypeId = await this.getBookTypeId(bookType, transaction);
+
     const request = new sql.Request(transaction);
 
     const query = `
-      INSERT INTO Books (title, isbn, author_id, total_pages, publication_year, status_id, current_reading_cycle, score, comment)
+          INSERT INTO Books (title, isbn, author_id, total_pages, publication_year, book_type_id, synopsis, status_id, current_reading_cycle, score, comment)
       OUTPUT INSERTED.id, INSERTED.title, INSERTED.isbn, INSERTED.author_id, 
-             INSERTED.total_pages, INSERTED.publication_year, INSERTED.current_reading_cycle, 
-             INSERTED.score, INSERTED.comment
-      VALUES (@title, @isbn, @authorId, @totalPages, @publicationYear, @statusId, 1, @score, @comment)
+            INSERTED.book_type_id, INSERTED.synopsis, INSERTED.total_pages,
+             INSERTED.publication_year, INSERTED.current_reading_cycle, INSERTED.score, INSERTED.comment
+          VALUES (@title, @isbn, @authorId, @totalPages, @publicationYear, @bookTypeId, @synopsis, @statusId, 1, @score, @comment)
     `;
 
     const result = await request
@@ -356,6 +407,8 @@ export class BookRepository {
       .input("authorId", sql.Int, authorId)
       .input("totalPages", sql.Int, totalPages || null)
       .input("publicationYear", sql.Int, publicationYear || null)
+      .input("bookTypeId", sql.Int, bookTypeId || null)
+      .input("synopsis", sql.NVarChar, synopsis || null)
       .input("statusId", sql.Int, statusId)
       .input("score", sql.Decimal(3, 1), score ?? null)
       .input("comment", sql.NVarChar, comment || null)
@@ -363,12 +416,19 @@ export class BookRepository {
 
     const insertedRecord = result.recordset[0];
 
+    if (genres !== undefined) {
+      await this.replaceBookGenres(insertedRecord.id, genres, transaction);
+    }
+
     // Get author name and status code for complete Book entity
     const fullBookQuery = `
       SELECT 
         b.id,
         b.title,
         b.isbn,
+        bt.name as book_type,
+        genre_data.genres,
+        b.synopsis,
         b.author_id,
         a.name as author_name,
         c.name as author_nationality,
@@ -383,6 +443,13 @@ export class BookRepository {
       INNER JOIN Authors a ON b.author_id = a.id
       LEFT JOIN Countries c ON a.nationality_id = c.id
       INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      LEFT JOIN BookTypes bt ON b.book_type_id = bt.id
+      OUTER APPLY (
+        SELECT STRING_AGG(g.name, '||') as genres
+        FROM BookGenres bg
+        INNER JOIN Genres g ON g.id = bg.genre_id
+        WHERE bg.book_id = b.id
+      ) genre_data
       WHERE b.id = @bookId
     `;
 
@@ -391,6 +458,135 @@ export class BookRepository {
       .query(fullBookQuery);
 
     return Book.fromDatabase(fullResult.recordset[0]);
+  }
+
+  /**
+   * Replace book genres through the BookGenres junction table
+   * @param {number} bookId - Book ID
+   * @param {string[]|undefined} genres - Genre names
+   * @param {sql.Transaction} transaction - Active transaction
+   * @returns {Promise<void>}
+   */
+  async replaceBookGenres(bookId, genres, transaction) {
+    const normalizedGenres = this.normalizeGenres(genres);
+
+    await new sql.Request(transaction)
+      .input("bookId", sql.Int, bookId)
+      .query("DELETE FROM BookGenres WHERE book_id = @bookId");
+
+    if (normalizedGenres.length === 0) {
+      return;
+    }
+
+    const genreIds = await this.getOrCreateGenreIds(
+      normalizedGenres,
+      transaction,
+    );
+
+    const insertRequest = new sql.Request(transaction).input(
+      "bookId",
+      sql.Int,
+      bookId,
+    );
+
+    const values = genreIds.map((genreId, index) => {
+      const paramName = `genreId${index}`;
+      insertRequest.input(paramName, sql.Int, genreId);
+      return `(@bookId, @${paramName})`;
+    });
+
+    await insertRequest.query(
+      `INSERT INTO BookGenres (book_id, genre_id) VALUES ${values.join(", ")}`,
+    );
+  }
+
+  /**
+   * Resolve genre IDs, creating missing genres when needed.
+   * @param {string[]} genres - Normalized unique genre names
+   * @param {sql.Transaction} transaction - Active transaction
+   * @returns {Promise<number[]>}
+   */
+  async getOrCreateGenreIds(genres, transaction) {
+    const genreIds = [];
+
+    for (const genreName of genres) {
+      const existingResult = await new sql.Request(transaction)
+        .input("genreName", sql.NVarChar, genreName)
+        .query("SELECT id FROM Genres WHERE name = @genreName");
+
+      if (existingResult.recordset.length > 0) {
+        genreIds.push(existingResult.recordset[0].id);
+        continue;
+      }
+
+      const insertedResult = await new sql.Request(transaction)
+        .input("genreName", sql.NVarChar, genreName)
+        .query(
+          "INSERT INTO Genres (name) OUTPUT INSERTED.id VALUES (@genreName)",
+        );
+
+      genreIds.push(insertedResult.recordset[0].id);
+    }
+
+    return genreIds;
+  }
+
+  /**
+   * Resolve BookType ID from name.
+   * BookTypes are predefined in the database, so this just looks up the ID.
+   * @param {string|null|undefined} bookType - BookType name (e.g., "Novel", "Memoir")
+   * @param {sql.Transaction} transaction - Active transaction
+   * @returns {Promise<number|null>} BookType ID or null if not found or input is empty
+   */
+  async getBookTypeId(bookType, transaction) {
+    if (!bookType || typeof bookType !== "string") {
+      return null;
+    }
+
+    const trimmedType = bookType.trim();
+    if (!trimmedType) {
+      return null;
+    }
+
+    const result = await new sql.Request(transaction)
+      .input("bookType", sql.NVarChar, trimmedType)
+      .query("SELECT id FROM BookTypes WHERE name = @bookType");
+
+    if (result.recordset.length > 0) {
+      return result.recordset[0].id;
+    }
+
+    // BookType not found in predefined list
+    return null;
+  }
+
+  /**
+   * Normalize and deduplicate genre values from API payload.
+   * @param {string[]|undefined} genres - Raw genre list
+   * @returns {string[]}
+   */
+  normalizeGenres(genres) {
+    if (!Array.isArray(genres)) {
+      return [];
+    }
+
+    const uniqueGenres = new Map();
+
+    for (const genre of genres) {
+      const trimmedGenre = typeof genre === "string" ? genre.trim() : "";
+
+      if (!trimmedGenre) {
+        continue;
+      }
+
+      const normalizedKey = trimmedGenre.toLowerCase();
+
+      if (!uniqueGenres.has(normalizedKey)) {
+        uniqueGenres.set(normalizedKey, trimmedGenre);
+      }
+    }
+
+    return Array.from(uniqueGenres.values());
   }
 
   /**

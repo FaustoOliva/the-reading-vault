@@ -225,6 +225,9 @@ export class BookQueryBuilder {
         b.id,
         b.title,
         b.isbn,
+        bt.name as book_type,
+        genre_data.genres,
+        b.synopsis,
         b.author_id,
         a.name as author_name,
         c.name as author_nationality,
@@ -239,6 +242,13 @@ export class BookQueryBuilder {
       INNER JOIN Authors a ON b.author_id = a.id
       LEFT JOIN Countries c ON a.nationality_id = c.id
       INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      LEFT JOIN BookTypes bt ON b.book_type_id = bt.id
+      OUTER APPLY (
+        SELECT STRING_AGG(g.name, '||') as genres
+        FROM BookGenres bg
+        INNER JOIN Genres g ON g.id = bg.genre_id
+        WHERE bg.book_id = b.id
+      ) genre_data
       WHERE 1=1
     `;
 
@@ -282,6 +292,7 @@ export class BookQueryBuilder {
       INNER JOIN Authors a ON b.author_id = a.id
       LEFT JOIN Countries c ON a.nationality_id = c.id
       INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      LEFT JOIN BookTypes bt ON b.book_type_id = bt.id
       WHERE 1=1
     `;
 

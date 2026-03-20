@@ -65,6 +65,9 @@ export class GetBookByIdService {
         id: book.id,
         title: book.title,
         isbn: book.isbn,
+        bookType: book.bookType,
+        genres: book.genres,
+        synopsis: book.synopsis,
         publicationYear: book.publicationYear,
         author: {
           id: book.authorId,

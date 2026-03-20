@@ -8,6 +8,7 @@ import { BooksController } from "../controllers/booksController.js";
 import { ReadingSessionsController } from "../controllers/readingSessionsController.js";
 import { AuthorsController } from "../controllers/authorsController.js";
 import { CountriesController } from "../controllers/countriesController.js";
+import { BookTypesController } from "../controllers/bookTypesController.js";
 import { KpiController } from "../controllers/kpiController.js";
 import { AIController } from "../controllers/aiController.js";
 import { MSSQLClient } from "../infraestructure/config/database.js";
@@ -15,6 +16,7 @@ import { DatabaseRepository } from "../infraestructure/database/DatabaseReposito
 import { BookRepository } from "../infraestructure/repositories/bookRepository.js";
 import { AuthorRepository } from "../infraestructure/repositories/authorRepository.js";
 import { CountryRepository } from "../infraestructure/repositories/countryRepository.js";
+import { BookTypesRepository } from "../infraestructure/repositories/bookTypesRepository.js";
 import { ReadingSessionRepository } from "../infraestructure/repositories/readingSessionRepository.js";
 import { BookStatusHistoryRepository } from "../infraestructure/repositories/bookStatusHistoryRepository.js";
 import { AIContextRepository } from "../infraestructure/repositories/aiContextRepository.js";
@@ -30,6 +32,7 @@ import { ReopenBookService } from "../services/reopenBookService.js";
 import { RequestReviewService } from "../services/requestReviewService.js";
 import { GetAuthorsService } from "../services/getAuthorsService.js";
 import { GetCountriesService } from "../services/getCountriesService.js";
+import { GetBookTypesService } from "../services/getBookTypesService.js";
 import { CalculateReadingKPIService } from "../services/calculateReadingKPIService.js";
 import { GetBookReadingStatsService } from "../services/getBookReadingStatsService.js";
 import { GetReaderProfileService } from "../services/getReaderProfileService.js";
@@ -58,6 +61,7 @@ export class DIContainer {
     const bookRepository = new BookRepository(mssqlClient);
     const authorRepository = new AuthorRepository(mssqlClient);
     const countryRepository = new CountryRepository(mssqlClient);
+    const bookTypesRepository = new BookTypesRepository(mssqlClient);
     const readingSessionRepository = new ReadingSessionRepository(mssqlClient);
     const bookStatusHistoryRepository = new BookStatusHistoryRepository(
       mssqlClient,
@@ -67,6 +71,7 @@ export class DIContainer {
     this.instances.set("bookRepository", bookRepository);
     this.instances.set("authorRepository", authorRepository);
     this.instances.set("countryRepository", countryRepository);
+    this.instances.set("bookTypesRepository", bookTypesRepository);
     this.instances.set("readingSessionRepository", readingSessionRepository);
     this.instances.set(
       "bookStatusHistoryRepository",
@@ -92,6 +97,7 @@ export class DIContainer {
     const bookRepository = this.instances.get("bookRepository");
     const authorRepository = this.instances.get("authorRepository");
     const countryRepository = this.instances.get("countryRepository");
+    const bookTypesRepository = this.instances.get("bookTypesRepository");
     const readingSessionRepository = this.instances.get(
       "readingSessionRepository",
     );
@@ -145,6 +151,7 @@ export class DIContainer {
     );
     const getAuthorsService = new GetAuthorsService(authorRepository);
     const getCountriesService = new GetCountriesService(countryRepository);
+    const getBookTypesService = new GetBookTypesService(bookTypesRepository);
     const calculateReadingKPIService = new CalculateReadingKPIService(
       bookRepository,
       readingSessionRepository,
@@ -180,6 +187,7 @@ export class DIContainer {
     this.instances.set("requestReviewService", requestReviewService);
     this.instances.set("getAuthorsService", getAuthorsService);
     this.instances.set("getCountriesService", getCountriesService);
+    this.instances.set("getBookTypesService", getBookTypesService);
     this.instances.set(
       "calculateReadingKPIService",
       calculateReadingKPIService,
@@ -211,6 +219,7 @@ export class DIContainer {
     );
     const getAuthorsService = this.instances.get("getAuthorsService");
     const getCountriesService = this.instances.get("getCountriesService");
+    const getBookTypesService = this.instances.get("getBookTypesService");
     const calculateReadingKPIService = this.instances.get(
       "calculateReadingKPIService",
     );
@@ -247,6 +256,10 @@ export class DIContainer {
     this.instances.set(
       "authorsController",
       new AuthorsController(getAuthorsService),
+    );
+    this.instances.set(
+      "bookTypesController",
+      new BookTypesController(getBookTypesService),
     );
     this.instances.set(
       "countriesController",

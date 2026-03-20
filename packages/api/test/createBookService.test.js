@@ -87,6 +87,72 @@ describe("CreateBookService", () => {
   });
 
   describe("✅ Happy Paths", () => {
+    it("should pass enriched metadata fields to repository", async () => {
+      // Arrange
+      const input = {
+        title: "The Left Hand of Darkness",
+        isbn: "9780441478125",
+        totalPages: 304,
+        publicationYear: 1969,
+        bookType: "Novel",
+        genres: ["Science Fiction", "Political Fiction"],
+        synopsis:
+          "A diplomat navigates politics and identity on a frozen world.",
+        author: {
+          name: "Ursula K. Le Guin",
+        },
+      };
+
+      const mockAuthor = {
+        id: 20,
+        name: "Ursula K. Le Guin",
+        nationalityId: null,
+      };
+      const mockBook = new Book({
+        id: 20,
+        title: "The Left Hand of Darkness",
+        isbn: "9780441478125",
+        bookType: "Novel",
+        genres: ["Science Fiction", "Political Fiction"],
+        synopsis:
+          "A diplomat navigates politics and identity on a frozen world.",
+        authorId: 20,
+        authorName: "Ursula K. Le Guin",
+        totalPages: 304,
+        publicationYear: 1969,
+        status: BookStatus.WISH_LIST,
+        currentReadingCycle: 1,
+        score: null,
+        comment: null,
+      });
+
+      mockBookRepository.findByIsbn.mockResolvedValue(null);
+      mockAuthorRepository.findByName.mockResolvedValue(null);
+      mockAuthorRepository.create.mockResolvedValue(mockAuthor);
+      mockRequest.query.mockResolvedValue({ recordset: [{ id: 1 }] });
+      mockBookRepository.create.mockResolvedValue(mockBook);
+
+      // Act
+      await service.execute(input);
+
+      // Assert
+      expect(mockBookRepository.create).toHaveBeenCalledWith(
+        {
+          title: "The Left Hand of Darkness",
+          isbn: "9780441478125",
+          authorId: 20,
+          totalPages: 304,
+          publicationYear: 1969,
+          bookType: "Novel",
+          genres: ["Science Fiction", "Political Fiction"],
+          synopsis:
+            "A diplomat navigates politics and identity on a frozen world.",
+          statusId: 1,
+        },
+        mockTransaction,
+      );
+    });
+
     it("should create book with new author and country", async () => {
       // Arrange
       const input = {

@@ -38,7 +38,7 @@ export class CreateBookService {
 
   /**
    * Execute CreateBook use case
-   * @param {Object} input - { title, isbn, totalPages, publicationYear, status, author: { name, nationality } }
+   * @param {Object} input - { title, isbn, totalPages, publicationYear, bookType, genres, synopsis, status, author: { name, nationality } }
    * @returns {Promise<Book>}
    */
   async execute(input) {
@@ -47,6 +47,9 @@ export class CreateBookService {
       isbn,
       totalPages,
       publicationYear,
+      bookType,
+      genres,
+      synopsis,
       status,
       score,
       comment,
@@ -127,6 +130,9 @@ export class CreateBookService {
           authorId: authorRecord.id,
           totalPages,
           publicationYear,
+          bookType,
+          genres,
+          synopsis,
           statusId,
           ...(score !== undefined ? { score } : {}),
           ...(comment !== undefined ? { comment } : {}),

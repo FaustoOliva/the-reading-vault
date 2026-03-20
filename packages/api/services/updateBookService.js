@@ -1,6 +1,6 @@
 /**
  * UpdateBookService (Command Use Case)
- * Updates book metadata (title, totalPages, score, comment) without changing status
+ * Updates book metadata (title, pages, enriched metadata, score, comment) without changing status
  *
  * Responsibilities:
  * - Update book metadata fields
@@ -25,7 +25,7 @@ export class UpdateBookService {
   /**
    * Execute UpdateBook use case
    * @param {number} bookId - Book ID to update
-   * @param {Object} data - Partial update data { title?, totalPages?, score?, comment? }
+   * @param {Object} data - Partial update data { title?, totalPages?, publicationYear?, bookType?, genres?, synopsis?, score?, comment? }
    * @returns {Promise<Book>} Updated book entity
    */
   async execute(bookId, data) {
