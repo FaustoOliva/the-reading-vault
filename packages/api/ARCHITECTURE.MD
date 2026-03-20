@@ -299,6 +299,7 @@ See:
 **Responsibilities:**
 
 - Generate narrative summaries from structured profile data
+- Generate book recommendations and synergy analyses
 - Manage OpenAI API communication
 - Track token usage for cost monitoring
 - Health check for connectivity verification
@@ -306,13 +307,16 @@ See:
 **Key Methods:**
 
 - `generateProfileSummary(profileData)` - Call GPT-3.5-turbo
+- `recommendBooks(input)` - Generate recommendation payloads
+- `analyzeBookSynergy(input)` - Evaluate book-to-profile fit
+- `analyzeAuthorSynergy(input)` - Evaluate author-to-profile fit
 - `checkHealth()` - Validate API key and connectivity
 
 **Configuration:**
 
 - Model: `gpt-3.5-turbo`
 - Temperature: `0.4` (deterministic)
-- Max tokens: `300` (cost control)
+- Max tokens: `500` for profile summary generation
 - Timeout: `15000ms`
 
 **Error Handling:**
@@ -338,6 +342,23 @@ See:
 - `refreshIfNeeded(context)` - Backward-compatible wrapper that only marks events
 - `_isProfileStale(profile)` - Check if >24 hours old
 
+#### AI Query Services
+
+**Pattern:** Thin orchestration services consuming reader profile + OpenAIClient
+
+**Responsibilities:**
+
+- Resolve the current reader profile
+- Enforce minimum profile threshold before AI responses
+- Choose semantic summary first, structured profile second
+- Return structured payloads for mobile consumption
+
+**Current/Target Services:**
+
+- `RecommendBooksService`
+- `AnalyzeBookSynergyService`
+- `AnalyzeAuthorSynergyService`
+
 **Integration Pattern:**
 
 ```javascript
@@ -361,7 +382,7 @@ OpenAIClient.generateProfileSummary() (LLM narration)
   ↓
 ReaderProfiles table (stored profile)
   ↓
-AI Services (consume for recommendations)
+AI Services (consume for recommendations and synergy)
 ```
 
 ### Refresh Lifecycle
@@ -400,6 +421,16 @@ Versioning enables backward-compatible evolution without breaking existing integ
 - Rate limit exceeded → Skip semantic generation, retry on next refresh
 - Database errors → Log warning, continue parent operation
 
+### Metadata Signals for AI
+
+The AI layer may consume enriched book metadata when present:
+
+- `bookType` for high-level editorial classification
+- `genres` for thematic clustering
+- `synopsis` for semantic context during summary generation and synergy analysis
+
+These fields are optional and must not block standard book creation flows.
+
 ### Performance Targets
 
 - Profile read: < 50ms
@@ -410,7 +441,7 @@ Versioning enables backward-compatible evolution without breaking existing integ
 ### Cost Management
 
 - Temperature: `0.4` (prevents overly creative/long responses)
-- Max tokens: `300` (caps response length)
+- Max tokens: `500` for profile summary generation
 - Estimated cost per refresh: ~$0.001-0.002 USD
 - Monthly estimate (typical usage): < $0.01 USD
 

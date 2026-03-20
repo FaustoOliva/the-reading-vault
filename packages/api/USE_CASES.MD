@@ -56,7 +56,7 @@ Registers a new book in the system. Supports legacy books by allowing initial st
 - title
 - author
 - totalPages
-- optional metadata (isbn, notes)
+- optional metadata (`isbn`, `bookType`, `genres`, `synopsis`, notes)
 - **status** (optional) - Initial status for the book. Defaults to WISH_LIST if not provided. Required for legacy books with different initial states.
 
 **Output**
@@ -78,6 +78,10 @@ Registers a new book in the system. Supports legacy books by allowing initial st
 - Legacy books can be created with any valid status (WISH_LIST, READING, COMPLETED, ABANDONED)
 - When status is provided, it must be a valid BookStatus enum value
 - Initial status COMPLETED or ABANDONED may require score (enforced at domain level)
+- `bookType` is a single editorial classification (0..1 relation, predefined: Novel, Memoir, Anthology, Short-Story Collection, Poetry, Non-Fiction, Biography, Essay Collection, Self-Help, History)
+- `genres` are stored in a normalized relation (`Genres` + `BookGenres`) while the API contract remains `string[] | null`
+- `synopsis` maximum length is 4000 characters
+- All three metadata fields (`bookType`, `genres`, `synopsis`) are optional and can be user-entered or AI-suggested before save
 
 **Transactional**
 
@@ -121,24 +125,32 @@ Logs a reading session within an active reading cycle.
 **Note**  
 Reading cycles are automatically managed as a side effect of LogReadingSession:
 
-- Firs3 CompleteBook
+- `WISH_LIST → READING` when the first session is logged
+- `READING → PENDING_SCORE` when total pages are reached for books with `totalPages`
+- `COMPLETED → READING` when a re-read session starts, incrementing the reading cycle
+- `ABANDONED` and `PENDING_SCORE` books cannot accept new sessions
+
+---
+
+### 5.3 ReviewBook
 
 **Description**  
-Marks a book as completed with a required score. Books can only be completed manually if all pages have been read (when total_pages is defined), or at any time for legacy books without total_pages.
+Transitions a `PENDING_SCORE` book to `COMPLETED` or `ABANDONED` with a mandatory score.
 
 **Input**
 
 ```typescript
 {
   bookId: number,
-  score: number,        // Required, 0.0-10.0
-  comment?: string      // Optional
+  targetStatus: "COMPLETED" | "ABANDONED",
+  score: number,
+  comment?: string
 }
 ```
 
 **Output**
 
-- Book (updated entity with COMPLETED status)
+- Book
 
 **Models Involved**
 
@@ -147,75 +159,15 @@ Marks a book as completed with a required score. Books can only be completed man
 
 **Errors**
 
-- NotFoundError (book does not exist)
-- MissingScoreError (score not provided)
-- InsufficientPagesError (total_pages defined but not all pages read)
-- InvalidStateTransitionError (book already COMPLETED or ABANDONED)
-
-**Business Rules**
-
-- Valid transitions: WISH_LIST → COMPLETED, READING → COMPLETED
-- Invalid transitions: COMPLETED → COMPLETED (cannot re-complete)
-- Invalid transitions: ABANDONED → COMPLETED (cannot complete abandoned book)
-- Score is mandatory (0.0-10.0)
-- If total_pages IS NOT NULL: must have pages_read_total >= total_pages
-- If t4 AbandonBook
-
-**Description**  
-Marks a book as abandoned with a required score. Once abandoned, the book is locked and cannot accept new reading sessions unless explicitly reopened.
-
-**Input**
-
-```typescript
-{
-  bookId: number,
-  score: number,        // Required, 0.0-10.0
-  comment?: string      // Optional
-}
-```
-
-**Output**
-
-- Book (updated entity with ABANDONED status)
-
-**Models Involved**
-
-- Book
-- BookStatusHistory
-
-**Errors**
-
-- NotFoundError (book does not exist)
-- MissingScoreError (score not provided)
-- InvalidStateTransitionError (book already ABANDONED or is COMPLETED)
-
-**Business Rules**
-
-- Valid transitions: WISH_LIST → ABANDONED, READING → ABANDONED
-- Invalid transitions: ABANDONED → ABANDONED (cannot re-abandon)
-- Invalid transitions: COMPLETED → ABANDONED (cannot abandon completed book)
-- Score is mandatory (0.0-10.0)
-- Future reading sessions will be blocked (BookClosedError)
-  **Output**
-- Book (updated entity with ABANDONED status)
-- bookId
-- completionDate
-- score
-
-**Output**
-
-- CompletedBookSummary
-
-**Models Involved**
-
-- Book
-- ReadingCycle
-
-**Errors**
-
-- BookNotFoundError
+- NotFoundError
 - MissingScoreError
 - InvalidStateTransitionError
+
+**Business Rules**
+
+- Review is valid only from `PENDING_SCORE`
+- Score is mandatory
+- Target status must be `COMPLETED` or `ABANDONED`
 
 **Transactional**
 
@@ -223,31 +175,75 @@ Marks a book as abandoned with a required score. Once abandoned, the book is loc
 
 ---
 
-### 5.5 AbandonBook
+### 5.4 RequestBookReview
 
 **Description**  
-Marks a book as abandoned and locks further reading activity.
+Transitions a `READING` book to `PENDING_SCORE` when the user wants to close the reading cycle manually.
 
 **Input**
 
-- bookId
-- abandonmentDate
-- score
+```typescript
+{
+  bookId: number;
+}
+```
 
 **Output**
 
-- AbandonedBookSummary
+- Book
 
 **Models Involved**
 
 - Book
-- ReadingCycle
+- BookStatusHistory
 
 **Errors**
 
-- BookNotFoundError
-- MissingScoreError
+- NotFoundError
 - InvalidStateTransitionError
+
+**Business Rules**
+
+- Valid only from `READING`
+- Does not assign score or final status
+
+**Transactional**
+
+- Yes
+
+---
+
+### 5.5 ReopenBook
+
+**Description**  
+Transitions an `ABANDONED` book back to `READING` and starts a new reading cycle.
+
+**Input**
+
+```typescript
+{
+  bookId: number;
+}
+```
+
+**Output**
+
+- Book
+
+**Models Involved**
+
+- Book
+- BookStatusHistory
+
+**Errors**
+
+- NotFoundError
+- InvalidStateTransitionError
+
+**Business Rules**
+
+- Valid only from `ABANDONED`
+- Increments reading cycle
 
 **Transactional**
 
@@ -360,6 +356,9 @@ Book = {
   id: number,
   title: string,
   isbn: string | null,
+  bookType: string | null,
+  genres: string[] | null,
+  synopsis: string | null,
   author: {
     id: number,
     name: string,
@@ -423,6 +422,9 @@ BookDetails = {
   id: number,
   title: string,
   isbn: string | null,
+  bookType: string | null,
+  genres: string[] | null,
+  synopsis: string | null,
   author: {
     id: number,
     name: string,
@@ -941,6 +943,12 @@ ReaderProfile = {
     score: number
   }>,
 
+  metadataSignals: {
+    topBookTypes: Array<{ name: string, count: number }>,
+    topGenres: Array<{ name: string, count: number }>,
+    synopsisThemes: string[]
+  },
+
   abandonedBooks: Array<{                   // For recommendation avoidance
     title: string,
     author: string,
@@ -1011,7 +1019,7 @@ After refresh, `important_event_pending` is reset to `false`.
 
 - Model: `gpt-3.5-turbo`
 - Temperature: `0.4` (deterministic)
-- Max tokens: `300` (cost control)
+- Max tokens: `500` for profile summary generation
 - Timeout: `15 seconds`
 - Graceful degradation: `semantic_summary` can be `null` if OpenAI unavailable
 
@@ -1062,7 +1070,131 @@ If a new use case is required, it must be:
 
 ---
 
-## 10. Agent Rules
+## 10. AI Query Use Cases
+
+### 10.1 RecommendBooks
+
+**Description**  
+Generates on-demand recommendations using the reader profile semantic summary as the primary AI input.
+
+**Input**
+
+```typescript
+{
+}
+```
+
+**Output**
+
+```typescript
+{
+  recommendations: Array<{
+    title: string,
+    author: string,
+    synopsis: string,
+    compatibilityScore: number,
+    reasoning: string
+  }>,
+  tokensUsed: number,
+  generatedAt: string,
+  inputMode: "semantic" | "structured"
+}
+```
+
+**Errors**
+
+- ReaderProfileMinimumBooksError
+- OpenAIUnavailableError
+- OpenAITimeoutError
+- OpenAIRateLimitError
+
+### 10.2 AnalyzeBookSynergy
+
+**Description**  
+Analyzes how well a specific book fits the current reader profile.
+
+**Input**
+
+```typescript
+{
+  bookId: number;
+}
+```
+
+**Output**
+
+```typescript
+{
+  book: {
+    id: number,
+    title: string,
+    author: { id: number, name: string }
+  },
+  compatibility: {
+    score: number,
+    label: "low" | "moderate" | "high" | "very_high",
+    reasoning: string,
+    positiveSignals: string[],
+    cautionSignals: string[]
+  },
+  tokensUsed: number,
+  generatedAt: string,
+  inputMode: "semantic" | "structured"
+}
+```
+
+**Errors**
+
+- NotFoundError
+- ReaderProfileMinimumBooksError
+- OpenAIUnavailableError
+- OpenAITimeoutError
+- OpenAIRateLimitError
+
+### 10.3 AnalyzeAuthorSynergy
+
+**Description**  
+Analyzes how well a specific author fits the current reader profile.
+
+**Input**
+
+```typescript
+{
+  authorId: number;
+}
+```
+
+**Output**
+
+```typescript
+{
+  author: {
+    id: number,
+    name: string,
+    nationality: string | null
+  },
+  compatibility: {
+    score: number,
+    label: "low" | "moderate" | "high" | "very_high",
+    reasoning: string,
+    positiveSignals: string[],
+    cautionSignals: string[]
+  },
+  tokensUsed: number,
+  generatedAt: string,
+  inputMode: "semantic" | "structured"
+}
+```
+
+**Errors**
+
+- NotFoundError
+- ReaderProfileMinimumBooksError
+- OpenAIUnavailableError
+- OpenAITimeoutError
+- OpenAIRateLimitError
+
+## 11. Agent Rules
 
 AI agents:
 
@@ -1073,7 +1205,7 @@ AI agents:
 
 ---
 
-## 11. References
+## 12. References
 
 - DOMAIN.md
 - ARCHITECTURE.md

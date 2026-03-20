@@ -4,8 +4,10 @@
 
 - **Authors** (1) ---- (N) **Books**
 - **Countries** (1) ---- (N) **Authors**
+- **BookTypes** (1) ---- (0..N) **Books**
 - **Books** (1) ---- (N) **ReadingSessions**
 - **Books** (1) ---- (N) **BookStatusHistory**
+- **Books** (N) ---- (N) **Genres** via **BookGenres**
 - **ReaderProfiles** (singleton) — aggregates data from Books/Authors/Countries
 
 ## Table Definitions
@@ -26,22 +28,50 @@
 | `name`     | NVARCHAR(40) | NOT NULL, UNIQUE                             |
 | `iso_code` | NVARCHAR(2)  | NOT NULL, UNIQUE (ISO 3166-1 alpha-2 format) |
 
-### 2. Books
+### 3. BookTypes
 
-| Column                  | Type          | Constraints                                                      |
-| :---------------------- | :------------ | :--------------------------------------------------------------- |
-| `id`                    | INT           | Primary Key, Identity(1,1)                                       |
-| `author_id`             | INT           | Foreign Key (Authors.id)                                         |
-| `title`                 | NVARCHAR(255) | NOT NULL                                                         |
-| `isbn`                  | NVARCHAR(20)  | NULL                                                             |
-| `total_pages`           | INT           | NULL                                                             |
-| `publication_year`      | INT           | NULL, CHECK (`publication_year` between 1000 and 9999)           |
-| `current_reading_cycle` | INT           | NOT NULL, DEFAULT 1                                              |
-| `status_id`             | INT           | Foreign Key (BookStatuses.id) — replaces textual `status` column |
-| `score`                 | DECIMAL(3,1)  | NULL (0.0 to 10.0)                                               |
-| `comment`               | NVARCHAR(MAX) | NULL                                                             |
+| Column       | Type          | Constraints                 |
+| :----------- | :------------ | :-------------------------- |
+| `id`         | INT           | Primary Key, Identity(1,1)  |
+| `name`       | NVARCHAR(100) | NOT NULL, UNIQUE            |
+| `created_at` | DATETIME2     | NOT NULL, DEFAULT GETDATE() |
 
-### 3. ReadingSessions (KPI Engine)
+**Predefined Values:** Novel, Memoir, Anthology, Short-Story Collection, Poetry, Non-Fiction, Biography, Essay Collection, Self-Help, History
+
+### 4. Books
+
+| Column                  | Type           | Constraints                                                      |
+| :---------------------- | :------------- | :--------------------------------------------------------------- |
+| `id`                    | INT            | Primary Key, Identity(1,1)                                       |
+| `author_id`             | INT            | Foreign Key (Authors.id)                                         |
+| `title`                 | NVARCHAR(255)  | NOT NULL                                                         |
+| `isbn`                  | NVARCHAR(20)   | NULL                                                             |
+| `book_type_id`          | INT            | Foreign Key (BookTypes.id), NULL, ON DELETE SET NULL             |
+| `total_pages`           | INT            | NULL                                                             |
+| `synopsis`              | NVARCHAR(4000) | NULL                                                             |
+| `publication_year`      | INT            | NULL, CHECK (`publication_year` between 1000 and 9999)           |
+| `current_reading_cycle` | INT            | NOT NULL, DEFAULT 1                                              |
+| `status_id`             | INT            | Foreign Key (BookStatuses.id) — replaces textual `status` column |
+| `score`                 | DECIMAL(3,1)   | NULL (0.0 to 10.0)                                               |
+| `comment`               | NVARCHAR(MAX)  | NULL                                                             |
+
+### 5. Genres
+
+| Column | Type          | Constraints                |
+| :----- | :------------ | :------------------------- |
+| `id`   | INT           | Primary Key, Identity(1,1) |
+| `name` | NVARCHAR(100) | NOT NULL, UNIQUE           |
+
+### 6. BookGenres
+
+| Column     | Type | Constraints                                |
+| :--------- | :--- | :----------------------------------------- |
+| `book_id`  | INT  | Foreign Key (Books.id), ON DELETE CASCADE  |
+| `genre_id` | INT  | Foreign Key (Genres.id), ON DELETE CASCADE |
+
+Primary key: (`book_id`, `genre_id`)
+
+### 7. ReadingSessions (KPI Engine)
 
 | Column          | Type     | Constraints                 |
 | :-------------- | :------- | :-------------------------- |
@@ -53,7 +83,7 @@
 | `pages_read`    | INT      | NOT NULL                    |
 | `duration`      | INT      | NULL                        |
 
-### 4. BookStatusHistory
+### 8. BookStatusHistory
 
 | Column          | Type     | Constraints                                       |
 | :-------------- | :------- | :------------------------------------------------ |
@@ -64,7 +94,7 @@
 | `reading_cycle` | INT      | NOT NULL, DEFAULT 1                               |
 | `created_at`    | DATETIME | NOT NULL, DEFAULT GETDATE()                       |
 
-### 5. BookStatuses (reference table)
+### 9. BookStatuses (reference table)
 
 | Column          | Type          | Constraints                                    |
 | :-------------- | :------------ | :--------------------------------------------- |
@@ -73,7 +103,7 @@
 | `display_name`  | NVARCHAR(100) | NOT NULL                                       |
 | `ui_color`      | NVARCHAR(7)   | NULL — HEX color for UI                        |
 
-### 6. ReaderProfiles (AI Context - Phase 4 MVP)
+### 10. ReaderProfiles (AI Context - Phase 4 MVP)
 
 | Column                    | Type          | Constraints                                                          |
 | :------------------------ | :------------ | :------------------------------------------------------------------- |
@@ -104,6 +134,7 @@
 - `IX_Books_Score` on `Books(score)` WHERE `score IS NOT NULL` — optimizes rating/score filtering
 - `IX_Books_TotalPages` on `Books(total_pages)` WHERE `total_pages IS NOT NULL` — optimizes page count filtering
 - `IX_Books_PublicationYear` on `Books(publication_year)` WHERE `publication_year IS NOT NULL` — optimizes publication year filtering
+- `IX_BookGenres_GenreId` on `BookGenres(genre_id)` — optimizes genre-based lookups
 
 ### Initial Status Rows
 

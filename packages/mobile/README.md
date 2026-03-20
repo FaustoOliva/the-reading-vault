@@ -11,10 +11,13 @@ This is an [Expo](https://expo.dev) React Native application that provides a pol
 ### Core Functionality
 
 - **Book Management**: Create, edit, and organize your reading collection
+- **Metadata Enrichment**: Capture profile-relevant book metadata such as `bookType`, `genres`, and `synopsis`
 - **Reading Sessions**: Log page progress and track reading time
 - **Book States**: Manage books through their lifecycle (Wish List → Reading → Reviewing → Completed/Abandoned)
 - **Reading Cycles**: Support multiple reading attempts per book
 - **KPI Dashboard**: Visualize reading statistics and metrics
+- **AI Recommendations**: Generate personalized suggestions from the reader profile
+- **AI Synergy**: Inspect how well a book or author matches the current reader profile
 
 ### User Experience Enhancements
 
@@ -66,7 +69,7 @@ This is an [Expo](https://expo.dev) React Native application that provides a pol
 
 ### Tech Stack
 
-- **Framework**: React Native + Expo SDK 52
+- **Framework**: React Native + Expo SDK 54
 - **Routing**: Expo Router (file-based)
 - **Language**: TypeScript (95%+)
 - **Server State**: React Query (TanStack Query v5)
@@ -81,7 +84,9 @@ app/
 ├── (tabs)/           # Tab-based navigation
 │   ├── index.tsx     # Books list with filters
 │   ├── create-book.tsx
-│   └── kpi.tsx       # Reading statistics
+│   ├── log-session.tsx
+│   ├── statistics.tsx
+│   └── ai.tsx        # AI recommendations and related flows
 ├── book/[id].tsx     # Book detail screen
 └── _layout.tsx       # Root layout with providers
 
@@ -92,8 +97,9 @@ components/
 └── ui/               # Reusable UI primitives (toast, animated, skeleton)
 
 hooks/
-├── useBooks.ts       # React Query hooks with optimistic updates
-└── useReducedMotion.ts  # Accessibility hook
+├── useBooks.ts             # React Query hooks with optimistic updates
+├── useAIRecommendations.ts # AI recommendation mutations
+└── useReducedMotion.ts     # Accessibility hook
 
 services/
 └── api.ts            # Centralized fetch wrapper (30s timeout, AbortController)
@@ -161,10 +167,11 @@ All mutations (update, reopen, request review) implement:
 
 ### Testing
 
-```bash
-npm run test              # Run test suite
-npm run test:coverage     # Generate coverage report
-```
+Current state:
+
+- Unit/integration test setup is still being completed for mobile.
+- MVP release validation will add smoke E2E coverage for critical flows.
+- Recommended E2E stack for this repo: Maestro.
 
 Target coverage: 70-80%
 
@@ -184,12 +191,21 @@ The app expects a REST API at the configured base URL with the following endpoin
 - `POST /books` - Create new book
 - `GET /books/:id` - Get book details with stats
 - `PUT /books/:id` - Update book
-- `POST /books/:id/reopen` - Start new reading cycle
-- `POST /books/:id/request-review` - Request manual review
+- `PATCH /books/:id/review` - Complete or abandon a pending-review book
+- `PATCH /books/:id/reopen` - Start new reading cycle from abandoned status
+- `PATCH /books/:id/request-review` - Request manual review
 - `POST /reading-sessions` - Log reading session
-- `GET /kpi` - Get reading statistics
+- `GET /reading-sessions/recent` - Get latest reading session summary
+- `GET /kpis/global` - Get reading statistics
 - `GET /authors` - List authors (autocomplete)
 - `GET /countries` - List countries (autocomplete)
+- `POST /ai/recommendations` - Generate recommendations
+
+Planned MVP closure additions:
+
+- enriched book creation/editing fields: `bookType`, `genres`, `synopsis`
+- AI-assisted autofill for those fields during creation
+- visible book/author synergy analysis in mobile UI
 
 See [backend USE_CASES.md](../api/USE_CASES.MD) for detailed API contracts.
 
@@ -213,6 +229,8 @@ See [ACCESSIBILITY.md](ACCESSIBILITY.md) for color contrast ratios and WCAG comp
 - **Domain Rules**: [DOMAIN.md](../../DOMAIN.md) (business logic)
 - **Agent Guidelines**: [AGENTS.md](../../AGENTS.md) (AI assistant rules)
 - **API Endpoints**: [endpoints.md](../../endpoints.md)
+
+The authoritative API contract is [../api/USE_CASES.MD](../api/USE_CASES.MD).
 
 ## Contributing
 

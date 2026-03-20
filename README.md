@@ -13,10 +13,11 @@ This project is part of my **2026 Strategic Roadmap** to consolidate technical e
 ## 🚀 Key Features (MVP)
 
 - **Offline-First Architecture:** Full functionality without internet using local SQLite storage.
-- **ISBN Scanner:** Fast book ingestion using camera-based barcode scanning.
-- **Nightly Log Form:** Optimized UI for quick entry of pages read during nightly sessions.
+- **Structured Book Metadata:** Books can store profile-relevant metadata such as `bookType`, `genres`, and `synopsis`.
+- **AI-Assisted Metadata Autofill:** AI can suggest book metadata during creation to improve profile quality.
+- **Reading Workflow:** Fast session logging, review-driven completion, and multi-cycle reading support.
 - **Reading KPIs:** Automated metrics for reading velocity, consistency, and estimated completion dates.
-- **AI Reader Persona:** Integration with LLMs to analyze reading tastes and provide technical book recommendations.
+- **AI Reader Persona:** Integration with LLMs to analyze reading tastes, recommend books, and evaluate synergy with books or authors.
 
 ---
 
@@ -37,7 +38,24 @@ Following **Clean Architecture** principles to ensure maintainability and scalab
 
 1.  **Domain (Entities):** Core business logic (Books, Authors, ReadingSessions).
 2.  **Use Cases:** Specific application rules (Logging a session, generating recommendations).
-3.  **Infrastructure:** External agents (Database drivers, ISBN API, UI).
+3.  **Infrastructure:** External agents (Database drivers, AI providers, UI).
+
+## 📌 Current MVP Scope
+
+The current MVP is focused on:
+
+- book creation, editing, review, and status transitions
+- reading session logging with the current API contract
+- KPI dashboards and book-level statistics
+- reader profile generation and AI-powered recommendations
+- enriched book metadata (`bookType`, `genres`, `synopsis`)
+- AI-assisted metadata suggestion and book/author synergy analysis
+
+Explicitly out of MVP scope:
+
+- ISBN scanner
+- notifications
+- general-purpose AI chat
 
 ---
 
