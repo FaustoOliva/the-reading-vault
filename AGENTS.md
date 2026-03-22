@@ -1,6 +1,6 @@
 # Agent Execution Rules - The Reading Vault
 
-**Version:** 2.0 | **Last Updated:** February 6, 2026
+**Version:** 2.1 | **Last Updated:** March 22, 2026
 
 ---
 
@@ -57,10 +57,17 @@ Follow the **Conventional Commits** standard:
 
 Before committing any code, you MUST:
 
+0. **Set execution location first:** Run all checklist commands from repository root (`the-reading-vault`)
+
+  ```bash
+  # PowerShell
+  Set-Location c:/Users/faust/Documents/Fausto/the-reading-vault
+  ```
+
 1. **Verify no errors:** Check for TypeScript/compilation errors
 
    ```bash
-   cd packages/mobile && npx tsc --noEmit
+  npm --workspace=mobile exec tsc -- --noEmit
    ```
 
 2. **Run formatting:** Ensure code follows style guidelines
@@ -70,9 +77,16 @@ Before committing any code, you MUST:
    ```
 
 3. **Run linting:** Fix all linting issues
+
    ```bash
    npm run lint
    ```
+
+**Execution safety rules:**
+
+- Do not chain commands that change directories implicitly.
+- Do not run package-level scripts unless the script exists in that package.
+- If a command fails with "Missing script", return to repo root and use workspace-scoped execution.
 
 **If any of these steps fail, DO NOT commit.** Fix the issues first.
 
