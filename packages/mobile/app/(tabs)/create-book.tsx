@@ -45,6 +45,7 @@ import { useCreateBook } from "@/hooks/useBooks";
 import { useAuthors } from "@/hooks/useAuthors";
 import { useCountries } from "@/hooks/useCountries";
 import { useBookTypes } from "@/hooks/useBookTypes";
+import { useGenres } from "@/hooks/useGenres";
 import { FormInput } from "@/components/forms/formInput";
 import { InputWithSuggestions } from "@/components/forms/inputWithSuggestions";
 import { CustomDropdown } from "@/components/forms/customDropdown";
@@ -73,6 +74,7 @@ export default function CreateBookScreen() {
   const { data: authors, isLoading: isLoadingAuthors } = useAuthors();
   const { data: countries, isLoading: isLoadingCountries } = useCountries();
   const { data: bookTypes, isLoading: isLoadingBookTypes } = useBookTypes();
+  const { data: genres, isLoading: isLoadingGenres } = useGenres();
 
   // Form state
   const [title, setTitle] = useState("");
@@ -128,6 +130,7 @@ export default function CreateBookScreen() {
   const authorSuggestions = authors?.map((a) => a.name) || [];
   const countrySuggestions = countries?.map((c) => c.name) || [];
   const bookTypeSuggestions = bookTypes?.map((bt) => bt.name) || [];
+  const genreSuggestions = genres?.map((genre) => genre.name) || [];
 
   // Check if the current author name matches an existing author
   const existingAuthor = useMemo(() => {
@@ -249,7 +252,12 @@ export default function CreateBookScreen() {
   };
 
   // Show loading state while fetching authors/countries/bookTypes
-  if (isLoadingAuthors || isLoadingCountries || isLoadingBookTypes) {
+  if (
+    isLoadingAuthors ||
+    isLoadingCountries ||
+    isLoadingBookTypes ||
+    isLoadingGenres
+  ) {
     return (
       <View
         style={{
@@ -387,14 +395,14 @@ export default function CreateBookScreen() {
         label="ISBN"
         value={isbn}
         onChangeText={setIsbn}
-        placeholder="Enter ISBN (optional)"
+        placeholder="Enter ISBN"
         error={errors.isbn}
         accessibilityLabel="ISBN, optional"
         accessibilityHint="Enter the book's ISBN number if available"
       />
 
       <InputWithSuggestions
-        label="Book Type (Optional)"
+        label="Book Type"
         value={bookType}
         onChangeText={setBookType}
         suggestions={bookTypeSuggestions}
@@ -404,21 +412,22 @@ export default function CreateBookScreen() {
         accessibilityHint="Select from predefined types (Novel, Memoir, Anthology, etc.) or type a custom value"
       />
 
-      <FormInput
+      <InputWithSuggestions
         label="Genres"
         value={genresInput}
         onChangeText={setGenresInput}
+        suggestions={genreSuggestions}
         placeholder="e.g. Fantasy, Historical Fiction"
         error={errors.genresInput}
         accessibilityLabel="Genres, optional"
-        accessibilityHint="Enter one or more genres separated by commas"
+        accessibilityHint="Select from suggestions or enter one or more genres separated by commas"
       />
 
       <FormInput
         label="Synopsis"
         value={synopsis}
         onChangeText={setSynopsis}
-        placeholder="Short description of the book (optional)"
+        placeholder="Short description of the book"
         error={errors.synopsis}
         multiline
         numberOfLines={4}

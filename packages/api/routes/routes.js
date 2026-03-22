@@ -4,6 +4,7 @@ import readingSessionRoutes from "./readingSessionRoutes.js";
 import authorRoutes from "./authorRoutes.js";
 import countryRoutes from "./countryRoutes.js";
 import bookTypesRoutes from "./bookTypesRoutes.js";
+import genreRoutes from "./genreRoutes.js";
 import kpiRoutes from "./kpiRoutes.js";
 import aiRoutes from "./aiRoutes.js";
 
@@ -14,6 +15,7 @@ const routes = [
   authorRoutes,
   countryRoutes,
   bookTypesRoutes,
+  genreRoutes,
   kpiRoutes,
   aiRoutes,
 ];

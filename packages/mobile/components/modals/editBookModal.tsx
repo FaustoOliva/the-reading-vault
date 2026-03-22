@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import { useUpdateBook } from "@/hooks/useBooks";
 import { useBookTypes } from "@/hooks/useBookTypes";
+import { useGenres } from "@/hooks/useGenres";
 import { Book } from "@/types/book";
 import {
   editBookSchema,
@@ -63,7 +64,9 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
 
   const updateMutation = useUpdateBook();
   const { data: bookTypes, isLoading: isLoadingBookTypes } = useBookTypes();
+  const { data: genres, isLoading: isLoadingGenres } = useGenres();
   const bookTypeSuggestions = bookTypes?.map((bt) => bt.name) || [];
+  const genreSuggestions = genres?.map((genre) => genre.name) || [];
 
   // Reset form when book changes
   useEffect(() => {
@@ -283,50 +286,21 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
             accessibilityHint="Select from predefined types (Novel, Memoir, Anthology, etc.) or type a custom value"
           />
 
-          <View style={{ gap: 6 }}>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: "600",
-                color: TextColors.primary,
-              }}
-            >
-              Genres
-            </Text>
-            <TextInput
-              style={{
-                borderWidth: 1,
-                borderColor: errors.genresInput
-                  ? Feedback.error.border
-                  : Border.default,
-                borderRadius: 8,
-                borderCurve: "continuous",
-                padding: 12,
-                fontSize: 16,
-                backgroundColor: Background.surface,
-                color: TextColors.primary,
-              }}
-              placeholder="e.g. Fantasy, Historical Fiction"
-              placeholderTextColor={TextColors.tertiary}
-              value={genresInput}
-              onChangeText={(text) => {
-                setGenresInput(text);
-                if (errors.genresInput) {
-                  setErrors((prev) => ({ ...prev, genresInput: "" }));
-                }
-              }}
-            />
-            {errors.genresInput ? (
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: Feedback.error.text,
-                }}
-              >
-                {errors.genresInput}
-              </Text>
-            ) : null}
-          </View>
+          <InputWithSuggestions
+            label="Genres"
+            value={genresInput}
+            onChangeText={(text) => {
+              setGenresInput(text);
+              if (errors.genresInput) {
+                setErrors((prev) => ({ ...prev, genresInput: "" }));
+              }
+            }}
+            suggestions={genreSuggestions}
+            placeholder="e.g. Fantasy, Historical Fiction"
+            error={errors.genresInput}
+            accessibilityLabel="Genres, optional"
+            accessibilityHint="Select from suggestions or enter one or more genres separated by commas"
+          />
 
           <View style={{ gap: 6 }}>
             <Text
@@ -591,10 +565,14 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
           {/* Save Button */}
           <Pressable
             onPress={handleSave}
-            disabled={updateMutation.isPending || isLoadingBookTypes}
+            disabled={
+              updateMutation.isPending || isLoadingBookTypes || isLoadingGenres
+            }
             style={({ pressed }) => ({
               backgroundColor:
-                updateMutation.isPending || isLoadingBookTypes
+                updateMutation.isPending ||
+                isLoadingBookTypes ||
+                isLoadingGenres
                   ? Interactive.primary.disabled
                   : pressed
                     ? Interactive.primary.pressed
@@ -608,7 +586,9 @@ export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
               gap: 8,
             })}
           >
-            {updateMutation.isPending || isLoadingBookTypes ? (
+            {updateMutation.isPending ||
+            isLoadingBookTypes ||
+            isLoadingGenres ? (
               <ActivityIndicator color={Interactive.primary.text} />
             ) : null}
             <Text
