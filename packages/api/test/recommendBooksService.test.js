@@ -14,6 +14,7 @@ describe("RecommendBooksService", () => {
   let service;
   let mockGetReaderProfileService;
   let mockOpenAIClient;
+  let mockBookRepository;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -27,9 +28,14 @@ describe("RecommendBooksService", () => {
       recommendBooks: vi.fn(),
     };
 
+    mockBookRepository = {
+      getRecommendationExclusionList: vi.fn().mockResolvedValue([]),
+    };
+
     service = new RecommendBooksService(
       mockGetReaderProfileService,
       mockOpenAIClient,
+      mockBookRepository,
     );
   });
 
@@ -384,6 +390,155 @@ describe("RecommendBooksService", () => {
           abandonedBooks: [],
         }),
       );
+    });
+
+    it("should deterministically filter recommendations already in vault", async () => {
+      // Arrange
+      const mockProfile = {
+        id: 1,
+        version: 5,
+        profileData: {
+          statistics: {
+            completedBooks: 8,
+            abandonedBooks: 2,
+          },
+          abandonedBooks: [],
+        },
+        semanticSummary: "Profile summary",
+      };
+
+      mockGetReaderProfileService.execute.mockResolvedValue(mockProfile);
+      mockBookRepository.getRecommendationExclusionList.mockResolvedValue([
+        { title: "1984", author: "George Orwell" },
+      ]);
+      mockOpenAIClient.recommendBooks.mockResolvedValue({
+        recommendations: [
+          {
+            title: "1984",
+            author: "George Orwell",
+            synopsis: "Already read",
+            compatibilityScore: 90,
+            reasoning: "Duplicate",
+          },
+          {
+            title: "Fresh Book",
+            author: "Fresh Author",
+            synopsis: "New",
+            compatibilityScore: 82,
+            reasoning: "Fits profile",
+          },
+          {
+            title: "Fresh Book Two",
+            author: "Fresh Author Two",
+            synopsis: "New",
+            compatibilityScore: 81,
+            reasoning: "Fits profile",
+          },
+          {
+            title: "Fresh Book Three",
+            author: "Fresh Author Three",
+            synopsis: "New",
+            compatibilityScore: 80,
+            reasoning: "Fits profile",
+          },
+        ],
+        tokensUsed: 220,
+      });
+
+      // Act
+      const result = await service.execute();
+
+      // Assert
+      expect(result.recommendations).toHaveLength(3);
+      expect(result.recommendations[0].title).toBe("Fresh Book");
+      expect(result.tokensUsed).toBe(220);
+      expect(mockOpenAIClient.recommendBooks).toHaveBeenCalledTimes(1);
+    });
+
+    it("should retry once with blacklist when filtering leaves too few recommendations", async () => {
+      // Arrange
+      const mockProfile = {
+        id: 1,
+        version: 5,
+        profileData: {
+          statistics: {
+            completedBooks: 8,
+            abandonedBooks: 2,
+          },
+          abandonedBooks: [],
+        },
+        semanticSummary: "Profile summary",
+      };
+
+      mockGetReaderProfileService.execute.mockResolvedValue(mockProfile);
+      mockBookRepository.getRecommendationExclusionList.mockResolvedValue([
+        { title: "1984", author: "George Orwell" },
+        { title: "Animal Farm", author: "George Orwell" },
+      ]);
+
+      mockOpenAIClient.recommendBooks
+        .mockResolvedValueOnce({
+          recommendations: [
+            {
+              title: "1984",
+              author: "George Orwell",
+              synopsis: "Dup",
+              compatibilityScore: 91,
+              reasoning: "Dup",
+            },
+            {
+              title: "Animal Farm",
+              author: "George Orwell",
+              synopsis: "Dup",
+              compatibilityScore: 87,
+              reasoning: "Dup",
+            },
+          ],
+          tokensUsed: 200,
+        })
+        .mockResolvedValueOnce({
+          recommendations: [
+            {
+              title: "Book A",
+              author: "Author A",
+              synopsis: "A",
+              compatibilityScore: 80,
+              reasoning: "A",
+            },
+            {
+              title: "Book B",
+              author: "Author B",
+              synopsis: "B",
+              compatibilityScore: 81,
+              reasoning: "B",
+            },
+            {
+              title: "Book C",
+              author: "Author C",
+              synopsis: "C",
+              compatibilityScore: 82,
+              reasoning: "C",
+            },
+          ],
+          tokensUsed: 180,
+        });
+
+      // Act
+      const result = await service.execute();
+
+      // Assert
+      expect(mockOpenAIClient.recommendBooks).toHaveBeenCalledTimes(2);
+      expect(mockOpenAIClient.recommendBooks).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          excludeBooks: [
+            { title: "1984", author: "George Orwell" },
+            { title: "Animal Farm", author: "George Orwell" },
+          ],
+        }),
+      );
+      expect(result.recommendations).toHaveLength(3);
+      expect(result.tokensUsed).toBe(380);
     });
   });
 });

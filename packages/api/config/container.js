@@ -175,6 +175,7 @@ export class DIContainer {
     const recommendBooksService = new RecommendBooksService(
       getReaderProfileService,
       openAIClient,
+      bookRepository,
     );
 
     // Inject getReaderProfileService into services that need it

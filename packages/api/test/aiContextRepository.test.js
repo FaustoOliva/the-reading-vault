@@ -1,16 +1,16 @@
 /**
- * AIContextRepository Test Suite - MVP
+ * AIContextRepository Test Suite
  * Tests for reader profile aggregation and storage
  *
  * Pattern: AAA (Arrange-Act-Assert)
  * Target Coverage: ≥ 80%
- * Phase: MVP (Schema Version 1)
+ * Phase: Metadata-enriched profile (Schema Version 2)
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { AIContextRepository } from "../infraestructure/repositories/aiContextRepository.js";
 
-describe("AIContextRepository - MVP", () => {
+describe("AIContextRepository", () => {
   let repository;
   let mockPool;
   let mockRequest;
@@ -22,7 +22,7 @@ describe("AIContextRepository - MVP", () => {
     vi.clearAllMocks();
 
     mockRequest = {
-      query: vi.fn(),
+      query: vi.fn().mockResolvedValue({ recordset: [] }),
       input: vi.fn().mockReturnThis(),
     };
 
@@ -74,10 +74,10 @@ describe("AIContextRepository - MVP", () => {
       const mockProfile = {
         id: 1,
         version: 5,
-        schema_version: 1,
+        schema_version: 2,
         profile_data: JSON.stringify({
           version: 5,
-          schemaVersion: 1,
+          schemaVersion: 2,
           statistics: { totalBooks: 10 },
         }),
         semantic_summary: "Test summary",
@@ -96,7 +96,7 @@ describe("AIContextRepository - MVP", () => {
       expect(result).toEqual({
         id: 1,
         version: 5,
-        schemaVersion: 1,
+        schemaVersion: 2,
         profileData: JSON.parse(mockProfile.profile_data),
         semanticSummary: "Test summary",
         lastUpdated: mockProfile.last_updated,
@@ -110,7 +110,7 @@ describe("AIContextRepository - MVP", () => {
       // Arrange
       const profileData = {
         version: 1,
-        schemaVersion: 1,
+        schemaVersion: 2,
         statistics: { totalBooks: 5, completedBooks: 3 },
         topAuthors: [{ name: "Test Author", bookCount: 2 }],
       };
@@ -118,7 +118,7 @@ describe("AIContextRepository - MVP", () => {
       const mockProfile = {
         id: 1,
         version: 1,
-        schema_version: 1,
+        schema_version: 2,
         profile_data: JSON.stringify(profileData),
         semantic_summary: null,
         last_updated: new Date(),
@@ -134,7 +134,7 @@ describe("AIContextRepository - MVP", () => {
 
       // Assert
       expect(result.profileData).toEqual(profileData);
-      expect(result.schemaVersion).toBe(1);
+      expect(result.schemaVersion).toBe(2);
     });
   });
 
@@ -263,7 +263,7 @@ describe("AIContextRepository - MVP", () => {
     });
   });
 
-  describe("calculateReaderProfile - MVP", () => {
+  describe("calculateReaderProfile", () => {
     it("should compute all statistics from books", async () => {
       // Arrange
       const mockKPIs = {
@@ -300,7 +300,7 @@ describe("AIContextRepository - MVP", () => {
         booksRated: 15,
         avgScore: 7.8,
       });
-      expect(result.schemaVersion).toBe(1);
+      expect(result.schemaVersion).toBe(2);
     });
 
     it("should handle empty vault gracefully", async () => {
@@ -330,12 +330,12 @@ describe("AIContextRepository - MVP", () => {
       expect(result.statistics.totalBooks).toBe(0);
       expect(result.statistics.avgScore).toBeNull();
       expect(result.topAuthors).toEqual([]);
-      expect(result.topCountries).toEqual([]);
-      expect(result.favoriteBooks).toEqual([]);
+      expect(result.distributions.countries).toEqual([]);
+      expect(result.topRatedBooks).toEqual([]);
       expect(result.abandonedBooks).toEqual([]);
     });
 
-    it("should include all required MVP sections", async () => {
+    it("should include all required profile sections", async () => {
       // Arrange
       mockBookRepository.calculateGlobalKPIs.mockResolvedValue({
         totalBooks: 10,
@@ -362,16 +362,18 @@ describe("AIContextRepository - MVP", () => {
       const result = await repository.calculateReaderProfile();
 
       // Assert
-      expect(result).toHaveProperty("schemaVersion", 1);
+      expect(result).toHaveProperty("schemaVersion", 2);
       expect(result).toHaveProperty("statistics");
       expect(result).toHaveProperty("topAuthors");
-      expect(result).toHaveProperty("topCountries");
-      expect(result).toHaveProperty("favoriteBooks");
+      expect(result).toHaveProperty("topRatedBooks");
+      expect(result).toHaveProperty("lowRatedBooks");
+      expect(result).toHaveProperty("distributions");
+      expect(result).toHaveProperty("metadataSignals");
       expect(result).toHaveProperty("abandonedBooks");
       expect(result).toHaveProperty("generatedAt");
     });
 
-    it("should set schemaVersion to 1 for MVP profile", async () => {
+    it("should set schemaVersion to 2 for metadata-enriched profile", async () => {
       // Arrange
       mockBookRepository.calculateGlobalKPIs.mockResolvedValue({
         totalBooks: 5,
@@ -394,7 +396,7 @@ describe("AIContextRepository - MVP", () => {
       const result = await repository.calculateReaderProfile();
 
       // Assert
-      expect(result.schemaVersion).toBe(1);
+      expect(result.schemaVersion).toBe(2);
     });
   });
 
@@ -615,7 +617,7 @@ describe("AIContextRepository - MVP", () => {
       const result = await repository.calculateReaderProfile();
 
       // Assert
-      expect(result.topCountries).toEqual(mockCountries);
+      expect(result.distributions.countries).toEqual(mockCountries);
     });
 
     it("should sort by book count DESC", async () => {
@@ -647,9 +649,9 @@ describe("AIContextRepository - MVP", () => {
       const result = await repository.calculateReaderProfile();
 
       // Assert
-      expect(result.topCountries[0].bookCount).toBeGreaterThanOrEqual(
-        result.topCountries[1].bookCount,
-      );
+      expect(
+        result.distributions.countries[0].bookCount,
+      ).toBeGreaterThanOrEqual(result.distributions.countries[1].bookCount);
     });
 
     it("should limit to top 3 countries", async () => {
@@ -682,7 +684,7 @@ describe("AIContextRepository - MVP", () => {
       const result = await repository.calculateReaderProfile();
 
       // Assert
-      expect(result.topCountries).toHaveLength(3);
+      expect(result.distributions.countries).toHaveLength(3);
     });
   });
 
@@ -720,8 +722,8 @@ describe("AIContextRepository - MVP", () => {
       const result = await repository.calculateReaderProfile();
 
       // Assert
-      expect(result.favoriteBooks).toEqual(mockFavorites);
-      expect(result.favoriteBooks.every((book) => book.score >= 8)).toBe(true);
+      expect(result.topRatedBooks).toEqual(mockFavorites);
+      expect(result.topRatedBooks.every((book) => book.score >= 8)).toBe(true);
     });
 
     it("should include title, author, score", async () => {
@@ -751,9 +753,9 @@ describe("AIContextRepository - MVP", () => {
       const result = await repository.calculateReaderProfile();
 
       // Assert
-      expect(result.favoriteBooks[0]).toHaveProperty("title");
-      expect(result.favoriteBooks[0]).toHaveProperty("author");
-      expect(result.favoriteBooks[0]).toHaveProperty("score");
+      expect(result.topRatedBooks[0]).toHaveProperty("title");
+      expect(result.topRatedBooks[0]).toHaveProperty("author");
+      expect(result.topRatedBooks[0]).toHaveProperty("score");
     });
 
     it("should order by score DESC", async () => {
@@ -785,8 +787,8 @@ describe("AIContextRepository - MVP", () => {
       const result = await repository.calculateReaderProfile();
 
       // Assert
-      expect(result.favoriteBooks[0].score).toBeGreaterThanOrEqual(
-        result.favoriteBooks[1].score,
+      expect(result.topRatedBooks[0].score).toBeGreaterThanOrEqual(
+        result.topRatedBooks[1].score,
       );
     });
   });
@@ -811,6 +813,7 @@ describe("AIContextRepository - MVP", () => {
       });
 
       mockRequest.query
+        .mockResolvedValueOnce({ recordset: [] })
         .mockResolvedValueOnce({ recordset: [] })
         .mockResolvedValueOnce({ recordset: [] })
         .mockResolvedValueOnce({ recordset: [] })
@@ -841,6 +844,7 @@ describe("AIContextRepository - MVP", () => {
       });
 
       mockRequest.query
+        .mockResolvedValueOnce({ recordset: [] })
         .mockResolvedValueOnce({ recordset: [] })
         .mockResolvedValueOnce({ recordset: [] })
         .mockResolvedValueOnce({ recordset: [] })
@@ -888,7 +892,7 @@ describe("AIContextRepository - MVP", () => {
       const existingProfile = {
         id: 1,
         version: 5,
-        profile_data: JSON.stringify({ schemaVersion: 1 }),
+        profile_data: JSON.stringify({ schemaVersion: 2 }),
       };
 
       mockRequest.query

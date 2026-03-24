@@ -188,7 +188,7 @@ describe("OpenAIClient - MVP", () => {
       expect(userPrompt).toContain("8.5");
     });
 
-    it("should include top authors and countries", async () => {
+    it("should include distributions in prompt", async () => {
       // Arrange
       const profileData = {
         statistics: {
@@ -197,14 +197,22 @@ describe("OpenAIClient - MVP", () => {
           completionRate: 80.0,
           avgScore: 7.5,
         },
-        topAuthors: [
-          { name: "Author A", bookCount: 5, avgScore: 8.0 },
-          { name: "Author B", bookCount: 3, avgScore: 7.5 },
-        ],
-        topCountries: [
-          { name: "Country X", bookCount: 6 },
-          { name: "Country Y", bookCount: 4 },
-        ],
+        distributions: {
+          genres: [
+            { name: "Sci-Fi", count: 4 },
+            { name: "Drama", count: 2 },
+          ],
+          countries: [
+            { name: "Country X", bookCount: 6 },
+            { name: "Country Y", bookCount: 4 },
+          ],
+          years: { average: 1999.2, min: 1978, max: 2020 },
+          pages: { average: 352.4, min: 180, max: 620 },
+          formats: [
+            { name: "Novel", count: 5 },
+            { name: "Essay", count: 2 },
+          ],
+        },
         favoriteBooks: [],
         abandonedBooks: [],
       };
@@ -226,8 +234,9 @@ describe("OpenAIClient - MVP", () => {
       const fetchCallBody = JSON.parse(global.fetch.mock.calls[0][1].body);
       const userPrompt = fetchCallBody.messages[1].content;
 
-      expect(userPrompt).toContain("Author A");
+      expect(userPrompt).toContain("Sci-Fi");
       expect(userPrompt).toContain("Country X");
+      expect(userPrompt).toContain("1999.2");
     });
 
     it("should include favorite books in prompt", async () => {
@@ -636,7 +645,7 @@ describe("OpenAIClient - MVP", () => {
   });
 
   describe("_buildProfileSummaryPrompt", () => {
-    it("should construct valid MVP prompt with statistics, topAuthors, topCountries, favoriteBooks", () => {
+    it("should construct valid prompt with summary, distributions, and behavior", () => {
       // Arrange
       const profile = {
         statistics: {
@@ -700,7 +709,7 @@ describe("OpenAIClient - MVP", () => {
       // Assert
       expect(prompt).toContain("0");
       expect(prompt).toContain("N/A");
-      expect(prompt).toContain("Ninguno aún");
+      expect(prompt).toContain("Ninguno");
     });
 
     it("should NOT include Phase 2 data (affinity, implicit signals, reading activity)", () => {
@@ -731,7 +740,7 @@ describe("OpenAIClient - MVP", () => {
       expect(prompt).not.toContain("deepEngagement");
     });
 
-    it("should limit to top 3 authors in prompt", () => {
+    it("should limit behavior book lists to 5 entries", () => {
       // Arrange
       const profile = {
         statistics: {
@@ -740,15 +749,15 @@ describe("OpenAIClient - MVP", () => {
           completionRate: 0.8,
           avgScore: 8.0,
         },
-        topAuthors: [
-          { name: "Author 1", bookCount: 5, avgScore: 9.0 },
-          { name: "Author 2", bookCount: 4, avgScore: 8.5 },
-          { name: "Author 3", bookCount: 3, avgScore: 8.0 },
-          { name: "Author 4", bookCount: 2, avgScore: 7.5 },
-          { name: "Author 5", bookCount: 1, avgScore: 7.0 },
+        topRatedBooks: [
+          { title: "Book 1", author: "Author 1", score: 9.9 },
+          { title: "Book 2", author: "Author 2", score: 9.8 },
+          { title: "Book 3", author: "Author 3", score: 9.7 },
+          { title: "Book 4", author: "Author 4", score: 9.6 },
+          { title: "Book 5", author: "Author 5", score: 9.5 },
+          { title: "Book 6", author: "Author 6", score: 9.4 },
         ],
-        topCountries: [],
-        favoriteBooks: [],
+        lowRatedBooks: [],
         abandonedBooks: [],
       };
 
@@ -756,11 +765,9 @@ describe("OpenAIClient - MVP", () => {
       const prompt = client._buildProfileSummaryPrompt(profile);
 
       // Assert
-      expect(prompt).toContain("Author 1");
-      expect(prompt).toContain("Author 2");
-      expect(prompt).toContain("Author 3");
-      expect(prompt).not.toContain("Author 4");
-      expect(prompt).not.toContain("Author 5");
+      expect(prompt).toContain("Book 1");
+      expect(prompt).toContain("Book 5");
+      expect(prompt).not.toContain("Book 6");
     });
 
     it("should include max 250 words instruction", () => {
@@ -1165,6 +1172,27 @@ describe("OpenAIClient - MVP", () => {
       // Assert
       expect(prompt).toContain("ANÁLISIS DEL PERFIL:");
       expect(prompt).not.toContain("LIBROS ABANDONADOS");
+    });
+
+    it("should include exclusion blacklist when provided", () => {
+      // Arrange
+      const input = {
+        type: "semantic",
+        summary: "Test summary",
+        abandonedBooks: [],
+        excludeBooks: [
+          { title: "1984", author: "George Orwell" },
+          { title: "Animal Farm", author: "George Orwell" },
+        ],
+      };
+
+      // Act
+      const prompt = client._buildRecommendationPrompt(input);
+
+      // Assert
+      expect(prompt).toContain("LIBROS YA LEIDOS/EN VAULT (NO RECOMENDAR):");
+      expect(prompt).toContain("1984");
+      expect(prompt).toContain("Animal Farm");
     });
 
     it("should include JSON format specification", () => {

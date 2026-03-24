@@ -23,9 +23,10 @@
 import { ReaderProfileMinimumBooksError } from "../errors/index.js";
 
 export class RecommendBooksService {
-  constructor(getReaderProfileService, openAIClient) {
+  constructor(getReaderProfileService, openAIClient, bookRepository = null) {
     this.getReaderProfileService = getReaderProfileService;
     this.openAIClient = openAIClient;
+    this.bookRepository = bookRepository;
   }
 
   /**
@@ -85,15 +86,142 @@ export class RecommendBooksService {
       );
     }
 
-    // 4. Generate recommendations via OpenAI
-    const result = await this.openAIClient.recommendBooks(promptInput);
+    // 4. Load deterministic exclusion set from vault
+    const existingBookKeys = await this._loadExistingBookKeys();
 
-    // 5. Return with metadata
+    // 5. Generate recommendations via OpenAI
+    const firstResult = await this.openAIClient.recommendBooks(promptInput);
+    let totalTokens = firstResult.tokensUsed || 0;
+
+    let recommendations = this._filterRecommendations(
+      firstResult.recommendations,
+      existingBookKeys,
+    );
+
+    // 6. Controlled retry once when filtering leaves too few valid books
+    if (recommendations.length < 3) {
+      const blacklist = this._extractExcludedFromBatch(
+        firstResult.recommendations,
+        existingBookKeys,
+      );
+
+      if (blacklist.length > 0) {
+        const retryInput = {
+          ...promptInput,
+          excludeBooks: blacklist,
+        };
+
+        const retryResult = await this.openAIClient.recommendBooks(retryInput);
+        totalTokens += retryResult.tokensUsed || 0;
+
+        const retryRecommendations = this._filterRecommendations(
+          retryResult.recommendations,
+          existingBookKeys,
+          new Set(
+            recommendations.map((book) =>
+              this._buildBookKey(book.title, book.author),
+            ),
+          ),
+        );
+
+        recommendations = [...recommendations, ...retryRecommendations];
+      }
+    }
+
+    // 7. Return with metadata
     return {
-      recommendations: result.recommendations,
-      tokensUsed: result.tokensUsed,
+      recommendations: recommendations.slice(0, 5),
+      tokensUsed: totalTokens,
       generatedAt: new Date().toISOString(),
       inputMode: promptInput.type, // For debugging/analytics
     };
+  }
+
+  async _loadExistingBookKeys() {
+    if (!this.bookRepository?.getRecommendationExclusionList) {
+      return new Set();
+    }
+
+    const books = await this.bookRepository.getRecommendationExclusionList();
+    return new Set(
+      books.map((book) => this._buildBookKey(book.title, book.author)),
+    );
+  }
+
+  _filterRecommendations(
+    recommendations,
+    existingBookKeys,
+    seenKeys = new Set(),
+  ) {
+    if (!recommendations || recommendations.length === 0) {
+      return [];
+    }
+
+    const filtered = [];
+
+    for (const book of recommendations) {
+      const key = this._buildBookKey(book.title, book.author);
+      if (!key) {
+        continue;
+      }
+
+      if (existingBookKeys.has(key) || seenKeys.has(key)) {
+        continue;
+      }
+
+      seenKeys.add(key);
+      filtered.push(book);
+    }
+
+    return filtered;
+  }
+
+  _extractExcludedFromBatch(recommendations, existingBookKeys) {
+    if (!recommendations || recommendations.length === 0) {
+      return [];
+    }
+
+    const excluded = [];
+    const seen = new Set();
+
+    for (const book of recommendations) {
+      const key = this._buildBookKey(book.title, book.author);
+      if (!key || !existingBookKeys.has(key) || seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      excluded.push({
+        title: book.title,
+        author: book.author,
+      });
+    }
+
+    return excluded;
+  }
+
+  _buildBookKey(title, author) {
+    const normalizedTitle = this._normalizeBookText(title);
+    const normalizedAuthor = this._normalizeBookText(author);
+
+    if (!normalizedTitle || !normalizedAuthor) {
+      return null;
+    }
+
+    return `${normalizedTitle}::${normalizedAuthor}`;
+  }
+
+  _normalizeBookText(text) {
+    if (!text || typeof text !== "string") {
+      return "";
+    }
+
+    return text
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 }

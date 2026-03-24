@@ -59,15 +59,15 @@ Before committing any code, you MUST:
 
 0. **Set execution location first:** Run all checklist commands from repository root (`the-reading-vault`)
 
-  ```bash
-  # PowerShell
-  Set-Location c:/Users/faust/Documents/Fausto/the-reading-vault
-  ```
+```bash
+# PowerShell
+Set-Location c:/Users/faust/Documents/Fausto/the-reading-vault
+```
 
 1. **Verify no errors:** Check for TypeScript/compilation errors
 
    ```bash
-  npm --workspace=mobile exec tsc -- --noEmit
+   npm --workspace=mobile exec tsc -- --noEmit
    ```
 
 2. **Run formatting:** Ensure code follows style guidelines
@@ -196,6 +196,8 @@ ensureCanAcceptSession() {
 - No layer mixing for convenience.
 - **NEVER modify .md files (documentation) without explicitly consulting the human**.
 - Do not create unnecessary DTOs; use domain entities directly when possible.
+- **NEVER apply unilateral decisions without explicit human approval when they affect scope, performance trade-offs, data limits, API/profile contracts, schema versions, field removals/renames, or model/token/runtime defaults.**
+- **If any such decision is needed, STOP and ask first.**
 
 ---
 

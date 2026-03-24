@@ -208,72 +208,144 @@ export class OpenAIClient {
    * @returns {string} Formatted prompt
    */
   _buildProfileSummaryPrompt(profile) {
-    // Format top authors
-    const topAuthors =
-      profile.topAuthors && profile.topAuthors.length > 0
-        ? profile.topAuthors
-            .slice(0, 3)
-            .map((a) => {
-              const avgScoreText =
-                a.avgScore !== null && a.avgScore !== undefined
-                  ? a.avgScore.toFixed(1)
-                  : "N/A";
-              return `${a.name} (${a.bookCount} libros, promedio: ${avgScoreText})`;
-            })
-            .join(", ")
-        : "Ninguno aún";
+    const statistics = profile.statistics || {};
+    const distributions = profile.distributions || {};
+    const metadataSignals = profile.metadataSignals || {};
 
-    // Format top countries
-    const topCountries =
-      profile.topCountries && profile.topCountries.length > 0
-        ? profile.topCountries
-            .slice(0, 3)
-            .map((c) => `${c.name} (${c.bookCount} libros)`)
-            .join(", ")
+    const completedBooks = statistics.completedBooks || 0;
+    const completionRate =
+      statistics.completionRate !== null &&
+      statistics.completionRate !== undefined
+        ? Number(statistics.completionRate).toFixed(1)
+        : "0.0";
+
+    const averageScoreValue =
+      statistics.averageScore !== null && statistics.averageScore !== undefined
+        ? statistics.averageScore
+        : statistics.avgScore;
+    const averageScore =
+      averageScoreValue !== null && averageScoreValue !== undefined
+        ? Number(averageScoreValue).toFixed(1)
         : "N/A";
 
-    // Format favorite books
-    const favoriteBooks =
-      profile.favoriteBooks && profile.favoriteBooks.length > 0
-        ? profile.favoriteBooks
-            .slice(0, 3)
-            .map((b) => `"${b.title}" por ${b.author} (${b.score}/10)`)
-            .join(", ")
-        : "Ninguno aún";
+    const formatDistributionList = (items, limit = 5) => {
+      if (!items || items.length === 0) {
+        return "N/A";
+      }
 
-    // Format statistics avgScore
-    const avgScoreText =
-      profile.statistics.avgScore !== null &&
-      profile.statistics.avgScore !== undefined
-        ? profile.statistics.avgScore.toFixed(1)
+      return items
+        .slice(0, limit)
+        .map((item) => {
+          if (typeof item === "string") {
+            return item;
+          }
+
+          if (item && typeof item === "object") {
+            const name = item.name || item.label || "N/A";
+            const count = item.count ?? item.bookCount;
+            return count !== null && count !== undefined
+              ? `${name} (${count})`
+              : name;
+          }
+
+          return String(item);
+        })
+        .join(", ");
+    };
+
+    const formatBooksList = (books, limit = 5) => {
+      if (!books || books.length === 0) {
+        return "Ninguno";
+      }
+
+      return books
+        .slice(0, limit)
+        .map((book) => {
+          const scoreText =
+            book.score !== null && book.score !== undefined
+              ? `${Number(book.score).toFixed(1)}/10`
+              : "sin score";
+          return `"${book.title}" (${book.author}, ${scoreText})`;
+        })
+        .join(", ");
+    };
+
+    const topRatedBooks = profile.topRatedBooks || profile.favoriteBooks || [];
+    const lowRatedBooks = profile.lowRatedBooks || [];
+    const abandonedBooks = profile.abandonedBooks || [];
+
+    const genres =
+      distributions.genres ||
+      metadataSignals.topGenres ||
+      profile.topGenres ||
+      [];
+    const countries =
+      distributions.countries ||
+      profile.topCountries ||
+      metadataSignals.topCountries ||
+      [];
+    const formats =
+      distributions.formats ||
+      metadataSignals.topBookTypes ||
+      profile.topBookTypes ||
+      [];
+
+    const years = distributions.years || {};
+    const pages = distributions.pages || {};
+
+    const yearsText =
+      years.average !== null && years.average !== undefined
+        ? `promedio ${Number(years.average).toFixed(1)}, rango ${years.min || "N/A"}-${years.max || "N/A"}`
         : "N/A";
 
-    // Format abandoned books for anti-patterns
-    const abandonedList =
-      profile.abandonedBooks && profile.abandonedBooks.length > 0
-        ? profile.abandonedBooks
-            .map((b) => `"${b.title}" (${b.author})`)
-            .join(", ")
-        : "Ninguno";
+    const pagesText =
+      pages.average !== null && pages.average !== undefined
+        ? `promedio ${Number(pages.average).toFixed(1)}, rango ${pages.min || "N/A"}-${pages.max || "N/A"}`
+        : "N/A";
 
-    return `Analiza este perfil de lectura e identifica patrones ocultos y preferencias subyacentes.
+    return `Analiza este perfil de lectura como un sistema de preferencias implícitas.
 
-DATOS CLAVE:
-${profile.statistics.completedBooks} libros completados (${profile.statistics.completionRate.toFixed(1)}% tasa), score promedio ${avgScoreText}
-Autores destacados: ${topAuthors}
-Países: ${topCountries}
-Favoritos: ${favoriteBooks}
-Abandonados: ${abandonedList}
+DATOS DEL PERFIL:
 
-INSTRUCCIONES - IMPORTANTE:
-❌ NO repitas las estadísticas ni los datos de entrada
-❌ NO hagas listas descriptivas de lo obvio
-✅ IDENTIFICA patrones temáticos, de género o estilo narrativo común entre sus autores favoritos
-✅ DEDUCE qué busca este lector (¿tensión psicológica? ¿realismo sucio? ¿literatura existencial?)
-✅ EXPLICA por qué podría haber abandonado ciertos libros (diferencias con sus favoritos)
-✅ RECOMIENDA estrategias de filtrado para un sistema de recomendaciones (qué características priorizar)
+RESUMEN:
+- Libros completados: ${completedBooks}
+- Tasa de finalización: ${completionRate}%
+- Score promedio: ${averageScore}
 
-Genera un análisis de máximo 250 palabras en español, tercera persona, tono profesional. Enfócate en insights accionables, no en reformular datos.`;
+DISTRIBUCIONES:
+- Géneros más frecuentes: ${formatDistributionList(genres)}
+- Nacionalidades de autores: ${formatDistributionList(countries)}
+- Años de publicación (promedio y rango): ${yearsText}
+- Cantidad de páginas (promedio y rango): ${pagesText}
+- Formatos consumidos (bookType editorial): ${formatDistributionList(formats)}
+
+COMPORTAMIENTO:
+- Libros mejor puntuados: ${formatBooksList(topRatedBooks)}
+- Libros peor puntuados: ${formatBooksList(lowRatedBooks)}
+- Libros abandonados: ${formatBooksList(abandonedBooks)}
+
+INSTRUCCIONES:
+
+Analiza el perfil sin repetir los datos anteriores.
+
+1. Identifica correlaciones entre variables (género, nacionalidad, año, páginas, formato).
+2. Detecta patrones estructurales:
+   - complejidad narrativa
+   - tipo de conflicto (psicológico vs acción)
+   - estilo predominante (realismo, existencialismo, etc.)
+3. Deduce qué busca el lector (motivación emocional o intelectual).
+4. Explica los abandonos como desviaciones del patrón principal.
+5. Define reglas accionables para recomendación:
+   - filtros duros (qué incluir/excluir)
+   - criterios de scoring
+
+RESTRICCIONES:
+- No listar datos explícitos
+- No hacer descripciones obvias
+- Cada afirmación debe implicar inferencia
+
+OUTPUT:
+máximo 250 palabras, español, tercera persona, tono analítico-profesional.`;
   }
 
   /**
@@ -284,6 +356,10 @@ Genera un análisis de máximo 250 palabras en español, tercera persona, tono p
    */
   _buildRecommendationPrompt(input) {
     let contextSection;
+    const excludedSection =
+      input.excludeBooks && input.excludeBooks.length > 0
+        ? `\n\nLIBROS YA LEIDOS/EN VAULT (NO RECOMENDAR):\n${input.excludeBooks.map((b) => `- "${b.title}" por ${b.author}`).join("\n")}`
+        : "";
 
     if (input.type === "semantic") {
       // ✅ Efficient mode: Use pre-analyzed summary
@@ -296,7 +372,7 @@ ${input.abandonedBooks.map((b) => `- "${b.title}" por ${b.author}`).join("\n")}`
       contextSection = `ANÁLISIS DEL PERFIL:
 ${input.summary}
 
-${abandonedSection}`;
+    ${abandonedSection}${excludedSection}`;
     } else {
       // ⚠️ Fallback: Reconstruct from structured data
       const data = input.data;
@@ -307,7 +383,7 @@ ${abandonedSection}`;
           .join(", ") || "N/A";
 
       const favorites =
-        data.favoriteBooks
+        (data.topRatedBooks || data.favoriteBooks)
           ?.slice(0, 3)
           .map((b) => `"${b.title}" por ${b.author} (${b.score}/10)`)
           .join(", ") || "N/A";
@@ -316,7 +392,7 @@ ${abandonedSection}`;
 - Autores favoritos: ${topAuthors}
 - Libros mejor valorados: ${favorites}
 - Score promedio: ${data.statistics?.avgScore?.toFixed(1) || "N/A"}
-- Libros completados: ${data.statistics?.completedBooks || 0}`;
+    - Libros completados: ${data.statistics?.completedBooks || 0}${excludedSection}`;
     }
 
     return `${contextSection}

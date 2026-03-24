@@ -110,6 +110,30 @@ export class BookRepository {
   }
 
   /**
+   * Get canonical title+author pairs to exclude already-read/in-progress books
+   * from AI recommendations.
+   * @returns {Promise<Array<{title: string, author: string}>>}
+   */
+  async getRecommendationExclusionList() {
+    const pool = await this.mssqlClient.getConnection();
+
+    const query = `
+      SELECT
+        b.title,
+        a.name as author
+      FROM Books b
+      INNER JOIN Authors a ON b.author_id = a.id
+    `;
+
+    const result = await pool.request().query(query);
+
+    return result.recordset.map((record) => ({
+      title: record.title,
+      author: record.author,
+    }));
+  }
+
+  /**
    * Get a single book by ID
    * @param {number} bookId - Book ID
    * @returns {Promise<Book|null>} Book entity or null if not found

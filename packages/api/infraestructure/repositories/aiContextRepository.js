@@ -13,10 +13,8 @@
  * - Returns plain objects, not domain entities
  * - Profile is a computed value object, not a persistent entity
  *
- * Phase: MVP (Phase 1)
- * - Simple aggregations: top authors by count, favorites, abandoned books
- * - No implicit signals (deferred to Phase 2)
- * - No reading activity from sessions (deferred to Phase 2)
+ * Phase: Metadata-enriched profile
+ * - Aggregations include score behavior, metadata distributions, and anti-signals
  */
 
 import sql from "mssql";
@@ -73,7 +71,7 @@ export class AIContextRepository {
   /**
    * Save reader profile to database (UPSERT)
    * @param {number} version - Profile version (incremented on each refresh)
-   * @param {number} schemaVersion - Schema version (1=MVP, 2=Complete)
+   * @param {number} schemaVersion - Schema version (1=legacy, 2=metadata-enriched)
    * @param {Object} profileData - Structured profile data
    * @param {string|null} semanticSummary - OpenAI-generated summary
    * @param {string} reason - Reason for refresh
@@ -153,7 +151,7 @@ export class AIContextRepository {
   /**
    * Calculate complete reader profile from database
    * Orchestrates all aggregation methods
-   * @returns {Promise<Object>} Complete profile data (MVP structure)
+   * @returns {Promise<Object>} Complete profile data (schema v2)
    */
   async calculateReaderProfile() {
     // Execute all aggregations in parallel for performance
@@ -162,23 +160,43 @@ export class AIContextRepository {
       topAuthors,
       topCountries,
       favoriteBooks,
+      lowRatedBooks,
       abandonedBooks,
+      topGenres,
+      topBookTypes,
+      publicationYears,
+      pageCounts,
     ] = await Promise.all([
       this._calculateStatistics(),
       this._calculateTopAuthors(),
       this._calculateTopCountries(),
       this._calculateFavoriteBooks(),
+      this._calculateLowRatedBooks(),
       this._calculateAbandonedBooks(),
+      this._calculateTopGenres(),
+      this._calculateTopBookTypes(),
+      this._calculatePublicationYearDistribution(),
+      this._calculatePageCountDistribution(),
     ]);
 
-    // Assemble MVP profile structure
+    // Assemble complete profile structure
     return {
-      schemaVersion: 1, // MVP
+      schemaVersion: 2, // Complete metadata-enriched profile
       version: 0, // Will be set by service when saving
       statistics,
       topAuthors,
-      topCountries,
-      favoriteBooks,
+      topRatedBooks: favoriteBooks,
+      lowRatedBooks,
+      distributions: {
+        genres: topGenres,
+        countries: topCountries,
+        years: publicationYears,
+        pages: pageCounts,
+        formats: topBookTypes,
+      },
+      metadataSignals: {
+        synopsisThemes: [],
+      },
       abandonedBooks,
       generatedAt: new Date().toISOString(),
     };
@@ -193,7 +211,7 @@ export class AIContextRepository {
   async _calculateStatistics() {
     const kpis = await this.bookRepository.calculateGlobalKPIs();
 
-    // Transform to MVP profile structure
+    // Transform to profile statistics structure
     return {
       totalBooks: kpis.total,
       completedBooks: kpis.completed,
@@ -281,7 +299,7 @@ export class AIContextRepository {
     const pool = await this.mssqlClient.getConnection();
 
     const query = `
-      SELECT 
+      SELECT TOP 15
         b.title,
         a.name as author,
         b.score
@@ -296,7 +314,10 @@ export class AIContextRepository {
     return result.recordset.map((record) => ({
       title: record.title,
       author: record.author,
-      score: parseFloat(record.score.toFixed(1)),
+      score:
+        record.score !== null && record.score !== undefined
+          ? parseFloat(record.score.toFixed(1))
+          : null,
     }));
   }
 
@@ -309,7 +330,7 @@ export class AIContextRepository {
     const pool = await this.mssqlClient.getConnection();
 
     const query = `
-      SELECT 
+      SELECT TOP 15
         b.title,
         a.name as author,
         c.name as nationality
@@ -328,6 +349,158 @@ export class AIContextRepository {
       author: record.author,
       nationality: record.nationality || "Unknown",
     }));
+  }
+
+  /**
+   * Get low-rated books (score <= 4)
+   * @private
+   * @returns {Promise<Array>} Low-rated books with title, author, and score
+   */
+  async _calculateLowRatedBooks() {
+    const pool = await this.mssqlClient.getConnection();
+
+    const query = `
+      SELECT TOP 15
+        b.title,
+        a.name as author,
+        b.score
+      FROM Books b
+      INNER JOIN Authors a ON b.author_id = a.id
+      WHERE b.score IS NOT NULL AND b.score <= 4
+      ORDER BY b.score ASC, b.title ASC
+    `;
+
+    const result = await pool.request().query(query);
+
+    return result.recordset.map((record) => ({
+      title: record.title,
+      author: record.author,
+      score:
+        record.score !== null && record.score !== undefined
+          ? parseFloat(record.score.toFixed(1))
+          : null,
+    }));
+  }
+
+  /**
+   * Calculate top genres by frequency
+   * @private
+   * @returns {Promise<Array>} Top genres with counts
+   */
+  async _calculateTopGenres() {
+    const pool = await this.mssqlClient.getConnection();
+
+    const query = `
+      SELECT TOP 5
+        g.name,
+        COUNT(*) as count
+      FROM Books b
+      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      INNER JOIN BookGenres bg ON b.id = bg.book_id
+      INNER JOIN Genres g ON g.id = bg.genre_id
+      WHERE bs.internal_code IN ('COMPLETED', 'READING', 'ABANDONED')
+      GROUP BY g.name
+      ORDER BY count DESC, g.name ASC
+    `;
+
+    const result = await pool.request().query(query);
+
+    return result.recordset.map((record) => ({
+      name: record.name,
+      count: record.count,
+    }));
+  }
+
+  /**
+   * Calculate top editorial book types (used as format proxy)
+   * @private
+   * @returns {Promise<Array>} Top editorial types with counts
+   */
+  async _calculateTopBookTypes() {
+    const pool = await this.mssqlClient.getConnection();
+
+    const query = `
+      SELECT TOP 5
+        bt.name,
+        COUNT(*) as count
+      FROM Books b
+      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      INNER JOIN BookTypes bt ON b.book_type_id = bt.id
+      WHERE bs.internal_code IN ('COMPLETED', 'READING', 'ABANDONED')
+      GROUP BY bt.name
+      ORDER BY count DESC, bt.name ASC
+    `;
+
+    const result = await pool.request().query(query);
+
+    return result.recordset.map((record) => ({
+      name: record.name,
+      count: record.count,
+    }));
+  }
+
+  /**
+   * Calculate publication year distribution
+   * @private
+   * @returns {Promise<Object>} Year stats with average and range
+   */
+  async _calculatePublicationYearDistribution() {
+    const pool = await this.mssqlClient.getConnection();
+
+    const query = `
+      SELECT
+        AVG(CAST(b.publication_year AS FLOAT)) as avg,
+        MIN(b.publication_year) as min,
+        MAX(b.publication_year) as max
+      FROM Books b
+      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      WHERE bs.internal_code IN ('COMPLETED', 'READING', 'ABANDONED')
+        AND b.publication_year IS NOT NULL
+    `;
+
+    const result = await pool.request().query(query);
+    const record = result.recordset[0] || {};
+
+    return {
+      average:
+        record.avg !== null && record.avg !== undefined
+          ? parseFloat(record.avg.toFixed(1))
+          : null,
+      min: record.min || null,
+      max: record.max || null,
+    };
+  }
+
+  /**
+   * Calculate page-count distribution
+   * @private
+   * @returns {Promise<Object>} Page stats with average and range
+   */
+  async _calculatePageCountDistribution() {
+    const pool = await this.mssqlClient.getConnection();
+
+    const query = `
+      SELECT
+        AVG(CAST(b.total_pages AS FLOAT)) as avg,
+        MIN(b.total_pages) as min,
+        MAX(b.total_pages) as max
+      FROM Books b
+      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      WHERE bs.internal_code IN ('COMPLETED', 'READING', 'ABANDONED')
+        AND b.total_pages IS NOT NULL
+    `;
+
+    const result = await pool.request().query(query);
+    const record = result.recordset[0] || {};
+
+    return {
+      average:
+        record.avg !== null && record.avg !== undefined
+          ? parseFloat(record.avg.toFixed(1))
+          : null,
+      min: record.min || null,
+      max: record.max || null,
+    };
   }
 
   /**
@@ -353,7 +526,7 @@ export class AIContextRepository {
     // Save profile
     await this.saveReaderProfile(
       newVersion,
-      1, // schemaVersion = 1 (MVP)
+      2, // schemaVersion = 2 (metadata-enriched profile)
       profileData,
       semanticSummary,
       reason,
