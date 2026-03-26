@@ -39,5 +39,29 @@ export default function aiRoutes(getController) {
     getController(AIController).recommendBooks(req, res, next),
   );
 
+  /**
+   * POST /ai/recommendations/by-favorite-authors
+   * Generate recommendations constrained to authors already read by the user
+   */
+  router.post("/ai/recommendations/by-favorite-authors", (req, res, next) =>
+    getController(AIController).recommendBooksByFavoriteAuthors(req, res, next),
+  );
+
+  /**
+   * GET /ai/book/:id/synergy
+   * Analyze compatibility for a specific book
+   */
+  router.get("/ai/book/:id/synergy", (req, res, next) =>
+    getController(AIController).analyzeBookSynergy(req, res, next),
+  );
+
+  /**
+   * GET /ai/author/:id/synergy
+   * Analyze compatibility for a specific author
+   */
+  router.get("/ai/author/:id/synergy", (req, res, next) =>
+    getController(AIController).analyzeAuthorSynergy(req, res, next),
+  );
+
   return router;
 }

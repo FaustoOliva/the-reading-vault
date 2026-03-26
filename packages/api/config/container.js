@@ -40,6 +40,9 @@ import { CalculateReadingKPIService } from "../services/calculateReadingKPIServi
 import { GetBookReadingStatsService } from "../services/getBookReadingStatsService.js";
 import { GetReaderProfileService } from "../services/getReaderProfileService.js";
 import { RecommendBooksService } from "../services/recommendBooksService.js";
+import { AnalyzeBookSynergyService } from "../services/analyzeBookSynergyService.js";
+import { AnalyzeAuthorSynergyService } from "../services/analyzeAuthorSynergyService.js";
+import { RecommendBooksByFavoriteAuthorsService } from "../services/recommendBooksByFavoriteAuthorsService.js";
 import { config } from "./env.js";
 
 export class DIContainer {
@@ -177,6 +180,24 @@ export class DIContainer {
       openAIClient,
       bookRepository,
     );
+    const analyzeBookSynergyService = new AnalyzeBookSynergyService(
+      getReaderProfileService,
+      openAIClient,
+      bookRepository,
+    );
+    const analyzeAuthorSynergyService = new AnalyzeAuthorSynergyService(
+      getReaderProfileService,
+      openAIClient,
+      authorRepository,
+      bookRepository,
+    );
+    const recommendBooksByFavoriteAuthorsService =
+      new RecommendBooksByFavoriteAuthorsService(
+        getReaderProfileService,
+        openAIClient,
+        aiContextRepository,
+        bookRepository,
+      );
 
     // Inject getReaderProfileService into services that need it
     reviewBookService.getReaderProfileService = getReaderProfileService;
@@ -207,6 +228,15 @@ export class DIContainer {
     );
     this.instances.set("getReaderProfileService", getReaderProfileService);
     this.instances.set("recommendBooksService", recommendBooksService);
+    this.instances.set("analyzeBookSynergyService", analyzeBookSynergyService);
+    this.instances.set(
+      "analyzeAuthorSynergyService",
+      analyzeAuthorSynergyService,
+    );
+    this.instances.set(
+      "recommendBooksByFavoriteAuthorsService",
+      recommendBooksByFavoriteAuthorsService,
+    );
   }
 
   /**
@@ -237,6 +267,15 @@ export class DIContainer {
       "getBookReadingStatsService",
     );
     const recommendBooksService = this.instances.get("recommendBooksService");
+    const analyzeBookSynergyService = this.instances.get(
+      "analyzeBookSynergyService",
+    );
+    const analyzeAuthorSynergyService = this.instances.get(
+      "analyzeAuthorSynergyService",
+    );
+    const recommendBooksByFavoriteAuthorsService = this.instances.get(
+      "recommendBooksByFavoriteAuthorsService",
+    );
 
     const mssqlClient = this.instances.get("mssqlClient");
     this.instances.set(
@@ -283,7 +322,15 @@ export class DIContainer {
       "kpiController",
       new KpiController(calculateReadingKPIService),
     );
-    this.instances.set("aiController", new AIController(recommendBooksService));
+    this.instances.set(
+      "aiController",
+      new AIController(
+        recommendBooksService,
+        analyzeBookSynergyService,
+        analyzeAuthorSynergyService,
+        recommendBooksByFavoriteAuthorsService,
+      ),
+    );
   }
 
   /**

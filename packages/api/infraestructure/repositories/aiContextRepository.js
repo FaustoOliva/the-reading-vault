@@ -149,6 +149,26 @@ export class AIContextRepository {
   }
 
   /**
+   * Returns top authors from latest stored profile
+   * @param {number} limit - Max authors to return
+   * @returns {Promise<Array<{name:string,nationality:string,bookCount:number,avgScore:number|null}>>}
+   */
+  async getTopAuthorsFromProfile(limit = 3) {
+    const profile = await this.getReaderProfile();
+
+    if (!profile?.profileData?.topAuthors) {
+      return [];
+    }
+
+    return profile.profileData.topAuthors.slice(0, limit).map((author) => ({
+      name: author.name,
+      nationality: author.nationality || "Unknown",
+      bookCount: author.bookCount || 0,
+      avgScore: author.avgScore ?? null,
+    }));
+  }
+
+  /**
    * Calculate complete reader profile from database
    * Orchestrates all aggregation methods
    * @returns {Promise<Object>} Complete profile data (schema v2)

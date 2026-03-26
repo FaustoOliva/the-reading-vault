@@ -15,9 +15,26 @@
  * Phase: MVP (5.1 - AI Recommendations)
  */
 
+import { z } from "zod";
+
+const aiFavoriteAuthorsBodySchema = z
+  .object({
+    topAuthorsLimit: z.coerce.number().int().min(1).max(5).default(3),
+  })
+  .strict();
+
 export class AIController {
-  constructor(recommendBooksService) {
+  constructor(
+    recommendBooksService,
+    analyzeBookSynergyService,
+    analyzeAuthorSynergyService,
+    recommendBooksByFavoriteAuthorsService,
+  ) {
     this.recommendBooksService = recommendBooksService;
+    this.analyzeBookSynergyService = analyzeBookSynergyService;
+    this.analyzeAuthorSynergyService = analyzeAuthorSynergyService;
+    this.recommendBooksByFavoriteAuthorsService =
+      recommendBooksByFavoriteAuthorsService;
   }
 
   /**
@@ -35,6 +52,60 @@ export class AIController {
   async recommendBooks(req, res, next) {
     try {
       const result = await this.recommendBooksService.execute();
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/ai/recommendations/by-favorite-authors
+   */
+  async recommendBooksByFavoriteAuthors(req, res, next) {
+    try {
+      const { topAuthorsLimit } = aiFavoriteAuthorsBodySchema.parse(req.body);
+
+      const result = await this.recommendBooksByFavoriteAuthorsService.execute({
+        topAuthorsLimit,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/ai/book/:id/synergy
+   */
+  async analyzeBookSynergy(req, res, next) {
+    try {
+      const bookId = z.coerce.number().int().positive().parse(req.params.id);
+      const result = await this.analyzeBookSynergyService.execute(bookId);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/ai/author/:id/synergy
+   */
+  async analyzeAuthorSynergy(req, res, next) {
+    try {
+      const authorId = z.coerce.number().int().positive().parse(req.params.id);
+      const result = await this.analyzeAuthorSynergyService.execute(authorId);
 
       res.status(200).json({
         success: true,

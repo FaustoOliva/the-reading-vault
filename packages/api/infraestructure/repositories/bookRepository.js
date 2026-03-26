@@ -134,6 +134,55 @@ export class BookRepository {
   }
 
   /**
+   * Get books in the vault by author
+   * @param {number} authorId - Author ID
+   * @returns {Promise<Array<{id:number,title:string,status:string,score:number|null,synopsis:string|null,bookType:string|null,genres:string[]|null}>>}
+   */
+  async getBooksByAuthorId(authorId) {
+    const pool = await this.mssqlClient.getConnection();
+
+    const query = `
+      SELECT
+        b.id,
+        b.title,
+        bs.internal_code as status,
+        b.score,
+        b.synopsis,
+        bt.name as book_type,
+        genre_data.genres
+      FROM Books b
+      INNER JOIN BookStatuses bs ON b.status_id = bs.id
+      LEFT JOIN BookTypes bt ON b.book_type_id = bt.id
+      OUTER APPLY (
+        SELECT STRING_AGG(g.name, '||') as genres
+        FROM BookGenres bg
+        INNER JOIN Genres g ON g.id = bg.genre_id
+        WHERE bg.book_id = b.id
+      ) genre_data
+      WHERE b.author_id = @authorId
+      ORDER BY b.title ASC
+    `;
+
+    const result = await pool
+      .request()
+      .input("authorId", sql.Int, authorId)
+      .query(query);
+
+    return result.recordset.map((record) => ({
+      id: record.id,
+      title: record.title,
+      status: record.status,
+      score:
+        record.score !== null && record.score !== undefined
+          ? parseFloat(record.score.toFixed(1))
+          : null,
+      synopsis: record.synopsis || null,
+      bookType: record.book_type || null,
+      genres: Book.parseGenres(record.genres),
+    }));
+  }
+
+  /**
    * Get a single book by ID
    * @param {number} bookId - Book ID
    * @returns {Promise<Book|null>} Book entity or null if not found

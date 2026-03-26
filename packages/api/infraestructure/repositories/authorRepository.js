@@ -20,6 +20,32 @@ export class AuthorRepository {
   }
 
   /**
+   * Get a single author by ID
+   * @param {number} authorId - Author ID
+   * @returns {Promise<{id: number, name: string, nationality: string | null} | null>}
+   */
+  async getById(authorId) {
+    const pool = await this.mssqlClient.getConnection();
+
+    const result = await pool.request().input("authorId", sql.Int, authorId)
+      .query(`
+        SELECT
+          A.id,
+          A.name,
+          C.name AS nationality
+        FROM Authors A
+        LEFT JOIN Countries C ON A.nationality_id = C.id
+        WHERE A.id = @authorId
+      `);
+
+    if (result.recordset.length === 0) {
+      return null;
+    }
+
+    return result.recordset[0];
+  }
+
+  /**
    * Get all authors with optional name filtering, sorted alphabetically
    * @param {Object} filters - Optional filters { nameLike }
    * @returns {Promise<Array<{id: number, name: string, nationality: string | null}>>}
