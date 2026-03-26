@@ -43,3 +43,19 @@ export function useGenerateRecommendations() {
     // User can regenerate anytime for fresh suggestions
   });
 }
+
+/**
+ * Hook: Generate recommendations constrained by favorite authors
+ * Calls POST /api/ai/recommendations/by-favorite-authors
+ */
+export function useGenerateFavoriteAuthorRecommendations() {
+  return useMutation({
+    mutationFn: (topAuthorsLimit: number = 3) =>
+      api.post<AIRecommendationsApiResponse>(
+        "/api/ai/recommendations/by-favorite-authors",
+        {
+          topAuthorsLimit,
+        },
+      ),
+  });
+}

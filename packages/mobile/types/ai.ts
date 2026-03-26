@@ -45,3 +45,50 @@ export enum AIRecommendationError {
   OPENAI_TIMEOUT = "OPENAI_TIMEOUT",
   OPENAI_RATE_LIMIT = "OPENAI_RATE_LIMIT",
 }
+
+export type SynergyLabel = "low" | "moderate" | "high" | "very_high";
+
+export interface SynergyCompatibility {
+  score: number;
+  label: SynergyLabel;
+  reasoning: string;
+  positiveSignals: string[];
+  cautionSignals: string[];
+}
+
+export interface BookSynergyResponse {
+  book: {
+    id: number;
+    title: string;
+    author: {
+      id: number;
+      name: string;
+    };
+  };
+  compatibility: SynergyCompatibility;
+  tokensUsed: number;
+  generatedAt: string;
+  inputMode: "semantic" | "structured";
+}
+
+export interface AuthorSynergyResponse {
+  author: {
+    id: number;
+    name: string;
+    nationality: string | null;
+  };
+  compatibility: SynergyCompatibility;
+  tokensUsed: number;
+  generatedAt: string;
+  inputMode: "semantic" | "structured";
+}
+
+export interface BookSynergyApiResponse {
+  success: boolean;
+  data: BookSynergyResponse;
+}
+
+export interface AuthorSynergyApiResponse {
+  success: boolean;
+  data: AuthorSynergyResponse;
+}
