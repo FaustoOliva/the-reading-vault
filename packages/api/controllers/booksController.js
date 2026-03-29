@@ -41,6 +41,22 @@ import { forBodyParams } from "../adapters/zodAdapters.js";
 const getBooksQuerySchema = z
   .object({
     status: bookStatusSchema.optional(),
+    statuses: z
+      .preprocess((value) => {
+        if (typeof value === "string") {
+          return value
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+        }
+
+        if (Array.isArray(value)) {
+          return value;
+        }
+
+        return undefined;
+      }, z.array(bookStatusSchema).nonempty())
+      .optional(),
     authorId: z.coerce.number().int().positive().optional(),
     countryId: z.coerce.number().int().positive().optional(),
     titleSearch: z.string().trim().optional(),
@@ -144,8 +160,18 @@ export class BooksController {
 
       const { page, limit, ...filters } = validated;
 
+      const normalizedFilters = {
+        ...filters,
+        statuses:
+          filters.statuses && filters.statuses.length > 0
+            ? filters.statuses
+            : filters.status
+              ? [filters.status]
+              : undefined,
+      };
+
       // Execute use case
-      const result = await this.getBooksService.execute(filters, {
+      const result = await this.getBooksService.execute(normalizedFilters, {
         page,
         limit,
       });

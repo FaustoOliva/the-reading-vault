@@ -50,7 +50,9 @@ function buildQueryString(
 ): string {
   const params = new URLSearchParams();
 
-  if (filters?.status) {
+  if (filters?.statuses && filters.statuses.length > 0) {
+    params.append("statuses", filters.statuses.join(","));
+  } else if (filters?.status) {
     params.append("status", filters.status);
   }
 

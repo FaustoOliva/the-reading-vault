@@ -37,6 +37,32 @@ export class BookQueryBuilder {
   }
 
   /**
+   * Filter by multiple book statuses
+   * @param {string[]} statuses - BookStatus enum values
+   * @returns {BookQueryBuilder} this for chaining
+   */
+  withStatuses(statuses) {
+    if (!Array.isArray(statuses) || statuses.length === 0) {
+      return this;
+    }
+
+    const params = statuses.map((status, index) => ({
+      name: `status${index}`,
+      type: sql.NVarChar,
+      value: status,
+    }));
+
+    const placeholders = params.map((param) => `@${param.name}`).join(", ");
+
+    this.filters.push({
+      condition: ` AND bs.internal_code IN (${placeholders})`,
+      params,
+    });
+
+    return this;
+  }
+
+  /**
    * Filter by author ID
    * @param {number} authorId - Author ID
    * @returns {BookQueryBuilder} this for chaining
@@ -272,10 +298,22 @@ export class BookQueryBuilder {
 
     // Store filter parameters
     for (const filter of this.filters) {
-      this.params.set(filter.param.name, {
-        type: filter.param.type,
-        value: filter.param.value,
-      });
+      if (Array.isArray(filter.params)) {
+        for (const param of filter.params) {
+          this.params.set(param.name, {
+            type: param.type,
+            value: param.value,
+          });
+        }
+        continue;
+      }
+
+      if (filter.param) {
+        this.params.set(filter.param.name, {
+          type: filter.param.type,
+          value: filter.param.value,
+        });
+      }
     }
 
     return query;

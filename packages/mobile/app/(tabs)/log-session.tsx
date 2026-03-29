@@ -52,8 +52,10 @@ export default function LogSessionScreen() {
     Record<string, string>
   >({});
 
-  // Fetch all books - will filter on client side
-  const { data: booksResponse, isLoading: booksLoading } = useBooks();
+  // Fetch only books that can receive reading sessions
+  const { data: booksResponse, isLoading: booksLoading } = useBooks({
+    statuses: [BookStatus.WISH_LIST, BookStatus.READING],
+  });
 
   // Fetch selected book details
   const { data: bookDetails, isLoading: detailsLoading } = useBookDetails(
@@ -64,12 +66,20 @@ export default function LogSessionScreen() {
   // Create session mutation
   const createSession = useCreateReadingSession();
 
-  // Filter books to show only WISH_LIST and READING statuses
-  const books = (booksResponse?.data ?? []).filter(
-    (book) =>
-      book.status === BookStatus.WISH_LIST ||
-      book.status === BookStatus.READING,
-  );
+  const books = useMemo(() => {
+    const items = [...(booksResponse?.data ?? [])];
+
+    return items.sort((left, right) => {
+      const leftPriority = left.status === BookStatus.READING ? 0 : 1;
+      const rightPriority = right.status === BookStatus.READING ? 0 : 1;
+
+      if (leftPriority !== rightPriority) {
+        return leftPriority - rightPriority;
+      }
+
+      return right.id - left.id;
+    });
+  }, [booksResponse?.data]);
 
   // Transform books to dropdown options
   const bookOptions = useMemo(() => {

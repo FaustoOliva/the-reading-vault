@@ -142,6 +142,7 @@ export interface ReviewBookInput {
  */
 export interface BooksFilter {
   status?: BookStatus;
+  statuses?: BookStatus[];
   authorId?: number;
   countryId?: number;
   titleSearch?: string;

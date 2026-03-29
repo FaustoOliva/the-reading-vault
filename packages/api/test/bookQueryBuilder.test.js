@@ -33,6 +33,29 @@ describe("BookQueryBuilder", () => {
     });
   });
 
+  describe("withStatuses", () => {
+    it("should add IN condition with dynamic status params", () => {
+      builder.withStatuses(["WISH_LIST", "READING"]);
+      const query = builder.buildSelectQuery();
+
+      expect(query).toContain("AND bs.internal_code IN (@status0, @status1)");
+    });
+
+    it("should add all status parameters", () => {
+      builder.withStatuses(["WISH_LIST", "READING"]);
+      builder.buildSelectQuery();
+
+      const params = Array.from(builder.params.entries());
+      const status0Param = params.find(([name]) => name === "status0");
+      const status1Param = params.find(([name]) => name === "status1");
+
+      expect(status0Param).toBeDefined();
+      expect(status0Param[1].value).toBe("WISH_LIST");
+      expect(status1Param).toBeDefined();
+      expect(status1Param[1].value).toBe("READING");
+    });
+  });
+
   describe("withAuthorId", () => {
     it("should add author filter condition", () => {
       builder.withAuthorId(5);

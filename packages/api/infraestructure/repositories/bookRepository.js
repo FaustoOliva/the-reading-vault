@@ -25,7 +25,7 @@ export class BookRepository {
 
   /**
    * Get all books with optional filters and pagination
-   * @param {Object} filters - Optional filters { status, authorId, countryId, titleSearch, minScore, maxScore, minPages, maxPages, publicationYearStart, publicationYearEnd, startDate, endDate }
+   * @param {Object} filters - Optional filters { status, statuses, authorId, countryId, titleSearch, minScore, maxScore, minPages, maxPages, publicationYearStart, publicationYearEnd, startDate, endDate }
    * @param {Object} pagination - Pagination params { page, limit }
    * @returns {Promise<{books: Book[], total: number, page: number, limit: number, totalPages: number}>}
    */
@@ -36,7 +36,9 @@ export class BookRepository {
     const queryBuilder = new BookQueryBuilder();
 
     // Apply filters dynamically
-    if (filters.status) {
+    if (filters.statuses && filters.statuses.length > 0) {
+      queryBuilder.withStatuses(filters.statuses);
+    } else if (filters.status) {
       queryBuilder.withStatus(filters.status);
     }
 

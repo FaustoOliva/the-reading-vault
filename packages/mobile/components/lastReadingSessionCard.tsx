@@ -5,7 +5,7 @@
  * Shows:
  * - Book title and author
  * - Reading date (short local format)
- * - Ending page
+ * - Pages read in that session
  */
 
 import { View, Text, ActivityIndicator } from "react-native";
@@ -140,7 +140,7 @@ export function LastReadingSessionCard() {
               }}
               selectable
             >
-              Ending Page
+              Pages Read
             </Text>
             <Text
               style={{
@@ -153,7 +153,7 @@ export function LastReadingSessionCard() {
               accessibilityRole="text"
               accessibilityLabel="Page"
             >
-              p. {lastSession.pagesRead}
+              {lastSession.pagesRead}
             </Text>
           </View>
         </View>
