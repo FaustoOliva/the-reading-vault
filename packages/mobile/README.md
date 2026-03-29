@@ -228,7 +228,6 @@ See [ACCESSIBILITY.md](ACCESSIBILITY.md) for color contrast ratios and WCAG comp
 - **Architecture**: This file
 - **Domain Rules**: [DOMAIN.md](../../DOMAIN.md) (business logic)
 - **Agent Guidelines**: [AGENTS.md](../../AGENTS.md) (AI assistant rules)
-- **API Endpoints**: [endpoints.md](../../endpoints.md)
 
 The authoritative API contract is [../api/USE_CASES.MD](../api/USE_CASES.MD).
 
@@ -243,4 +242,4 @@ This project follows Clean Architecture principles:
 
 ## License
 
-Private project - The Reading Vault
+Personal project - The Reading Vault

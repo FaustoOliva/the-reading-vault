@@ -1,7 +1,7 @@
 {
   "name": "the-reading-vault",
   "version": "1.0.0",
-  "description": "Aplicación de libros y métricas de lectura",
+  "description": "A comprehensive reading management system that tracks user reading sessions, preferences, and provides personalized book recommendations based on reading history and ratings.",
   "license": "ISC",
   "author": "Fausto Oliva",
   "type": "module",

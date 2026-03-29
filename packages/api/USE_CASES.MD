@@ -959,14 +959,6 @@ ReaderProfile = {
 }
 ```
 
-**Semantic Summary Example (MVP):**
-
-> Este lector ha completado 23 libros con una tasa de finalización del 65%, mostrando compromiso selectivo. Su score promedio de 7.8 indica exigencia moderada en sus valoraciones.
->
-> Preferencias claras: Autores favoritos incluyen Gabriel García Márquez (8 libros) y Jorge Luis Borges (5 libros), ambos de literatura latinoamericana. Entre sus libros mejor valorados destacan "Cien Años de Soledad" (score: 10) y "El Aleph" (score: 9).
->
-> Ha abandonado 12 libros, principalmente de autores contemporáneos. Para recomendaciones, evitar estilos similares a los abandonados y priorizar literatura latinoamericana clásica.
-
 **Models Involved**
 
 - Book
