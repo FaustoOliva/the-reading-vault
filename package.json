@@ -1,37 +1,27 @@
 {
   "name": "the-reading-vault",
   "version": "1.0.0",
+  "description": "A comprehensive reading management system that tracks user reading sessions, preferences, and provides personalized book recommendations based on reading history and ratings.",
+  "license": "ISC",
+  "author": "Fausto Oliva",
   "type": "module",
-  "description": "",
   "main": "index.js",
-  "scripts": {
-    "lint": "eslint . --fix",
-    "format": "prettier . --write",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start:api": "npm run start --workspace=api",
-    "dev:api": "npm run dev --workspace=api",
-    "start:app": "npm run android --workspace=mobile"
-  },
-  "keywords": [],
   "workspaces": [
     "packages/*"
   ],
-  "author": "FaustoOliva",
-  "license": "ISC",
-  "dependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.53.1",
-    "eslint": "9.39.2",
-    "eslint-plugin-import": "2.32.0",
-    "eslint-plugin-jsx-a11y": "6.10.2",
-    "eslint-plugin-react": "7.37.5",
-    "eslint-plugin-react-hooks": "7.0.1",
-    "globals": "17.0.0",
-    "js-yaml": "^4.1.1",
-    "prettier": "3.7.4"
+  "scripts": {
+    "lint": "eslint . --fix",
+    "format": "prettier . --write",
+    "start:api": "npm start --workspace=api",
+    "dev:api": "npm run dev --workspace=api",
+    "start:mobile": "npm start --workspace=mobile",
+    "start:web": "npm start --workspace=mobile --web"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.9",
-    "tsx": "^4.21.0",
-    "typescript": "5.9.2"
+    "@eslint/js": "^9.39.2",
+    "eslint": "^9.39.2",
+    "eslint-plugin-import": "^2.32.0",
+    "globals": "^17.1.0",
+    "prettier": "^3.8.1"
   }
 }

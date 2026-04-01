@@ -1,0 +1,629 @@
+/**
+ * Edit Book Modal
+ * Modal for editing book metadata (title, totalPages, publicationYear, score, comment)
+ * Does not change book status
+ *
+ * Design Rules:
+ * - All fields are optional (partial updates)
+ * - Publication year range: 1000-9999
+ * - Score range: 0-10
+ * - Uses accessible colors from @/constants/colors
+ */
+
+import { useState, useEffect } from "react";
+import {
+  Modal,
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+} from "react-native";
+import { useUpdateBook } from "@/hooks/useBooks";
+import { useBookTypes } from "@/hooks/useBookTypes";
+import { useGenres } from "@/hooks/useGenres";
+import { Book } from "@/types/book";
+import {
+  editBookSchema,
+  getZodErrors,
+  parseGenresInput,
+} from "@/types/schemas";
+import { InputWithSuggestions } from "@/components/forms/inputWithSuggestions";
+import { showToast } from "@/components/ui/toast";
+import {
+  Background,
+  Text as TextColors,
+  Border,
+  Interactive,
+  Feedback,
+} from "@/constants/colors";
+
+interface EditBookModalProps {
+  visible: boolean;
+  onClose: () => void;
+  book: Book;
+}
+
+export function EditBookModal({ visible, onClose, book }: EditBookModalProps) {
+  const [title, setTitle] = useState<string>(book.title);
+  const [bookType, setBookType] = useState<string>(book.bookType || "");
+  const [genresInput, setGenresInput] = useState<string>(
+    book.genres?.join(", ") || "",
+  );
+  const [synopsis, setSynopsis] = useState<string>(book.synopsis || "");
+  const [totalPages, setTotalPages] = useState<string>(
+    book.totalPages?.toString() || "",
+  );
+  const [publicationYear, setPublicationYear] = useState<string>(
+    book.publicationYear?.toString() || "",
+  );
+  const [score, setScore] = useState<string>(book.score?.toString() || "");
+  const [comment, setComment] = useState<string>(book.comment || "");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const updateMutation = useUpdateBook();
+  const { data: bookTypes, isLoading: isLoadingBookTypes } = useBookTypes();
+  const { data: genres, isLoading: isLoadingGenres } = useGenres();
+  const bookTypeSuggestions = bookTypes?.map((bt) => bt.name) || [];
+  const genreSuggestions = genres?.map((genre) => genre.name) || [];
+
+  // Reset form when book changes
+  useEffect(() => {
+    setTitle(book.title);
+    setBookType(book.bookType || "");
+    setGenresInput(book.genres?.join(", ") || "");
+    setSynopsis(book.synopsis || "");
+    setTotalPages(book.totalPages?.toString() || "");
+    setPublicationYear(book.publicationYear?.toString() || "");
+    setScore(book.score?.toString() || "");
+    setComment(book.comment || "");
+    setErrors({});
+  }, [book, visible]);
+
+  const validate = (): boolean => {
+    const result = editBookSchema.safeParse({
+      title,
+      bookType,
+      genresInput,
+      synopsis,
+      totalPages,
+      publicationYear,
+      score,
+      comment,
+    });
+
+    if (!result.success) {
+      setErrors(getZodErrors(result.error));
+      return false;
+    }
+
+    setErrors({});
+    return true;
+  };
+
+  const handleSave = () => {
+    if (!validate()) {
+      return;
+    }
+
+    const updates: {
+      title?: string;
+      bookType?: string;
+      genres?: string[];
+      synopsis?: string;
+      totalPages?: number;
+      publicationYear?: number;
+      score?: number;
+      comment?: string;
+    } = {};
+
+    // Only include changed fields
+    if (title.trim() !== book.title) {
+      updates.title = title.trim();
+    }
+
+    if (bookType.trim() !== (book.bookType || "")) {
+      updates.bookType = bookType.trim() || undefined;
+    }
+
+    const nextGenres = parseGenresInput(genresInput) || [];
+    const currentGenres = book.genres || [];
+    if (JSON.stringify(nextGenres) !== JSON.stringify(currentGenres)) {
+      updates.genres = nextGenres.length > 0 ? nextGenres : undefined;
+    }
+
+    if (synopsis.trim() !== (book.synopsis || "")) {
+      updates.synopsis = synopsis.trim() || undefined;
+    }
+
+    const totalPagesNum = totalPages ? Number(totalPages) : null;
+    if (totalPagesNum !== book.totalPages) {
+      updates.totalPages = totalPagesNum || undefined;
+    }
+
+    const publicationYearNum = publicationYear ? Number(publicationYear) : null;
+    if (publicationYearNum !== book.publicationYear) {
+      updates.publicationYear = publicationYearNum || undefined;
+    }
+
+    const scoreNum = score ? Number(score) : null;
+    if (scoreNum !== book.score) {
+      updates.score = scoreNum || undefined;
+    }
+
+    if (comment.trim() !== (book.comment || "")) {
+      updates.comment = comment.trim() || undefined;
+    }
+
+    // Check if anything changed
+    if (Object.keys(updates).length === 0) {
+      showToast.info("No changes", "No fields were modified");
+      return;
+    }
+
+    updateMutation.mutate(
+      {
+        id: book.id,
+        data: updates,
+      },
+      {
+        onSuccess: () => {
+          showToast.success("Book updated", "Changes saved successfully");
+          onClose();
+        },
+        onError: (error: any) => {
+          showToast.error(
+            "Update failed",
+            error?.message || "Failed to update book",
+          );
+        },
+      },
+    );
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <View style={{ flex: 1, backgroundColor: Background.primary }}>
+        {/* Header */}
+        <View
+          style={{
+            padding: 16,
+            borderBottomWidth: 1,
+            borderBottomColor: Border.default,
+            backgroundColor: Background.surface,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: "600",
+              color: TextColors.primary,
+              marginBottom: 4,
+            }}
+          >
+            Edit Book
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: TextColors.secondary,
+            }}
+          >
+            Update book metadata (status remains unchanged)
+          </Text>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={{ padding: 16, gap: 20 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Title Field */}
+          <View style={{ gap: 6 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: TextColors.primary,
+              }}
+            >
+              Title *
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: errors.title
+                  ? Feedback.error.border
+                  : Border.default,
+                borderRadius: 8,
+                borderCurve: "continuous",
+                padding: 12,
+                fontSize: 16,
+                backgroundColor: Background.surface,
+                color: TextColors.primary,
+              }}
+              placeholder="Enter book title"
+              placeholderTextColor={TextColors.tertiary}
+              value={title}
+              onChangeText={(text) => {
+                setTitle(text);
+                if (errors.title) {
+                  setErrors((prev) => ({ ...prev, title: "" }));
+                }
+              }}
+            />
+            {errors.title ? (
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: Feedback.error.text,
+                }}
+              >
+                {errors.title}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Book Type Field */}
+          <InputWithSuggestions
+            label="Book Type (Optional)"
+            value={bookType}
+            onChangeText={(text) => {
+              setBookType(text);
+              if (errors.bookType) {
+                setErrors((prev) => ({ ...prev, bookType: "" }));
+              }
+            }}
+            suggestions={bookTypeSuggestions}
+            placeholder="Type book type..."
+            error={errors.bookType}
+            accessibilityLabel="Book type, optional"
+            accessibilityHint="Select from predefined types (Novel, Memoir, Anthology, etc.) or type a custom value"
+          />
+
+          <InputWithSuggestions
+            label="Genres"
+            value={genresInput}
+            onChangeText={(text) => {
+              setGenresInput(text);
+              if (errors.genresInput) {
+                setErrors((prev) => ({ ...prev, genresInput: "" }));
+              }
+            }}
+            suggestions={genreSuggestions}
+            placeholder="e.g. Fantasy, Historical Fiction"
+            error={errors.genresInput}
+            accessibilityLabel="Genres, optional"
+            accessibilityHint="Select from suggestions or enter one or more genres separated by commas"
+          />
+
+          <View style={{ gap: 6 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: TextColors.primary,
+              }}
+            >
+              Synopsis
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: errors.synopsis
+                  ? Feedback.error.border
+                  : Border.default,
+                borderRadius: 8,
+                borderCurve: "continuous",
+                padding: 12,
+                fontSize: 16,
+                backgroundColor: Background.surface,
+                color: TextColors.primary,
+                minHeight: 100,
+                textAlignVertical: "top",
+              }}
+              placeholder="Short description of the book..."
+              placeholderTextColor={TextColors.tertiary}
+              value={synopsis}
+              onChangeText={(text) => {
+                setSynopsis(text);
+                if (errors.synopsis) {
+                  setErrors((prev) => ({ ...prev, synopsis: "" }));
+                }
+              }}
+              multiline
+              maxLength={4000}
+            />
+            {errors.synopsis ? (
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: Feedback.error.text,
+                }}
+              >
+                {errors.synopsis}
+              </Text>
+            ) : null}
+            <Text
+              style={{
+                fontSize: 13,
+                color: TextColors.tertiary,
+                textAlign: "right",
+              }}
+            >
+              {synopsis.length}/4000
+            </Text>
+          </View>
+
+          {/* Total Pages Field */}
+          <View style={{ gap: 6 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: TextColors.primary,
+              }}
+            >
+              Total Pages
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: errors.totalPages
+                  ? Feedback.error.border
+                  : Border.default,
+                borderRadius: 8,
+                borderCurve: "continuous",
+                padding: 12,
+                fontSize: 16,
+                backgroundColor: Background.surface,
+                color: TextColors.primary,
+              }}
+              placeholder="e.g. 350"
+              placeholderTextColor={TextColors.tertiary}
+              value={totalPages}
+              onChangeText={(text) => {
+                setTotalPages(text);
+                if (errors.totalPages) {
+                  setErrors((prev) => ({ ...prev, totalPages: "" }));
+                }
+              }}
+              keyboardType="number-pad"
+            />
+            {errors.totalPages ? (
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: Feedback.error.text,
+                }}
+              >
+                {errors.totalPages}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Publication Year Field */}
+          <View style={{ gap: 6 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: TextColors.primary,
+              }}
+            >
+              Publication Year
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: errors.publicationYear
+                  ? Feedback.error.border
+                  : Border.default,
+                borderRadius: 8,
+                borderCurve: "continuous",
+                padding: 12,
+                fontSize: 16,
+                backgroundColor: Background.surface,
+                color: TextColors.primary,
+              }}
+              placeholder="e.g. 2020"
+              placeholderTextColor={TextColors.tertiary}
+              value={publicationYear}
+              onChangeText={(text) => {
+                setPublicationYear(text);
+                if (errors.publicationYear) {
+                  setErrors((prev) => ({ ...prev, publicationYear: "" }));
+                }
+              }}
+              keyboardType="number-pad"
+            />
+            {errors.publicationYear ? (
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: Feedback.error.text,
+                }}
+              >
+                {errors.publicationYear}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Score Field */}
+          <View style={{ gap: 6 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: TextColors.primary,
+              }}
+            >
+              Score (0-10)
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: errors.score
+                  ? Feedback.error.border
+                  : Border.default,
+                borderRadius: 8,
+                borderCurve: "continuous",
+                padding: 12,
+                fontSize: 16,
+                backgroundColor: Background.surface,
+                color: TextColors.primary,
+              }}
+              placeholder="e.g. 8"
+              placeholderTextColor={TextColors.tertiary}
+              value={score}
+              onChangeText={(text) => {
+                setScore(text);
+                if (errors.score) {
+                  setErrors((prev) => ({ ...prev, score: "" }));
+                }
+              }}
+              keyboardType="number-pad"
+            />
+            {errors.score ? (
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: Feedback.error.text,
+                }}
+              >
+                {errors.score}
+              </Text>
+            ) : null}
+            <Text
+              style={{
+                fontSize: 13,
+                color: TextColors.tertiary,
+              }}
+            >
+              Rate from 0 (poor) to 10 (excellent)
+            </Text>
+          </View>
+
+          {/* Comment Field */}
+          <View style={{ gap: 6 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: TextColors.primary,
+              }}
+            >
+              Comment
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: Border.default,
+                borderRadius: 8,
+                borderCurve: "continuous",
+                padding: 12,
+                fontSize: 16,
+                backgroundColor: Background.surface,
+                color: TextColors.primary,
+                minHeight: 100,
+                textAlignVertical: "top",
+              }}
+              placeholder="Add your thoughts about this book..."
+              placeholderTextColor={TextColors.tertiary}
+              value={comment}
+              onChangeText={setComment}
+              multiline
+              maxLength={500}
+            />
+            <Text
+              style={{
+                fontSize: 13,
+                color: TextColors.tertiary,
+                textAlign: "right",
+              }}
+            >
+              {comment.length}/500
+            </Text>
+          </View>
+        </ScrollView>
+
+        {/* Action Buttons */}
+        <View
+          style={{
+            padding: 16,
+            gap: 12,
+            borderTopWidth: 1,
+            borderTopColor: Border.default,
+            backgroundColor: Background.surface,
+          }}
+        >
+          {/* Save Button */}
+          <Pressable
+            onPress={handleSave}
+            disabled={
+              updateMutation.isPending || isLoadingBookTypes || isLoadingGenres
+            }
+            style={({ pressed }) => ({
+              backgroundColor:
+                updateMutation.isPending ||
+                isLoadingBookTypes ||
+                isLoadingGenres
+                  ? Interactive.primary.disabled
+                  : pressed
+                    ? Interactive.primary.pressed
+                    : Interactive.primary.default,
+              padding: 16,
+              borderRadius: 8,
+              borderCurve: "continuous",
+              alignItems: "center",
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 8,
+            })}
+          >
+            {updateMutation.isPending ||
+            isLoadingBookTypes ||
+            isLoadingGenres ? (
+              <ActivityIndicator color={Interactive.primary.text} />
+            ) : null}
+            <Text
+              style={{
+                color: Interactive.primary.text,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              Save Changes
+            </Text>
+          </Pressable>
+
+          {/* Cancel */}
+          <Pressable
+            onPress={onClose}
+            disabled={updateMutation.isPending}
+            style={({ pressed }) => ({
+              padding: 12,
+              alignItems: "center",
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text
+              style={{
+                color: TextColors.secondary,
+                fontSize: 15,
+                fontWeight: "500",
+              }}
+            >
+              Cancel
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
