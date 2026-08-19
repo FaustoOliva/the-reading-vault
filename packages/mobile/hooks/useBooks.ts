@@ -16,6 +16,7 @@ import {
   UseQueryOptions,
 } from "@tanstack/react-query";
 import { api } from "@/services/api";
+import { showToast } from "@/components/ui/toast";
 import {
   Book,
   BookDetails,
@@ -274,6 +275,11 @@ export function useReviewBook() {
         method: "PATCH",
         body: JSON.stringify(data),
       }),
+    onError: (err) => {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to review book";
+      showToast.error("Review failed", errorMessage);
+    },
     onSuccess: (_, variables) => {
       // Invalidate book details and lists
       queryClient.invalidateQueries({
@@ -286,6 +292,9 @@ export function useReviewBook() {
       queryClient.invalidateQueries({
         queryKey: bookStatsKeys.detail(variables.id),
       });
+
+      // Show success feedback
+      showToast.success("Book reviewed successfully");
     },
   });
 }
@@ -329,6 +338,10 @@ export function useReopenBook() {
       if (context?.previousBook) {
         queryClient.setQueryData(booksKeys.detail(id), context.previousBook);
       }
+
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to reopen book";
+      showToast.error("Could not reopen book", errorMessage);
     },
 
     onSuccess: (_, bookId) => {
@@ -336,6 +349,8 @@ export function useReopenBook() {
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
       queryClient.invalidateQueries({ queryKey: kpiKeys.all });
       queryClient.invalidateQueries({ queryKey: bookStatsKeys.detail(bookId) });
+
+      showToast.success("Book reopened", "Start a new reading cycle");
     },
   });
 }
@@ -379,9 +394,15 @@ export function useRequestReview() {
     },
 
     onError: (err, id, context) => {
+      // Rollback optimistic update
       if (context?.previousBook) {
         queryClient.setQueryData(booksKeys.detail(id), context.previousBook);
       }
+
+      // Show error to user
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to request review";
+      showToast.error("Could not transition book", errorMessage);
     },
 
     onSuccess: (_, bookId) => {
@@ -389,6 +410,9 @@ export function useRequestReview() {
       queryClient.invalidateQueries({ queryKey: booksKeys.lists() });
       queryClient.invalidateQueries({ queryKey: kpiKeys.all });
       queryClient.invalidateQueries({ queryKey: bookStatsKeys.detail(bookId) });
+
+      // Show success feedback
+      showToast.success("Ready for review", "Open the review form to complete");
     },
   });
 }

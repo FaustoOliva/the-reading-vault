@@ -25,7 +25,6 @@ async function testOpenAIDirectly() {
   if (!openAIClient.apiKey || openAIClient.apiKey === "your-api-key-here") {
     console.error("❌ OPENAI_API_KEY is not configured in .env");
     console.log("\nAdd to .env file:");
-    console.log("OPENAI_API_KEY=sk-proj-...");
     return;
   }
 

@@ -5,6 +5,7 @@
  * Shows:
  * - Book title and author
  * - Reading date (short local format)
+ * - Session created date (short local format)
  * - Pages read in that session
  */
 
@@ -44,6 +45,13 @@ export function LastReadingSessionCard() {
   // Format date as local short format (e.g., 09/03/2026)
   const sessionDate = new Date(lastSession.occurredAt);
   const formattedDate = sessionDate.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  const createdDate = new Date(lastSession.createdAt);
+  const formattedCreatedDate = createdDate.toLocaleDateString("en-US", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -108,28 +116,54 @@ export function LastReadingSessionCard() {
             alignItems: "center",
           }}
         >
-          <View>
-            <Text
-              style={{
-                fontSize: 12,
-                color: TextColors.tertiary,
-              }}
-              selectable
-            >
-              Reading Date
-            </Text>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: "600",
-                color: TextColors.primary,
-                marginTop: 2,
-              }}
-              selectable
-              accessibilityRole="text"
-            >
-              {formattedDate}
-            </Text>
+          <View style={{ gap: 12 }}>
+            <View>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: TextColors.tertiary,
+                }}
+                selectable
+              >
+                Reading Date
+              </Text>
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: "600",
+                  color: TextColors.primary,
+                  marginTop: 2,
+                }}
+                selectable
+                accessibilityRole="text"
+              >
+                {formattedDate}
+              </Text>
+            </View>
+
+            <View>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: TextColors.tertiary,
+                }}
+                selectable
+              >
+                Created On
+              </Text>
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: "600",
+                  color: TextColors.primary,
+                  marginTop: 2,
+                }}
+                selectable
+                accessibilityRole="text"
+              >
+                {formattedCreatedDate}
+              </Text>
+            </View>
           </View>
 
           <View>

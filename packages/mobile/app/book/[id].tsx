@@ -14,7 +14,7 @@
  * - Handle loading/error/empty states properly
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, ScrollView, RefreshControl, Alert } from "react-native";
 import { useLocalSearchParams, Stack } from "expo-router";
 import {
@@ -53,6 +53,18 @@ export default function BookDetailScreen() {
 
   const isActionPending =
     reopenMutation.isPending || requestReviewMutation.isPending;
+
+  // Auto-open review modal after successful request-review transition
+  useEffect(() => {
+    if (
+      requestReviewMutation.isSuccess &&
+      bookDetails?.book.status === "PENDING_SCORE"
+    ) {
+      setReviewModalVisible(true);
+      // Reset mutation state so it doesn't auto-open again
+      requestReviewMutation.reset();
+    }
+  }, [requestReviewMutation.isSuccess, bookDetails?.book.status]);
 
   if (__DEV__) {
     console.log("📊 Query state:", {
@@ -179,11 +191,7 @@ export default function BookDetailScreen() {
           text: "Request Review",
           style: "default",
           onPress: () => {
-            requestReviewMutation.mutate(book.id, {
-              onSuccess: () => {
-                setReviewModalVisible(true);
-              },
-            });
+            requestReviewMutation.mutate(book.id);
           },
         },
       ],
