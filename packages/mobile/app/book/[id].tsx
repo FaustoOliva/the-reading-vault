@@ -15,7 +15,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { View, Text, ScrollView, RefreshControl, Alert } from "react-native";
+import { View, Text, ScrollView, RefreshControl } from "react-native";
 import { useLocalSearchParams, Stack } from "expo-router";
 import {
   useBookDetails,
@@ -30,6 +30,7 @@ import { BookDetailsCard } from "@/components/cards/bookDetailsCard";
 import { ReviewBookModal } from "@/components/modals/reviewBookModal";
 import { EditBookModal } from "@/components/modals/editBookModal";
 import { SkeletonBookDetail } from "@/components/ui/skeletonBookDetail";
+import { ConfirmDialog } from "@/components/ui/confirmDialog";
 import { BookStatus } from "@/types/book";
 import { Background, Text as TextColors, Feedback } from "@/constants/colors";
 
@@ -39,6 +40,9 @@ export default function BookDetailScreen() {
 
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<
+    "reopen" | "requestReview" | null
+  >(null);
 
   const {
     data: bookDetails,
@@ -165,37 +169,17 @@ export default function BookDetailScreen() {
    * Action Handlers
    */
   const handleReopen = () => {
-    Alert.alert(
-      "Reopen Book",
-      `Do you want to reopen "${book.title}"? This will start a new reading cycle.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reopen",
-          style: "default",
-          onPress: () => {
-            reopenMutation.mutate(book.id);
-          },
-        },
-      ],
-    );
+    if (__DEV__) {
+      console.log("🔄 Reopen pressed:", { bookId: book.id });
+    }
+    setConfirmAction("reopen");
   };
 
   const handleRequestReview = () => {
-    Alert.alert(
-      "Request Review",
-      `Do you want to mark "${book.title}" for review? This will allow you to score and complete or abandon the book.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Request Review",
-          style: "default",
-          onPress: () => {
-            requestReviewMutation.mutate(book.id);
-          },
-        },
-      ],
-    );
+    if (__DEV__) {
+      console.log("🏁 Finish pressed:", { bookId: book.id });
+    }
+    setConfirmAction("requestReview");
   };
 
   return (
@@ -278,6 +262,31 @@ export default function BookDetailScreen() {
           score: book.score,
           comment: book.comment,
         }}
+      />
+
+      {/* Confirm Dialog (cross-platform; Alert.alert is a no-op on web) */}
+      <ConfirmDialog
+        visible={confirmAction !== null}
+        title={
+          confirmAction === "requestReview" ? "Request Review" : "Reopen Book"
+        }
+        message={
+          confirmAction === "requestReview"
+            ? `Do you want to mark "${book.title}" for review? This will allow you to score and complete or abandon the book.`
+            : `Do you want to reopen "${book.title}"? This will start a new reading cycle.`
+        }
+        confirmLabel={
+          confirmAction === "requestReview" ? "Request Review" : "Reopen"
+        }
+        onConfirm={() => {
+          if (confirmAction === "requestReview") {
+            requestReviewMutation.mutate(book.id);
+          } else if (confirmAction === "reopen") {
+            reopenMutation.mutate(book.id);
+          }
+          setConfirmAction(null);
+        }}
+        onCancel={() => setConfirmAction(null)}
       />
     </>
   );
