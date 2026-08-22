@@ -169,16 +169,10 @@ export default function BookDetailScreen() {
    * Action Handlers
    */
   const handleReopen = () => {
-    if (__DEV__) {
-      console.log("🔄 Reopen pressed:", { bookId: book.id });
-    }
     setConfirmAction("reopen");
   };
 
   const handleRequestReview = () => {
-    if (__DEV__) {
-      console.log("🏁 Finish pressed:", { bookId: book.id });
-    }
     setConfirmAction("requestReview");
   };
 
