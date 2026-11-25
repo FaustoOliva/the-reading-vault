@@ -21,6 +21,7 @@ import { BookTypesRepository } from "../infraestructure/repositories/bookTypesRe
 import { GenresRepository } from "../infraestructure/repositories/genresRepository.js";
 import { ReadingSessionRepository } from "../infraestructure/repositories/readingSessionRepository.js";
 import { BookStatusHistoryRepository } from "../infraestructure/repositories/bookStatusHistoryRepository.js";
+import { ReadingStatsRepository } from "../infraestructure/repositories/readingStatsRepository.js";
 import { AIContextRepository } from "../infraestructure/repositories/aiContextRepository.js";
 import { OpenAIClient } from "../infraestructure/ai/openAIClient.js";
 import { GetBooksService } from "../services/getBooksService.js";
@@ -37,6 +38,7 @@ import { GetCountriesService } from "../services/getCountriesService.js";
 import { GetBookTypesService } from "../services/getBookTypesService.js";
 import { GetGenresService } from "../services/getGenresService.js";
 import { CalculateReadingKPIService } from "../services/calculateReadingKPIService.js";
+import { GetAnnualReadingSummaryService } from "../services/getAnnualReadingSummaryService.js";
 import { GetBookReadingStatsService } from "../services/getBookReadingStatsService.js";
 import { GetReaderProfileService } from "../services/getReaderProfileService.js";
 import { RecommendBooksService } from "../services/recommendBooksService.js";
@@ -73,6 +75,7 @@ export class DIContainer {
     const bookStatusHistoryRepository = new BookStatusHistoryRepository(
       mssqlClient,
     );
+    const readingStatsRepository = new ReadingStatsRepository(mssqlClient);
 
     this.instances.set("databaseRepository", databaseRepository);
     this.instances.set("bookRepository", bookRepository);
@@ -85,6 +88,7 @@ export class DIContainer {
       "bookStatusHistoryRepository",
       bookStatusHistoryRepository,
     );
+    this.instances.set("readingStatsRepository", readingStatsRepository);
 
     // AI Infrastructure
     const openAIClient = new OpenAIClient(config.openai);
@@ -113,6 +117,7 @@ export class DIContainer {
     const bookStatusHistoryRepository = this.instances.get(
       "bookStatusHistoryRepository",
     );
+    const readingStatsRepository = this.instances.get("readingStatsRepository");
     const aiContextRepository = this.instances.get("aiContextRepository");
     const openAIClient = this.instances.get("openAIClient");
 
@@ -171,6 +176,9 @@ export class DIContainer {
       readingSessionRepository,
       bookStatusHistoryRepository,
     );
+    const getAnnualReadingSummaryService = new GetAnnualReadingSummaryService(
+      readingStatsRepository,
+    );
     const getReaderProfileService = new GetReaderProfileService(
       aiContextRepository,
       openAIClient,
@@ -226,6 +234,10 @@ export class DIContainer {
       "getBookReadingStatsService",
       getBookReadingStatsService,
     );
+    this.instances.set(
+      "getAnnualReadingSummaryService",
+      getAnnualReadingSummaryService,
+    );
     this.instances.set("getReaderProfileService", getReaderProfileService);
     this.instances.set("recommendBooksService", recommendBooksService);
     this.instances.set("analyzeBookSynergyService", analyzeBookSynergyService);
@@ -265,6 +277,9 @@ export class DIContainer {
     );
     const getBookReadingStatsService = this.instances.get(
       "getBookReadingStatsService",
+    );
+    const getAnnualReadingSummaryService = this.instances.get(
+      "getAnnualReadingSummaryService",
     );
     const recommendBooksService = this.instances.get("recommendBooksService");
     const analyzeBookSynergyService = this.instances.get(
@@ -320,7 +335,10 @@ export class DIContainer {
     );
     this.instances.set(
       "kpiController",
-      new KpiController(calculateReadingKPIService),
+      new KpiController(
+        calculateReadingKPIService,
+        getAnnualReadingSummaryService,
+      ),
     );
     this.instances.set(
       "aiController",
