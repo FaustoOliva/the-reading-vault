@@ -8,6 +8,10 @@
  * - User enters ending page (not pages read)
  * - Mobile calculates pagesRead from: endingPage - lastEndingPage
  * - API receives: { bookId, pagesRead, occurredAt, duration }
+ *
+ * Layout:
+ * - Wide screens keep the form on the left and reading context on the right
+ * - Compact screens stack context under the header, as before
  */
 
 import { useState, useMemo } from "react";
@@ -16,7 +20,6 @@ import {
   Text,
   TextInput,
   Pressable,
-  ScrollView,
   ActivityIndicator,
   Platform,
 } from "react-native";
@@ -24,8 +27,15 @@ import * as Haptics from "expo-haptics";
 import { DatePicker } from "@/components/date-picker";
 import { CustomDropdown } from "@/components/forms/customDropdown";
 import { LastReadingSessionCard } from "@/components/lastReadingSessionCard";
+import {
+  FormSection,
+  PageHeader,
+  PageScroll,
+  SectionHeading,
+} from "@/components/ui/pageLayout";
 import { useBooks, useBookDetails } from "@/hooks/useBooks";
 import { useCreateReadingSession } from "@/hooks/useReadingSessions";
+import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { BookStatus } from "@/types/book";
 import {
   logSessionSchema,
@@ -41,6 +51,8 @@ import {
 } from "@/constants/colors";
 
 export default function LogSessionScreen() {
+  const { isSplitLayout } = useResponsiveLayout();
+
   // Form state
   const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
   const [endingPage, setEndingPage] = useState("");
@@ -228,104 +240,80 @@ export default function LogSessionScreen() {
 
   const lastEnding = getLastEndingPage();
   const totalPages = bookDetails?.book.total_pages;
+  const submitDisabled = !isFormValid() || createSession.isPending;
 
-  return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1, backgroundColor: Background.primary }}
-      contentContainerStyle={{ padding: 16, gap: 20 }}
-    >
-      {/* Header */}
-      <View style={{ gap: 4, marginBottom: 8 }}>
-        <Text
-          style={{ fontSize: 28, fontWeight: "700", color: TextColors.primary }}
-        >
-          Log Reading Session
-        </Text>
-        <Text
-          style={{ fontSize: 14, color: TextColors.secondary, lineHeight: 20 }}
-        >
-          Track your reading progress by logging completed sessions for books in
-          your wish list or currently reading.
-        </Text>
-      </View>
-
-      {/* Last Reading Session Card */}
-      <LastReadingSessionCard />
-
-      {/* Book Selector */}
-      <View style={{ gap: 8, position: "relative", zIndex: 20 }}>
-        {booksLoading ? (
-          <>
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: TextColors.primary,
-              }}
-            >
-              Book *
-            </Text>
-            <ActivityIndicator color={Interactive.primary.default} />
-          </>
-        ) : books.length === 0 ? (
-          <>
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: TextColors.primary,
-              }}
-            >
-              Book *
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                fontStyle: "italic",
-                padding: 16,
-                textAlign: "center",
-                color: TextColors.secondary,
-              }}
-              selectable
-              accessibilityRole="text"
-              accessibilityLabel="No books available"
-            >
-              No books available. Add a book to your wish list or start reading!
-            </Text>
-          </>
-        ) : (
-          <CustomDropdown
-            label="Book *"
-            value={selectedBookId ?? 0}
-            onValueChange={(value) =>
-              setSelectedBookId(value === 0 ? null : value)
-            }
-            options={[
-              { label: "Select a book to log session", value: 0 },
-              ...bookOptions,
-            ]}
-            error={validationErrors.bookId}
-            accessibilityLabel="Select book"
-            accessibilityHint="Choose a book from your wish list or currently reading"
-          />
-        )}
-      </View>
-
-      {/* Book Info */}
-      {selectedBookId && detailsLoading && (
-        <ActivityIndicator
-          style={{ marginTop: -12 }}
-          color={Interactive.primary.default}
+  const bookSelector = (
+    <View style={{ gap: 8, position: "relative", zIndex: 20 }}>
+      {booksLoading ? (
+        <>
+          <Text
+            style={{
+              fontSize: 15,
+              fontWeight: "600",
+              color: TextColors.primary,
+            }}
+          >
+            Book *
+          </Text>
+          <ActivityIndicator color={Interactive.primary.default} />
+        </>
+      ) : books.length === 0 ? (
+        <>
+          <Text
+            style={{
+              fontSize: 15,
+              fontWeight: "600",
+              color: TextColors.primary,
+            }}
+          >
+            Book *
+          </Text>
+          <Text
+            style={{
+              fontSize: 15,
+              fontStyle: "italic",
+              padding: 16,
+              textAlign: "center",
+              color: TextColors.secondary,
+            }}
+            selectable
+            accessibilityRole="text"
+            accessibilityLabel="No books available"
+          >
+            No books available. Add a book to your wish list or start reading!
+          </Text>
+        </>
+      ) : (
+        <CustomDropdown
+          label="Book *"
+          value={selectedBookId ?? 0}
+          onValueChange={(value) =>
+            setSelectedBookId(value === 0 ? null : value)
+          }
+          options={[
+            { label: "Select a book to log session", value: 0 },
+            ...bookOptions,
+          ]}
+          error={validationErrors.bookId}
+          accessibilityLabel="Select book"
+          accessibilityHint="Choose a book from your wish list or currently reading"
         />
       )}
-      {selectedBookId && !detailsLoading && bookDetails && (
+    </View>
+  );
+
+  const bookContextLine = (
+    <>
+      {selectedBookId && detailsLoading ? (
+        <ActivityIndicator color={Interactive.primary.default} />
+      ) : null}
+      {selectedBookId && !detailsLoading && bookDetails ? (
         <View style={{ gap: 6 }}>
           <Text
             style={{
               fontSize: 14,
-              marginLeft: 4,
               color: TextColors.secondary,
+              fontVariant: ["tabular-nums"],
             }}
             selectable
             accessibilityRole="text"
@@ -334,155 +322,137 @@ export default function LogSessionScreen() {
             {totalPages ? ` / ${totalPages}` : ""}
           </Text>
           {endingPage &&
-            !isNaN(Number(endingPage)) &&
-            Number(endingPage) > 0 && (
-              <Text
-                style={{
-                  fontSize: 14,
-                  marginLeft: 4,
-                  color: TextColors.secondary,
-                  fontWeight: "500",
-                }}
-                selectable
-              >
-                Pages to read: {calculatePagesRead(Number(endingPage))}
-              </Text>
-            )}
+          !isNaN(Number(endingPage)) &&
+          Number(endingPage) > 0 ? (
+            <Text
+              style={{
+                fontSize: 14,
+                color: TextColors.secondary,
+                fontWeight: "500",
+                fontVariant: ["tabular-nums"],
+              }}
+              selectable
+            >
+              Pages to read: {calculatePagesRead(Number(endingPage))}
+            </Text>
+          ) : null}
         </View>
-      )}
+      ) : null}
+    </>
+  );
 
-      {/* Ending Page Input */}
-      <View style={{ gap: 8 }}>
-        <Text
-          style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}
-        >
-          Ending Page *
-        </Text>
-        <TextInput
-          style={{
-            height: 50,
-            borderWidth: 1.5,
-            borderColor: validationErrors.endingPage
-              ? Feedback.error.border
-              : Border.default,
-            borderRadius: 12,
-            borderCurve: "continuous",
-            paddingHorizontal: 16,
-            fontSize: 16,
-            backgroundColor: Background.surface,
-            color: TextColors.primary,
-          }}
-          value={endingPage}
-          onChangeText={setEndingPage}
-          keyboardType="numeric"
-          placeholder="Page where you stopped reading"
-          placeholderTextColor={TextColors.tertiary}
-          accessibilityLabel="Ending page"
-          accessibilityHint="Enter the page number where you stopped reading"
-          accessibilityRole="spinbutton"
-        />
-        {validationErrors.endingPage && (
-          <Text
-            style={{
-              fontSize: 14,
-              marginTop: -4,
-              marginLeft: 4,
-              color: Feedback.error.text,
-            }}
-            selectable
-            accessibilityRole="alert"
-            accessibilityLiveRegion="polite"
-          >
-            {validationErrors.endingPage}
-          </Text>
-        )}
-      </View>
-
-      {/* Session Date */}
-      <DatePicker
-        value={sessionDate}
-        onChange={setSessionDate}
-        label="Reading Date *"
-        maximumDate={new Date()}
-        error={validationErrors.sessionDate}
-        accessibilityHint="Select the date when this reading session occurred"
+  const endingPageField = (
+    <View style={{ gap: 8 }}>
+      <Text
+        style={{ fontSize: 15, fontWeight: "600", color: TextColors.primary }}
+      >
+        Ending Page *
+      </Text>
+      <TextInput
+        style={{
+          height: 50,
+          borderWidth: 1.5,
+          borderColor: validationErrors.endingPage
+            ? Feedback.error.border
+            : Border.default,
+          borderRadius: 12,
+          borderCurve: "continuous",
+          paddingHorizontal: 16,
+          fontSize: 16,
+          backgroundColor: Background.surface,
+          color: TextColors.primary,
+        }}
+        value={endingPage}
+        onChangeText={setEndingPage}
+        keyboardType="numeric"
+        placeholder="Page where you stopped reading"
+        placeholderTextColor={TextColors.tertiary}
+        accessibilityLabel="Ending page"
+        accessibilityHint="Enter the page number where you stopped reading"
+        accessibilityRole="spinbutton"
       />
-
-      {/* Duration Input */}
-      <View style={{ gap: 8 }}>
-        <Text
-          style={{ fontSize: 16, fontWeight: "600", color: TextColors.primary }}
-        >
-          Duration (optional)
-        </Text>
-        <TextInput
-          style={{
-            height: 50,
-            borderWidth: 1.5,
-            borderColor: validationErrors.duration
-              ? Feedback.error.border
-              : Border.default,
-            borderRadius: 12,
-            borderCurve: "continuous",
-            paddingHorizontal: 16,
-            fontSize: 16,
-            backgroundColor: Background.surface,
-            color: TextColors.primary,
-          }}
-          value={duration}
-          onChangeText={setDuration}
-          keyboardType="numeric"
-          placeholder="Minutes, e.g., 45"
-          placeholderTextColor={TextColors.tertiary}
-          accessibilityLabel="Duration in minutes"
-          accessibilityHint="Optional: Enter session duration in minutes"
-          accessibilityRole="spinbutton"
-        />
+      {validationErrors.endingPage ? (
         <Text
           style={{
             fontSize: 14,
-            marginTop: -4,
-            marginLeft: 4,
-            color: TextColors.secondary,
+            color: Feedback.error.text,
           }}
           selectable
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
         >
-          Leave empty if not tracked
+          {validationErrors.endingPage}
         </Text>
-        {validationErrors.duration && (
-          <Text
-            style={{
-              fontSize: 14,
-              marginTop: -4,
-              marginLeft: 4,
-              color: Feedback.error.text,
-            }}
-            selectable
-            accessibilityRole="alert"
-            accessibilityLiveRegion="polite"
-          >
-            {validationErrors.duration}
-          </Text>
-        )}
-      </View>
+      ) : null}
+    </View>
+  );
 
-      {/* Success Message */}
-      {successMessage && (
+  const durationField = (
+    <View style={{ gap: 8 }}>
+      <Text
+        style={{ fontSize: 15, fontWeight: "600", color: TextColors.primary }}
+      >
+        Duration (optional)
+      </Text>
+      <TextInput
+        style={{
+          height: 50,
+          borderWidth: 1.5,
+          borderColor: validationErrors.duration
+            ? Feedback.error.border
+            : Border.default,
+          borderRadius: 12,
+          borderCurve: "continuous",
+          paddingHorizontal: 16,
+          fontSize: 16,
+          backgroundColor: Background.surface,
+          color: TextColors.primary,
+        }}
+        value={duration}
+        onChangeText={setDuration}
+        keyboardType="numeric"
+        placeholder="Minutes, e.g., 45"
+        placeholderTextColor={TextColors.tertiary}
+        accessibilityLabel="Duration in minutes"
+        accessibilityHint="Optional: Enter session duration in minutes"
+        accessibilityRole="spinbutton"
+      />
+      <Text style={{ fontSize: 13, color: TextColors.secondary }} selectable>
+        Leave empty if not tracked
+      </Text>
+      {validationErrors.duration ? (
+        <Text
+          style={{
+            fontSize: 14,
+            color: Feedback.error.text,
+          }}
+          selectable
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          {validationErrors.duration}
+        </Text>
+      ) : null}
+    </View>
+  );
+
+  const feedbackMessages = (
+    <>
+      {successMessage ? (
         <View
           style={{
             padding: 16,
             backgroundColor: Feedback.success.background,
             borderRadius: 12,
+            borderCurve: "continuous",
             borderWidth: 1,
             borderColor: Feedback.success.border,
-            borderCurve: "continuous",
           }}
         >
           <Text
             style={{
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: "600",
-              textAlign: "center",
               color: Feedback.success.text,
             }}
             selectable
@@ -492,25 +462,23 @@ export default function LogSessionScreen() {
             {successMessage}
           </Text>
         </View>
-      )}
+      ) : null}
 
-      {/* Error Message */}
-      {errorMessage && (
+      {errorMessage ? (
         <View
           style={{
             padding: 16,
             backgroundColor: Feedback.error.background,
             borderRadius: 12,
+            borderCurve: "continuous",
             borderWidth: 1,
             borderColor: Feedback.error.border,
-            borderCurve: "continuous",
           }}
         >
           <Text
             style={{
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: "600",
-              textAlign: "center",
               color: Feedback.error.text,
             }}
             selectable
@@ -520,50 +488,209 @@ export default function LogSessionScreen() {
             {errorMessage}
           </Text>
         </View>
-      )}
+      ) : null}
+    </>
+  );
 
-      {/* Submit Button */}
-      <Pressable
-        onPress={handleSubmit}
-        disabled={!isFormValid() || createSession.isPending}
-        style={({ pressed }) => ({
-          backgroundColor:
-            !isFormValid() || createSession.isPending
-              ? Interactive.primary.disabled
-              : pressed
-                ? Interactive.primary.pressed
-                : Interactive.primary.default,
-          paddingVertical: 16,
-          paddingHorizontal: 24,
-          borderRadius: 12,
+  const submitButton = (
+    <Pressable
+      onPress={handleSubmit}
+      disabled={submitDisabled}
+      style={({ pressed }) => ({
+        backgroundColor: submitDisabled
+          ? Interactive.primary.disabled
+          : pressed
+            ? Interactive.primary.pressed
+            : Interactive.primary.default,
+        paddingVertical: 15,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+        borderCurve: "continuous",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: 52,
+        flex: isSplitLayout ? undefined : 1,
+        minWidth: isSplitLayout ? 260 : undefined,
+        opacity: submitDisabled ? 0.7 : 1,
+      })}
+      accessibilityRole="button"
+      accessibilityLabel="Log session"
+      accessibilityHint="Submit the reading session"
+      accessibilityState={{ disabled: submitDisabled }}
+    >
+      {createSession.isPending ? (
+        <ActivityIndicator size="small" color={Interactive.primary.text} />
+      ) : (
+        <Text
+          style={{
+            color: Interactive.primary.text,
+            fontSize: 16,
+            fontWeight: "600",
+          }}
+        >
+          Log Session
+        </Text>
+      )}
+    </Pressable>
+  );
+
+  const contextPanel = (
+    <View style={{ flex: 1, gap: 20 }}>
+      <LastReadingSessionCard />
+
+      <View
+        style={{
+          backgroundColor: Background.surface,
+          borderWidth: 1,
+          borderColor: Border.default,
+          borderRadius: 14,
           borderCurve: "continuous",
-          alignItems: "center",
-          justifyContent: "center",
-          marginTop: 12,
-          minHeight: 56,
-          opacity: !isFormValid() || createSession.isPending ? 0.7 : 1,
-        })}
-        accessibilityRole="button"
-        accessibilityLabel="Log session"
-        accessibilityHint="Submit the reading session"
-        accessibilityState={{
-          disabled: !isFormValid() || createSession.isPending,
+          padding: 18,
+          gap: 12,
         }}
       >
-        {createSession.isPending ? (
-          <ActivityIndicator size="small" color={Interactive.primary.text} />
+        <SectionHeading title="Session preview" />
+        {selectedBookId && bookDetails ? (
+          <View style={{ gap: 10 }}>
+            <View style={{ gap: 2 }}>
+              <Text style={{ fontSize: 12, color: TextColors.tertiary }}>
+                Book
+              </Text>
+              <Text
+                selectable
+                numberOfLines={2}
+                style={{
+                  fontSize: 15,
+                  fontWeight: "600",
+                  color: TextColors.primary,
+                }}
+              >
+                {bookDetails.book.title}
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 24 }}>
+              <View style={{ gap: 2 }}>
+                <Text style={{ fontSize: 12, color: TextColors.tertiary }}>
+                  Last page
+                </Text>
+                <Text
+                  selectable
+                  style={{
+                    fontSize: 15,
+                    fontWeight: "600",
+                    color: TextColors.primary,
+                    fontVariant: ["tabular-nums"],
+                  }}
+                >
+                  {lastEnding}
+                  {totalPages ? ` / ${totalPages}` : ""}
+                </Text>
+              </View>
+
+              <View style={{ gap: 2 }}>
+                <Text style={{ fontSize: 12, color: TextColors.tertiary }}>
+                  Pages this session
+                </Text>
+                <Text
+                  selectable
+                  style={{
+                    fontSize: 15,
+                    fontWeight: "600",
+                    color: TextColors.primary,
+                    fontVariant: ["tabular-nums"],
+                  }}
+                >
+                  {endingPage && !isNaN(Number(endingPage))
+                    ? calculatePagesRead(Number(endingPage))
+                    : "—"}
+                </Text>
+              </View>
+            </View>
+
+            <Text
+              style={{
+                fontSize: 13,
+                lineHeight: 19,
+                color: TextColors.secondary,
+              }}
+            >
+              Pages are calculated from the ending page minus your last recorded
+              page in this cycle.
+            </Text>
+          </View>
         ) : (
           <Text
             style={{
-              color: Interactive.primary.text,
-              fontSize: 17,
-              fontWeight: "600",
+              fontSize: 13,
+              lineHeight: 19,
+              color: TextColors.secondary,
             }}
           >
-            Log Session
+            Select a book to preview how this session will be recorded.
           </Text>
         )}
-      </Pressable>
-    </ScrollView>
+      </View>
+    </View>
+  );
+
+  return (
+    <PageScroll gap={28}>
+      <PageHeader
+        eyebrow="Reading log"
+        title="Log a session"
+        subtitle="Track your reading progress by logging completed sessions for books in your wish list or currently reading."
+      />
+
+      <View
+        style={{
+          flexDirection: isSplitLayout ? "row" : "column",
+          alignItems: "flex-start",
+          gap: 28,
+        }}
+      >
+        <View
+          style={{
+            flex: isSplitLayout ? 1.4 : undefined,
+            width: isSplitLayout ? undefined : "100%",
+            gap: 20,
+          }}
+        >
+          {isSplitLayout ? null : <LastReadingSessionCard />}
+
+          <FormSection
+            title="Session"
+            caption="One session per reading sitting."
+            bordered={isSplitLayout}
+          >
+            {bookSelector}
+            {bookContextLine}
+            {endingPageField}
+            <DatePicker
+              value={sessionDate}
+              onChange={setSessionDate}
+              label="Reading Date *"
+              maximumDate={new Date()}
+              error={validationErrors.sessionDate}
+              accessibilityHint="Select the date when this reading session occurred"
+            />
+            {durationField}
+          </FormSection>
+
+          {feedbackMessages}
+
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: isSplitLayout ? "flex-end" : "flex-start",
+            }}
+          >
+            {submitButton}
+          </View>
+        </View>
+
+        {isSplitLayout ? contextPanel : null}
+      </View>
+    </PageScroll>
   );
 }

@@ -9,6 +9,8 @@
  * - Form state managed with useState
  * - Server state (mutation) with React Query
  * - Initial status can be selected (defaults to WISH_LIST)
+ * - Wide screens split the form into identity/classification and reading
+ *   details columns; compact screens keep a single ordered column
  *
  * Features:
  * - Input authors with inline suggestions (no dropdowns)
@@ -33,22 +35,22 @@
  */
 
 import { useState, useMemo, useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useCreateBook } from "@/hooks/useBooks";
 import { useAuthors } from "@/hooks/useAuthors";
 import { useCountries } from "@/hooks/useCountries";
 import { useBookTypes } from "@/hooks/useBookTypes";
 import { useGenres } from "@/hooks/useGenres";
+import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { FormInput } from "@/components/forms/formInput";
 import { InputWithSuggestions } from "@/components/forms/inputWithSuggestions";
 import { CustomDropdown } from "@/components/forms/customDropdown";
+import {
+  FormSection,
+  PageHeader,
+  PageScroll,
+} from "@/components/ui/pageLayout";
 import { showToast } from "@/components/ui/toast";
 import { BookStatus } from "@/types/book";
 import { BOOK_STATUS_LABELS } from "@/constants/bookStatus";
@@ -60,11 +62,13 @@ import {
 import {
   Interactive,
   Background,
+  Border,
   Text as TextColors,
 } from "@/constants/colors";
 
 export default function CreateBookScreen() {
   const router = useRouter();
+  const { isSplitLayout } = useResponsiveLayout();
   const params = useLocalSearchParams<{
     prefillTitle?: string;
     prefillAuthor?: string;
@@ -275,32 +279,8 @@ export default function CreateBookScreen() {
     );
   }
 
-  return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={{
-        flex: 1,
-        backgroundColor: Background.primary,
-      }}
-      contentContainerStyle={{
-        padding: 16,
-        gap: 20,
-      }}
-    >
-      {/* Header */}
-      <View style={{ gap: 4, marginBottom: 8 }}>
-        <Text
-          style={{ fontSize: 28, fontWeight: "700", color: TextColors.primary }}
-        >
-          Add New Book
-        </Text>
-        <Text
-          style={{ fontSize: 14, color: TextColors.secondary, lineHeight: 20 }}
-        >
-          Expand your library by adding a new book. Select from existing authors
-          or create new ones.
-        </Text>
-      </View>
+  const identityFields = (
+    <>
       <FormInput
         label="Title *"
         value={title}
@@ -324,7 +304,7 @@ export default function CreateBookScreen() {
         accessibilityHint="Type an author name. Select from suggestions or create new."
       />
 
-      {isCreatingNewAuthor && authorName.trim() && (
+      {isCreatingNewAuthor && authorName.trim() ? (
         <InputWithSuggestions
           label="Author Nationality (Optional)"
           value={countryName}
@@ -335,8 +315,12 @@ export default function CreateBookScreen() {
           accessibilityLabel="Author nationality, optional"
           accessibilityHint="Only shown when creating a new author. Type a country name or select from suggestions."
         />
-      )}
+      ) : null}
+    </>
+  );
 
+  const classificationFields = (
+    <>
       <CustomDropdown
         label="Initial Status"
         value={status}
@@ -362,34 +346,6 @@ export default function CreateBookScreen() {
         accessibilityLabel="Initial book status"
         accessibilityHint="Select the starting status for this book. Defaults to Wish List"
       />
-
-      {requiresReviewFields && (
-        <>
-          <FormInput
-            label="Score *"
-            value={score}
-            onChangeText={setScore}
-            placeholder="Enter score (0 to 10, step 0.5)"
-            keyboardType="decimal-pad"
-            error={errors.score}
-            accessibilityLabel="Book score, required for completed or abandoned"
-            accessibilityHint="Enter a score from 0 to 10 in increments of 0.5"
-          />
-
-          <FormInput
-            label="Comment"
-            value={comment}
-            onChangeText={setComment}
-            placeholder="Write an optional comment"
-            error={errors.comment}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-            accessibilityLabel="Book comment, optional"
-            accessibilityHint="Write an optional review comment"
-          />
-        </>
-      )}
 
       <FormInput
         label="ISBN"
@@ -422,96 +378,230 @@ export default function CreateBookScreen() {
         accessibilityLabel="Genres, optional"
         accessibilityHint="Select from suggestions or enter one or more genres separated by commas"
       />
+    </>
+  );
+
+  const readingDetailsFields = (
+    <>
+      <View style={{ gap: 6 }}>
+        <FormInput
+          label="Synopsis"
+          value={synopsis}
+          onChangeText={setSynopsis}
+          placeholder="Short description of the book"
+          error={errors.synopsis}
+          multiline
+          numberOfLines={5}
+          textAlignVertical="top"
+          maxLength={4000}
+          accessibilityLabel="Synopsis, optional"
+          accessibilityHint="Enter a short synopsis, up to 4000 characters"
+        />
+        <Text
+          style={{
+            fontSize: 13,
+            color: TextColors.tertiary,
+            textAlign: "right",
+            fontVariant: ["tabular-nums"],
+          }}
+        >
+          {synopsis.length}/4000
+        </Text>
+      </View>
+
+      <View
+        style={{
+          flexDirection: isSplitLayout ? "row" : "column",
+          gap: 16,
+        }}
+      >
+        <View style={{ flex: 1 }}>
+          <FormInput
+            label="Total Pages"
+            value={totalPages}
+            onChangeText={setTotalPages}
+            placeholder="Enter total pages (optional)"
+            keyboardType="numeric"
+            error={errors.totalPages}
+            accessibilityLabel="Total pages, optional"
+            accessibilityHint="Enter the total number of pages in the book"
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <FormInput
+            label="Publication Year"
+            value={publicationYear}
+            onChangeText={setPublicationYear}
+            placeholder="e.g. 2020 (optional)"
+            keyboardType="numeric"
+            error={errors.publicationYear}
+            accessibilityLabel="Publication year, optional"
+            accessibilityHint="Enter the year the book was published"
+          />
+        </View>
+      </View>
+    </>
+  );
+
+  const reviewFields = (
+    <>
+      <FormInput
+        label="Score *"
+        value={score}
+        onChangeText={setScore}
+        placeholder="Enter score (0 to 10, step 0.5)"
+        keyboardType="decimal-pad"
+        error={errors.score}
+        accessibilityLabel="Book score, required for completed or abandoned"
+        accessibilityHint="Enter a score from 0 to 10 in increments of 0.5"
+      />
 
       <FormInput
-        label="Synopsis"
-        value={synopsis}
-        onChangeText={setSynopsis}
-        placeholder="Short description of the book"
-        error={errors.synopsis}
+        label="Comment"
+        value={comment}
+        onChangeText={setComment}
+        placeholder="Write an optional comment"
+        error={errors.comment}
         multiline
         numberOfLines={4}
         textAlignVertical="top"
-        maxLength={4000}
-        accessibilityLabel="Synopsis, optional"
-        accessibilityHint="Enter a short synopsis, up to 4000 characters"
+        accessibilityLabel="Book comment, optional"
+        accessibilityHint="Write an optional review comment"
+      />
+    </>
+  );
+
+  const submitDisabled = !isFormValid() || isPending;
+
+  return (
+    <PageScroll gap={28}>
+      <PageHeader
+        eyebrow="Library"
+        title="Add a book"
+        subtitle="Expand your library by adding a new book. Select from existing authors or create new ones."
       />
 
-      <Text
+      {isSplitLayout ? (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "flex-start",
+            gap: 24,
+          }}
+        >
+          <View style={{ flex: 1, gap: 24 }}>
+            <FormSection
+              title="Book identity"
+              caption="Title and author are required."
+              bordered
+            >
+              {identityFields}
+            </FormSection>
+
+            <FormSection
+              title="Classification"
+              caption="Where the book sits in your library."
+              bordered
+            >
+              {classificationFields}
+            </FormSection>
+          </View>
+
+          <View style={{ flex: 1, gap: 24 }}>
+            <FormSection
+              title="Reading details"
+              caption="Optional metadata that improves your statistics."
+              bordered
+            >
+              {readingDetailsFields}
+            </FormSection>
+
+            {requiresReviewFields ? (
+              <FormSection
+                title="Review"
+                caption="Required for completed or abandoned books."
+                bordered
+              >
+                {reviewFields}
+              </FormSection>
+            ) : null}
+          </View>
+        </View>
+      ) : (
+        <View style={{ gap: 24 }}>
+          <FormSection title="Book identity">{identityFields}</FormSection>
+          <FormSection title="Classification">
+            {classificationFields}
+          </FormSection>
+          <FormSection title="Reading details">
+            {readingDetailsFields}
+          </FormSection>
+          {requiresReviewFields ? (
+            <FormSection title="Review">{reviewFields}</FormSection>
+          ) : null}
+        </View>
+      )}
+
+      <View
         style={{
-          fontSize: 13,
-          color: TextColors.tertiary,
-          textAlign: "right",
-          marginTop: -12,
+          borderTopWidth: isSplitLayout ? 1 : 0,
+          borderTopColor: Border.default,
+          paddingTop: isSplitLayout ? 20 : 0,
+          flexDirection: "row",
+          justifyContent: isSplitLayout ? "flex-end" : "flex-start",
+          alignItems: "center",
+          gap: 16,
         }}
       >
-        {synopsis.length}/4000
-      </Text>
+        {isSplitLayout ? (
+          <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
+            Title and author are required
+          </Text>
+        ) : null}
 
-      <FormInput
-        label="Total Pages"
-        value={totalPages}
-        onChangeText={setTotalPages}
-        placeholder="Enter total pages (optional)"
-        keyboardType="numeric"
-        error={errors.totalPages}
-        accessibilityLabel="Total pages, optional"
-        accessibilityHint="Enter the total number of pages in the book"
-      />
-
-      <FormInput
-        label="Publication Year"
-        value={publicationYear}
-        onChangeText={setPublicationYear}
-        placeholder="e.g. 2020 (optional)"
-        keyboardType="numeric"
-        error={errors.publicationYear}
-        accessibilityLabel="Publication year, optional"
-        accessibilityHint="Enter the year the book was published"
-      />
-
-      <Pressable
-        onPress={handleSubmit}
-        disabled={!isFormValid() || isPending}
-        accessibilityRole="button"
-        accessibilityLabel="Create book"
-        accessibilityHint="Creates a new book with the entered information"
-        accessibilityState={{
-          disabled: !isFormValid() || isPending,
-          busy: isPending,
-        }}
-        style={({ pressed }) => ({
-          backgroundColor:
-            !isFormValid() || isPending
+        <Pressable
+          onPress={handleSubmit}
+          disabled={submitDisabled}
+          accessibilityRole="button"
+          accessibilityLabel="Create book"
+          accessibilityHint="Creates a new book with the entered information"
+          accessibilityState={{
+            disabled: submitDisabled,
+            busy: isPending,
+          }}
+          style={({ pressed }) => ({
+            backgroundColor: submitDisabled
               ? Interactive.primary.disabled
               : pressed
                 ? Interactive.primary.pressed
                 : Interactive.primary.default,
-          paddingVertical: 16,
-          paddingHorizontal: 24,
-          borderRadius: 12,
-          borderCurve: "continuous",
-          alignItems: "center",
-          justifyContent: "center",
-          marginTop: 12,
-          minHeight: 56,
-          opacity: !isFormValid() || isPending ? 0.7 : 1,
-        })}
-      >
-        {isPending ? (
-          <ActivityIndicator size="small" color={Interactive.primary.text} />
-        ) : (
-          <Text
-            style={{
-              color: Interactive.primary.text,
-              fontSize: 17,
-              fontWeight: "600",
-            }}
-          >
-            Create Book
-          </Text>
-        )}
-      </Pressable>
-    </ScrollView>
+            paddingVertical: 14,
+            paddingHorizontal: 24,
+            borderRadius: 12,
+            borderCurve: "continuous",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: 52,
+            minWidth: isSplitLayout ? 260 : undefined,
+            flex: isSplitLayout ? undefined : 1,
+            opacity: submitDisabled ? 0.7 : 1,
+          })}
+        >
+          {isPending ? (
+            <ActivityIndicator size="small" color={Interactive.primary.text} />
+          ) : (
+            <Text
+              style={{
+                color: Interactive.primary.text,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              Create Book
+            </Text>
+          )}
+        </Pressable>
+      </View>
+    </PageScroll>
   );
 }
