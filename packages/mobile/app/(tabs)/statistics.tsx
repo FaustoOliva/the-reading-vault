@@ -1,200 +1,164 @@
-import {
-  ScrollView,
-  View,
-  Text,
-  ActivityIndicator,
-  RefreshControl,
-} from "react-native";
-import { useGlobalKPIs } from "@/hooks/useKPIs";
+/**
+ * Statistics Screen
+ * Annual reading view: one scrolling page per year with headline figures,
+ * highlights, the finished-cycle comparison and the share card.
+ *
+ * Rules:
+ * - A book counts when it reaches review (PENDING_SCORE) during the year
+ * - Figures are cycle-scoped (DOMAIN.md §4.2, §5.1, §5.3)
+ * - Years without finishes are never selectable
+ * - Missing session data is shown as "No session data", never as zero days
+ * - The wide canvas is used as an annual report: full-width KPI row,
+ *   highlight row and a comparison table that grows with the screen
+ */
+
+import { useMemo } from "react";
+import { ActivityIndicator, RefreshControl, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import {
   Background,
-  Text as TextColors,
-  Interactive,
-  Feedback,
   Border,
+  Feedback,
+  Interactive,
+  Text as TextColors,
 } from "@/constants/colors";
+import { ActionButton } from "@/components/ui/actionButton";
+import {
+  PageHeader,
+  PageScroll,
+  SectionHeading,
+} from "@/components/ui/pageLayout";
+import { AnnualComparisonTable } from "@/components/stats/annualComparisonTable";
+import { AnnualHighlights } from "@/components/stats/annualHighlights";
+import { ReadingActivityChart } from "@/components/stats/readingActivityChart";
+import {
+  HeadlineStats,
+  type HeadlineStat,
+} from "@/components/stats/headlineStats";
+import { YearSelector } from "@/components/stats/yearSelector";
+import { YearCard } from "@/components/cards/yearCard";
+import { useAnnualReadingSummary } from "@/hooks/useAnnualReadingSummary";
+import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import { useSelectedYear } from "@/hooks/useSelectedYear";
 
-type InsightCardProps = {
-  title: string;
-  primary: string;
-  secondary?: string;
-};
+const integerFormatter = new Intl.NumberFormat(undefined, {
+  maximumFractionDigits: 0,
+});
 
-function formatNumber(value: number) {
-  return value.toLocaleString();
-}
-
-function formatPercentFromRatio(value: number) {
-  return `${Math.round(value * 100)}%`;
-}
-
-function MetricCard({
-  label,
-  value,
-  suffix,
-}: {
-  label: string;
-  value: string;
-  suffix?: string;
-}) {
-  return (
-    <View
-      style={{
-        width: "48%",
-        backgroundColor: Background.surface,
-        borderWidth: 1,
-        borderColor: Border.default,
-        borderRadius: 14,
-        borderCurve: "continuous",
-        padding: 14,
-        gap: 6,
-      }}
-    >
-      <Text
-        selectable
-        style={{
-          fontSize: 26,
-          lineHeight: 30,
-          fontWeight: "800",
-          color: TextColors.primary,
-          fontVariant: ["tabular-nums"],
-        }}
-      >
-        {value}
-        {suffix ? (
-          <Text style={{ fontSize: 14, color: TextColors.secondary }}>
-            {" "}
-            {suffix}
-          </Text>
-        ) : null}
-      </Text>
-      <Text
-        style={{
-          fontSize: 12,
-          color: TextColors.tertiary,
-          textTransform: "uppercase",
-          letterSpacing: 0.6,
-        }}
-      >
-        {label}
-      </Text>
-    </View>
-  );
-}
-
-function InsightCard({ title, primary, secondary }: InsightCardProps) {
-  return (
-    <View
-      style={{
-        backgroundColor: Background.surface,
-        borderWidth: 1,
-        borderColor: Border.default,
-        borderRadius: 14,
-        borderCurve: "continuous",
-        padding: 14,
-        gap: 6,
-      }}
-    >
-      <Text
-        style={{
-          fontSize: 12,
-          color: TextColors.tertiary,
-          textTransform: "uppercase",
-          letterSpacing: 0.6,
-        }}
-      >
-        {title}
-      </Text>
-      <Text
-        selectable
-        style={{ fontSize: 18, fontWeight: "700", color: TextColors.primary }}
-      >
-        {primary}
-      </Text>
-      {secondary ? (
-        <Text selectable style={{ fontSize: 13, color: TextColors.secondary }}>
-          {secondary}
-        </Text>
-      ) : null}
-    </View>
-  );
-}
-
-function SectionTitle({ title, caption }: { title: string; caption?: string }) {
-  return (
-    <View style={{ gap: 4 }}>
-      <Text
-        style={{ fontSize: 18, fontWeight: "700", color: TextColors.primary }}
-      >
-        {title}
-      </Text>
-      {caption ? (
-        <Text style={{ fontSize: 13, color: TextColors.secondary }}>
-          {caption}
-        </Text>
-      ) : null}
-    </View>
-  );
-}
+const decimalFormatter = new Intl.NumberFormat(undefined, {
+  maximumFractionDigits: 1,
+});
 
 export default function StatisticsScreen() {
-  const {
-    data: response,
-    isLoading,
-    error,
-    refetch,
-    isRefetching,
-  } = useGlobalKPIs();
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useSelectedYear(currentYear);
+  const { data, isLoading, error, refetch, isRefetching } =
+    useAnnualReadingSummary(selectedYear);
+  const { contentWidth, isSplitLayout, isUltraWide } = useResponsiveLayout();
+  const { push } = useRouter();
 
-  const kpis = response?.kpis;
+  const comparisonWide = contentWidth >= 820;
 
-  if (isLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: Background.primary,
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 16,
-        }}
-      >
-        <ActivityIndicator size="large" color={Interactive.primary.default} />
-        <Text
-          style={{ marginTop: 12, fontSize: 15, color: TextColors.secondary }}
-        >
-          Loading all-time statistics...
-        </Text>
-      </View>
+  const years = useMemo(() => {
+    const uniqueYears = new Set<number>(data?.available_years ?? []);
+    uniqueYears.add(currentYear);
+
+    return Array.from(uniqueYears).sort((left, right) => right - left);
+  }, [currentYear, data?.available_years]);
+
+  const otherYearWithData = useMemo(() => {
+    const candidates = (data?.available_years ?? []).filter(
+      (year) => year !== selectedYear,
     );
-  }
 
-  if (error) {
-    return (
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={{ backgroundColor: Background.primary }}
-        contentContainerStyle={{ padding: 16 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            tintColor={Interactive.primary.default}
+    return candidates.length > 0 ? candidates[0] : null;
+  }, [data?.available_years, selectedYear]);
+
+  const hasFinishes = (data?.books_finished ?? 0) > 0;
+
+  const monthlyActivity = data?.monthly_activity ?? [];
+  const activityTotalPages = monthlyActivity.reduce(
+    (total, month) => total + Math.max(0, month.pages_read),
+    0,
+  );
+
+  const headlineStats: HeadlineStat[] = data
+    ? [
+        {
+          label: "Books finished",
+          value: integerFormatter.format(data.books_finished),
+        },
+        {
+          label: "Pages read",
+          value: integerFormatter.format(data.pages_read),
+        },
+        {
+          label: "Reading days",
+          value: integerFormatter.format(data.reading_days),
+        },
+        {
+          label: "Average pages per day",
+          value:
+            data.average_pages_per_day === null
+              ? "—"
+              : decimalFormatter.format(data.average_pages_per_day),
+        },
+      ]
+    : [];
+
+  const summaryLine = data
+    ? `${integerFormatter.format(data.books_finished)} ${
+        data.books_finished === 1 ? "book" : "books"
+      } finished in ${selectedYear}`
+    : "Loading your reading year...";
+
+  return (
+    <PageScroll
+      gap={isSplitLayout ? 32 : 24}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefetching}
+          onRefresh={refetch}
+          tintColor={Interactive.primary.default}
+        />
+      }
+    >
+      <PageHeader
+        eyebrow="Annual review"
+        title="Reading year"
+        subtitle={summaryLine}
+        actions={
+          <YearSelector
+            years={years}
+            selectedYear={selectedYear}
+            onSelectYear={setSelectedYear}
           />
         }
-      >
+      />
+
+      {isLoading && !data ? (
+        <View style={{ paddingVertical: 48, alignItems: "center", gap: 12 }}>
+          <ActivityIndicator size="large" color={Interactive.primary.default} />
+          <Text style={{ fontSize: 14, color: TextColors.secondary }}>
+            Loading {selectedYear} statistics...
+          </Text>
+        </View>
+      ) : null}
+
+      {error ? (
         <View
           style={{
-            padding: 16,
+            padding: 18,
             backgroundColor: Feedback.error.background,
             borderRadius: 12,
             borderWidth: 1,
             borderColor: Feedback.error.border,
-            gap: 8,
             borderCurve: "continuous",
+            gap: 10,
           }}
         >
           <Text
+            accessibilityRole="alert"
             style={{
               fontSize: 16,
               fontWeight: "700",
@@ -206,271 +170,115 @@ export default function StatisticsScreen() {
           <Text selectable style={{ fontSize: 14, color: Feedback.error.text }}>
             {error.message || "Pull to refresh and try again."}
           </Text>
-        </View>
-      </ScrollView>
-    );
-  }
-
-  if (!kpis) {
-    return (
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={{ backgroundColor: Background.primary }}
-        contentContainerStyle={{ padding: 16 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            tintColor={Interactive.primary.default}
+          <ActionButton
+            label="Try again"
+            variant="secondary"
+            onPress={() => refetch()}
           />
-        }
-      >
+        </View>
+      ) : null}
+
+      {data && !hasFinishes ? (
         <View
           style={{
-            padding: 16,
-            backgroundColor: Feedback.info.background,
-            borderRadius: 12,
+            padding: 24,
+            backgroundColor: Background.surface,
+            borderRadius: 14,
             borderWidth: 1,
-            borderColor: Feedback.info.border,
-            gap: 8,
+            borderColor: Border.default,
             borderCurve: "continuous",
+            gap: 12,
+            maxWidth: isSplitLayout ? 720 : undefined,
           }}
         >
           <Text
+            accessibilityRole="header"
             style={{
-              fontSize: 16,
+              fontSize: 20,
               fontWeight: "700",
-              color: Feedback.info.text,
+              color: TextColors.primary,
             }}
           >
-            No statistics available
+            No books finished in {selectedYear} yet.
           </Text>
-          <Text style={{ fontSize: 14, color: Feedback.info.text }}>
-            Complete books to unlock all-time insights.
+          <Text
+            style={{
+              fontSize: 14,
+              lineHeight: 20,
+              color: TextColors.secondary,
+            }}
+          >
+            A book counts here once it reaches review after you finish it.
           </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+            <ActionButton
+              label="Log a session"
+              onPress={() => push("/log-session")}
+            />
+            {otherYearWithData !== null ? (
+              <ActionButton
+                label={`View ${otherYearWithData} instead`}
+                variant="secondary"
+                onPress={() => setSelectedYear(otherYearWithData)}
+              />
+            ) : null}
+          </View>
         </View>
-      </ScrollView>
-    );
-  }
+      ) : null}
 
-  const completionRate =
-    kpis.total_books > 0
-      ? Math.round((kpis.books_completed / kpis.total_books) * 100)
-      : 0;
+      {data && hasFinishes ? (
+        <>
+          <View style={{ gap: 14 }}>
+            <SectionHeading
+              title="Headline stats"
+              caption="Every figure is scoped to the books you finished this year."
+            />
+            <HeadlineStats
+              stats={headlineStats}
+              columns={isUltraWide ? 4 : 2}
+              emphasis={isUltraWide ? "large" : "regular"}
+            />
+          </View>
 
-  const insights = kpis.library_insights;
+          <View style={{ gap: 14 }}>
+            <SectionHeading
+              title="Highlights"
+              caption="The extremes of the year, cycle by cycle."
+            />
+            <AnnualHighlights
+              highlights={data.highlights}
+              columns={isSplitLayout ? 3 : 1}
+            />
+          </View>
 
-  return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: Background.primary }}
-      contentContainerStyle={{ padding: 16, gap: 18, paddingBottom: 28 }}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefetching}
-          onRefresh={refetch}
-          tintColor={Interactive.primary.default}
-        />
-      }
-    >
-      <View style={{ gap: 4 }}>
-        <Text
-          style={{ fontSize: 30, fontWeight: "800", color: TextColors.primary }}
-        >
-          Statistics
-        </Text>
-        <Text style={{ fontSize: 14, color: TextColors.secondary }}>
-          All-time dashboard based on completed books.
-        </Text>
-      </View>
+          <View style={{ gap: 14 }}>
+            <SectionHeading
+              title={`Finished in ${selectedYear}`}
+              caption="One row per finished reading cycle, most recent finish first. Bar length compares pages per day."
+            />
+            <AnnualComparisonTable
+              cycles={data.cycles}
+              isWide={comparisonWide}
+            />
+          </View>
+        </>
+      ) : null}
 
-      <SectionTitle title="Library Overview" caption="Overall library state" />
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          gap: 10,
-          justifyContent: "space-between",
-        }}
-      >
-        <MetricCard
-          label="Total Books"
-          value={formatNumber(kpis.total_books)}
-        />
-        <MetricCard
-          label="Completed Books"
-          value={formatNumber(kpis.books_completed)}
-        />
-        <MetricCard
-          label="Abandoned Books"
-          value={formatNumber(kpis.books_abandoned)}
-        />
-        <MetricCard
-          label="Completion Rate"
-          value={formatNumber(completionRate)}
-          suffix="%"
-        />
-      </View>
+      {data && activityTotalPages > 0 ? (
+        <View style={{ gap: 14 }}>
+          <SectionHeading
+            title="Reading activity"
+            caption={`Pages read by month in ${selectedYear} — every book, including ones still in progress or abandoned. Each month is its own total, so the line can rise or fall. Counts, highlights and the comparison above use finished cycles only.`}
+          />
+          <ReadingActivityChart year={data.year} months={monthlyActivity} />
+        </View>
+      ) : null}
 
-      <SectionTitle title="Reading Habits" caption="How you read over time" />
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          gap: 10,
-          justifyContent: "space-between",
-        }}
-      >
-        <MetricCard
-          label="Total Pages Read"
-          value={formatNumber(kpis.total_pages_read)}
-        />
-        <MetricCard
-          label="Avg Pages per Session"
-          value={kpis.average_pages_per_session.toFixed(1)}
-        />
-      </View>
-
-      <SectionTitle
-        title="Reading Performance"
-        caption="Speed and consistency"
-      />
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          gap: 10,
-          justifyContent: "space-between",
-        }}
-      >
-        <MetricCard
-          label="Avg Reading Speed"
-          value={kpis.average_pages_per_session.toFixed(1)}
-          suffix="pps"
-        />
-        <MetricCard
-          label="Current Streak"
-          value={formatNumber(kpis.current_streak)}
-          suffix="days"
-        />
-        <MetricCard
-          label="Longest Streak"
-          value={formatNumber(kpis.longest_streak)}
-          suffix="days"
-        />
-        <MetricCard
-          label="Reading Consistency"
-          value={formatPercentFromRatio(kpis.consistency_rate).replace("%", "")}
-          suffix="%"
-        />
-        <MetricCard
-          label="Avg Days to Finish"
-          value={
-            kpis.average_days_to_complete
-              ? formatNumber(kpis.average_days_to_complete)
-              : "-"
-          }
-          suffix={kpis.average_days_to_complete ? "days" : undefined}
-        />
-      </View>
-
-      <SectionTitle
-        title="Library Insights"
-        caption="Highlights from completed books"
-      />
-      <View style={{ gap: 10 }}>
-        <InsightCard
-          title="Most Read Author"
-          primary={
-            insights.most_read_author
-              ? `${insights.most_read_author.author_name}`
-              : "No completed books yet"
-          }
-          secondary={
-            insights.most_read_author
-              ? `${insights.most_read_author.books_completed} books completed`
-              : undefined
-          }
-        />
-        <InsightCard
-          title="Fastest Book"
-          primary={
-            insights.fastest_book
-              ? `${insights.fastest_book.title}`
-              : "No completed books yet"
-          }
-          secondary={
-            insights.fastest_book
-              ? `${insights.fastest_book.total_pages ?? 0} pages in ${insights.fastest_book.days_to_finish} days`
-              : undefined
-          }
-        />
-        <InsightCard
-          title="Slowest Book"
-          primary={
-            insights.slowest_book
-              ? insights.slowest_book.title
-              : "No completed books yet"
-          }
-          secondary={
-            insights.slowest_book
-              ? `${insights.slowest_book.total_pages ?? 0} pages in ${insights.slowest_book.days_to_finish} days`
-              : undefined
-          }
-        />
-        <InsightCard
-          title="Longest Book"
-          primary={
-            insights.longest_book
-              ? insights.longest_book.title
-              : "No completed books yet"
-          }
-          secondary={
-            insights.longest_book
-              ? `${insights.longest_book.total_pages} pages`
-              : undefined
-          }
-        />
-        <InsightCard
-          title="Shortest Book"
-          primary={
-            insights.shortest_book
-              ? insights.shortest_book.title
-              : "No completed books yet"
-          }
-          secondary={
-            insights.shortest_book
-              ? `${insights.shortest_book.total_pages} pages`
-              : undefined
-          }
-        />
-        <InsightCard
-          title="Highest Rated Book"
-          primary={
-            insights.highest_rated_book
-              ? insights.highest_rated_book.title
-              : "No rated completed books"
-          }
-          secondary={
-            insights.highest_rated_book
-              ? `Score ${insights.highest_rated_book.score}`
-              : undefined
-          }
-        />
-        <InsightCard
-          title="Lowest Rated Book"
-          primary={
-            insights.lowest_rated_book
-              ? insights.lowest_rated_book.title
-              : "No rated completed books"
-          }
-          secondary={
-            insights.lowest_rated_book
-              ? `Score ${insights.lowest_rated_book.score}`
-              : undefined
-          }
-        />
-      </View>
-    </ScrollView>
+      {data && hasFinishes ? (
+        <View style={{ maxWidth: isSplitLayout ? 560 : undefined }}>
+          <YearCard key={data.year} summary={data} />
+        </View>
+      ) : null}
+    </PageScroll>
   );
 }
