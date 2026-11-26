@@ -38,9 +38,19 @@ const getGlobalKPIsQuerySchema = z
     },
   );
 
+/**
+ * Validation schema for GetAnnualReadingSummary query parameters
+ */
+const getAnnualSummaryQuerySchema = z
+  .object({
+    year: z.coerce.number().int().min(1000).max(9999).optional(),
+  })
+  .strict();
+
 export class KpiController {
-  constructor(calculateReadingKPIService) {
+  constructor(calculateReadingKPIService, getAnnualReadingSummaryService) {
     this.calculateReadingKPIService = calculateReadingKPIService;
+    this.getAnnualReadingSummaryService = getAnnualReadingSummaryService;
   }
 
   /**
@@ -60,6 +70,26 @@ export class KpiController {
       }
 
       const result = await this.calculateReadingKPIService.execute(filters);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/kpis/annual
+   * Get annual reading statistics for a single year
+   */
+  async getAnnualSummary(req, res, next) {
+    try {
+      const validated = getAnnualSummaryQuerySchema.parse(req.query);
+      const year = validated.year ?? new Date().getFullYear();
+
+      const result = await this.getAnnualReadingSummaryService.execute(year);
 
       res.status(200).json({
         success: true,

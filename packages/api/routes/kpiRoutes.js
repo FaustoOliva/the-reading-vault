@@ -25,5 +25,14 @@ export default function kpiRoutes(getController) {
     getController(KpiController).getGlobalKPIs(req, res, next),
   );
 
+  /**
+   * GET /kpis/annual
+   * Get annual reading statistics (finished cycles of a single year)
+   * Query params: year? (defaults to the current year)
+   */
+  router.get("/kpis/annual", (req, res, next) =>
+    getController(KpiController).getAnnualSummary(req, res, next),
+  );
+
   return router;
 }

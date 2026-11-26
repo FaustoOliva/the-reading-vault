@@ -1,19 +1,34 @@
+/**
+ * Books Library Screen
+ * Primary reading library: search, status filters, sorting and the book list.
+ *
+ * Rules:
+ * - Grouping, sorting and pagination behavior is unchanged
+ * - Wide screens use the extra canvas: a filter rail beside the list
+ * - Compact screens keep the header and filters inside the scrolling list
+ * - Section headers read as a table of contents, not as extra cards
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
+  Pressable,
   RefreshControl,
   ScrollView,
   SectionList,
   Text,
   View,
-  Pressable,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { useBooks } from "@/hooks/useBooks";
+import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { SearchBar } from "@/components/forms/searchBar";
 import { CustomDropdown } from "@/components/forms/customDropdown";
 import { BookListItem } from "@/components/list/bookListItem";
 import { LoadMoreButton } from "@/components/list/loadMoreButton";
 import { SkeletonBookItem } from "@/components/list/skeletonBookItem";
+import { ActionButton } from "@/components/ui/actionButton";
+import { PageContainer, PageHeader } from "@/components/ui/pageLayout";
 import { Book, BookStatus, BooksFilter } from "@/types/book";
 import { BOOK_STATUS_LABELS } from "@/constants/bookStatus";
 import {
@@ -26,6 +41,7 @@ import {
 
 const ITEMS_PER_PAGE = 100;
 const AUTO_LOAD_THRESHOLD = 50;
+const FILTER_RAIL_WIDTH = 300;
 
 type SortOptionValue =
   | "LAST_ACTIVITY"
@@ -147,7 +163,87 @@ function groupBooksByStatus(books: Book[]): BookSection[] {
   }));
 }
 
+function StatusChip({
+  label,
+  isActive,
+  onPress,
+}: {
+  label: string;
+  isActive: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: isActive }}
+      accessibilityLabel={`Filter by ${label}`}
+      style={({ pressed }) => ({
+        minHeight: 36,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: isActive ? Interactive.primary.default : Border.default,
+        backgroundColor: isActive
+          ? Interactive.primary.default
+          : pressed
+            ? Interactive.secondary.pressed
+            : Interactive.secondary.default,
+        justifyContent: "center",
+      })}
+    >
+      <Text
+        style={{
+          fontSize: 13,
+          fontWeight: "600",
+          color: isActive ? Interactive.primary.text : TextColors.primary,
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function LibrarySummary({
+  completedCount,
+  readingCount,
+  totalCount,
+}: {
+  completedCount: number;
+  readingCount: number;
+  totalCount: number;
+}) {
+  return (
+    <View style={{ gap: 6 }}>
+      <Text
+        selectable
+        style={{
+          fontSize: 13,
+          color: TextColors.secondary,
+          fontVariant: ["tabular-nums"],
+        }}
+      >
+        {totalCount} books in view
+      </Text>
+      <Text
+        selectable
+        style={{
+          fontSize: 13,
+          color: TextColors.tertiary,
+          fontVariant: ["tabular-nums"],
+        }}
+      >
+        {completedCount} completed · {readingCount} in progress
+      </Text>
+    </View>
+  );
+}
+
 export default function BooksListScreen() {
+  const router = useRouter();
+  const { isSplitLayout } = useResponsiveLayout();
   const [filters, setFilters] = useState<BooksFilter>({});
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOptionValue>("LAST_ACTIVITY");
@@ -261,24 +357,118 @@ export default function BooksListScreen() {
     refetch();
   };
 
-  const renderFiltersHeader = () => (
-    <View style={{ gap: 12, marginBottom: 8, marginTop: 4 }}>
-      <View style={{ gap: 4 }}>
+  const renderStatusChips = (wrap: boolean) => {
+    const chips = [
+      <StatusChip
+        key="all"
+        label="All"
+        isActive={!filters.status}
+        onPress={() => handleStatusChange(undefined)}
+      />,
+      ...STATUS_GROUP_ORDER.map((status) => (
+        <StatusChip
+          key={status}
+          label={BOOK_STATUS_LABELS[status]}
+          isActive={filters.status === status}
+          onPress={() => handleStatusChange(status)}
+        />
+      )),
+    ];
+
+    if (wrap) {
+      return (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {chips}
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8, paddingRight: 8 }}
+      >
+        {chips}
+      </ScrollView>
+    );
+  };
+
+  const renderSortControl = () => (
+    <CustomDropdown
+      label="Sort by"
+      value={sortBy}
+      onValueChange={setSortBy}
+      options={SORT_OPTIONS}
+      renderInModal
+      accessibilityLabel="Sort books"
+      accessibilityHint="Select how books are sorted"
+    />
+  );
+
+  const summary = (
+    <LibrarySummary
+      completedCount={completedCount}
+      readingCount={readingCount}
+      totalCount={displayedBooks.length}
+    />
+  );
+
+  const filterRail = (
+    <View style={{ width: FILTER_RAIL_WIDTH, flexShrink: 0, gap: 20 }}>
+      <View
+        style={{
+          backgroundColor: Background.surface,
+          borderWidth: 1,
+          borderColor: Border.default,
+          borderRadius: 14,
+          borderCurve: "continuous",
+          padding: 18,
+          gap: 18,
+        }}
+      >
         <Text
-          style={{ fontSize: 28, fontWeight: "700", color: TextColors.primary }}
+          accessibilityRole="header"
+          style={{ fontSize: 16, fontWeight: "700", color: TextColors.primary }}
         >
-          Library
+          Refine library
         </Text>
-        <Text
-          style={{
-            fontSize: 14,
-            color: TextColors.secondary,
-            paddingVertical: 4,
-          }}
-        >
-          Track progress, continue reading, and review your habits
-        </Text>
+
+        <SearchBar
+          value={filters.titleSearch || ""}
+          onChange={handleSearchChange}
+          placeholder="Search title or author"
+        />
+
+        <View style={{ gap: 10 }}>
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "700",
+              letterSpacing: 0.6,
+              textTransform: "uppercase",
+              color: TextColors.tertiary,
+            }}
+          >
+            Status
+          </Text>
+          {renderStatusChips(true)}
+        </View>
+
+        {renderSortControl()}
       </View>
+
+      {summary}
+    </View>
+  );
+
+  const compactHeader = (
+    <View style={{ gap: 16, paddingBottom: 4 }}>
+      <PageHeader
+        eyebrow="Library"
+        title="Books"
+        subtitle="Track progress, continue reading, and review your habits"
+      />
 
       <SearchBar
         value={filters.titleSearch || ""}
@@ -286,164 +476,32 @@ export default function BooksListScreen() {
         placeholder="Search title or author"
       />
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8, paddingRight: 8 }}
-      >
-        <Pressable
-          onPress={() => handleStatusChange(undefined)}
-          style={({ pressed }) => ({
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-            borderRadius: 999,
-            borderWidth: 1,
-            borderColor: !filters.status
-              ? Interactive.primary.default
-              : Border.default,
-            backgroundColor: !filters.status
-              ? Interactive.primary.default
-              : pressed
-                ? Interactive.secondary.pressed
-                : Interactive.secondary.default,
-          })}
-        >
-          <Text
-            style={{
-              fontSize: 13,
-              fontWeight: "600",
-              color: !filters.status
-                ? Interactive.primary.text
-                : TextColors.primary,
-            }}
-          >
-            All
-          </Text>
-        </Pressable>
+      {renderStatusChips(false)}
 
-        {STATUS_GROUP_ORDER.map((status) => {
-          const isActive = filters.status === status;
-          return (
-            <Pressable
-              key={status}
-              onPress={() => handleStatusChange(status)}
-              style={({ pressed }) => ({
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: isActive
-                  ? Interactive.primary.default
-                  : Border.default,
-                backgroundColor: isActive
-                  ? Interactive.primary.default
-                  : pressed
-                    ? Interactive.secondary.pressed
-                    : Interactive.secondary.default,
-              })}
-            >
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: "600",
-                  color: isActive
-                    ? Interactive.primary.text
-                    : TextColors.primary,
-                }}
-              >
-                {BOOK_STATUS_LABELS[status]}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      <View>
-        <CustomDropdown
-          label="Sort by"
-          value={sortBy}
-          onValueChange={setSortBy}
-          options={SORT_OPTIONS}
-          renderInModal
-          accessibilityLabel="Sort books"
-          accessibilityHint="Select how books are sorted"
-        />
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <View style={{ flex: 1 }}>{renderSortControl()}</View>
       </View>
 
-      <View
-        style={{
-          paddingVertical: 2,
-        }}
-      >
-        <Text style={{ fontSize: 13, color: TextColors.tertiary }}>
-          📚 {completedCount} books completed • {readingCount} currently reading
-        </Text>
-      </View>
+      {summary}
     </View>
   );
 
-  if (isLoading && displayedBooks.length === 0) {
-    return (
-      <FlatList
-        data={[1, 2, 3, 4, 5]}
-        keyExtractor={(item) => `skeleton-${item}`}
-        renderItem={() => <SkeletonBookItem />}
-        contentInsetAdjustmentBehavior="automatic"
-        style={{ backgroundColor: Background.primary }}
-        contentContainerStyle={{ padding: 16, gap: 8 }}
-        ListHeaderComponent={renderFiltersHeader}
-      />
-    );
-  }
+  const wideHeader = (
+    <PageHeader
+      eyebrow="Library"
+      title="Books"
+      subtitle="Track progress, continue reading, and review your habits"
+      actions={
+        <ActionButton
+          label="Add book"
+          onPress={() => router.push("/(tabs)/create-book")}
+          accessibilityHint="Opens the add book form"
+        />
+      }
+    />
+  );
 
-  if (error) {
-    return (
-      <FlatList
-        data={[]}
-        renderItem={() => null}
-        contentInsetAdjustmentBehavior="automatic"
-        style={{ backgroundColor: Background.primary }}
-        contentContainerStyle={{ padding: 16, gap: 12 }}
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} />
-        }
-        ListHeaderComponent={
-          <>
-            {renderFiltersHeader()}
-            <View
-              style={{
-                padding: 16,
-                backgroundColor: Feedback.error.background,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: Feedback.error.border,
-                gap: 8,
-                borderCurve: "continuous",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 17,
-                  fontWeight: "700",
-                  color: Feedback.error.text,
-                }}
-              >
-                Error loading books
-              </Text>
-              <Text
-                style={{ fontSize: 14, color: Feedback.error.text }}
-                selectable
-              >
-                {error.message || "An unexpected error occurred"}
-              </Text>
-            </View>
-          </>
-        }
-      />
-    );
-  }
-
-  return (
+  const listBody = (
     <SectionList
       sections={groupedSections}
       keyExtractor={(item) => item.id.toString()}
@@ -451,28 +509,45 @@ export default function BooksListScreen() {
       renderSectionHeader={({ section }) => (
         <View
           style={{
-            paddingTop: section.isFirstSection ? 16 : 28,
-            paddingBottom: 10,
+            paddingTop: section.isFirstSection ? (isSplitLayout ? 4 : 16) : 24,
+            paddingBottom: 8,
+            flexDirection: "row",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 12,
             backgroundColor: Background.primary,
+            borderBottomWidth: 1,
+            borderBottomColor: Border.default,
           }}
         >
           <Text
             style={{
-              fontSize: 15,
+              fontSize: 12,
               fontWeight: "700",
-              color: TextColors.secondary,
-              letterSpacing: 0.2,
+              color: TextColors.tertiary,
+              letterSpacing: 0.8,
+              textTransform: "uppercase",
             }}
           >
-            {section.title} ({section.data.length})
+            {section.title}
+          </Text>
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "600",
+              color: TextColors.tertiary,
+              fontVariant: ["tabular-nums"],
+            }}
+          >
+            {section.data.length}
           </Text>
         </View>
       )}
-      ListHeaderComponent={renderFiltersHeader}
+      ListHeaderComponent={isSplitLayout ? undefined : compactHeader}
       ListEmptyComponent={
         <View
           style={{
-            paddingVertical: 28,
+            paddingVertical: 32,
             alignItems: "center",
             gap: 8,
           }}
@@ -516,8 +591,115 @@ export default function BooksListScreen() {
         />
       }
       contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: Background.primary }}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
+      style={{ flex: 1, backgroundColor: Background.primary }}
+      contentContainerStyle={{ paddingBottom: 32 }}
     />
+  );
+
+  if (isLoading && displayedBooks.length === 0) {
+    return (
+      <PageContainer>
+        {isSplitLayout ? wideHeader : null}
+        <View
+          style={{
+            flex: 1,
+            flexDirection: isSplitLayout ? "row" : "column",
+            gap: 28,
+            paddingTop: 20,
+          }}
+        >
+          {isSplitLayout ? filterRail : null}
+          <FlatList
+            data={[1, 2, 3, 4, 5]}
+            keyExtractor={(item) => `skeleton-${item}`}
+            renderItem={() => <SkeletonBookItem />}
+            contentInsetAdjustmentBehavior="automatic"
+            style={{ flex: 1, backgroundColor: Background.primary }}
+            contentContainerStyle={{ gap: 8, paddingBottom: 32 }}
+            ListHeaderComponent={isSplitLayout ? undefined : compactHeader}
+          />
+        </View>
+      </PageContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageContainer>
+        {isSplitLayout ? wideHeader : null}
+        <View
+          style={{
+            flex: 1,
+            flexDirection: isSplitLayout ? "row" : "column",
+            gap: 28,
+            paddingTop: 20,
+          }}
+        >
+          {isSplitLayout ? filterRail : null}
+          <FlatList
+            data={[]}
+            renderItem={() => null}
+            contentInsetAdjustmentBehavior="automatic"
+            style={{ flex: 1, backgroundColor: Background.primary }}
+            contentContainerStyle={{ gap: 12, paddingBottom: 32 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefetching}
+                onRefresh={handleRefresh}
+              />
+            }
+            ListHeaderComponent={
+              <>
+                {isSplitLayout ? null : compactHeader}
+                <View
+                  style={{
+                    padding: 16,
+                    backgroundColor: Feedback.error.background,
+                    borderRadius: 10,
+                    borderCurve: "continuous",
+                    borderWidth: 1,
+                    borderColor: Feedback.error.border,
+                    gap: 8,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 17,
+                      fontWeight: "700",
+                      color: Feedback.error.text,
+                    }}
+                  >
+                    Error loading books
+                  </Text>
+                  <Text
+                    selectable
+                    style={{ fontSize: 14, color: Feedback.error.text }}
+                  >
+                    {error.message || "An unexpected error occurred"}
+                  </Text>
+                </View>
+              </>
+            }
+          />
+        </View>
+      </PageContainer>
+    );
+  }
+
+  return (
+    <PageContainer>
+      {isSplitLayout ? wideHeader : null}
+      <View
+        style={{
+          flex: 1,
+          flexDirection: isSplitLayout ? "row" : "column",
+          gap: 28,
+          paddingTop: isSplitLayout ? 24 : 8,
+        }}
+      >
+        {isSplitLayout ? filterRail : null}
+        <View style={{ flex: 1 }}>{listBody}</View>
+      </View>
+    </PageContainer>
   );
 }

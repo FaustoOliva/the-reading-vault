@@ -14,6 +14,7 @@
     "format": "prettier . --write",
     "start:api": "npm start --workspace=api",
     "dev:api": "npm run dev --workspace=api",
+    "mcp": "npm run mcp --workspace=api",
     "start:mobile": "npm start --workspace=mobile",
     "start:web": "npm start --workspace=mobile --web"
   },

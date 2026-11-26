@@ -8,13 +8,15 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "dev": "node --watch index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "mcp": "node infraestructure/mcp/server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@modelcontextprotocol/server": "2.4.0",
     "@reading-vault/common": "*",
     "cors": "^2.8.6",
     "dotenv": "^16.4.7",

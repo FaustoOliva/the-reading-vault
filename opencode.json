@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "reading-vault": {
+        "type": "local",
+        "command": ["node", "infraestructure/mcp/server.js"],
+        "cwd": "packages/api"
+      }
+    }
+  }
+}

@@ -1,5 +1,15 @@
+/**
+ * AI Workspace Screen
+ * Recommendations and synergy analysis against the reader profile.
+ *
+ * Rules:
+ * - Business behavior is unchanged: same modes, hooks, payloads and errors
+ * - Wide screens split controls (left) from output (right)
+ * - Recommendation cards form a two-column grid once the canvas allows it
+ * - Compact screens keep the original single-column flow
+ */
+
 import {
-  ScrollView,
   View,
   Text,
   ActivityIndicator,
@@ -13,8 +23,14 @@ import {
   useGenerateFavoriteAuthorRecommendations,
 } from "@/hooks/useAIRecommendations";
 import { useAuthorSynergy, useBookSynergy } from "@/hooks/useAISynergy";
+import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { RecommendationCard } from "@/components/cards/recommendationCard";
 import { AISynergyCard } from "@/components/cards/aiSynergyCard";
+import {
+  PageHeader,
+  PageScroll,
+  SectionHeading,
+} from "@/components/ui/pageLayout";
 import {
   Background,
   Text as TextColors,
@@ -55,8 +71,11 @@ const MODE_CONFIG = {
   },
 } as const;
 
+const CONTROL_COLUMN_WIDTH = 340;
+
 export default function AIScreen() {
   const router = useRouter();
+  const { isSplitLayout } = useResponsiveLayout();
 
   const [mode, setMode] = useState<(typeof AI_MODE)[keyof typeof AI_MODE]>(
     AI_MODE.GENERAL,
@@ -247,16 +266,22 @@ export default function AIScreen() {
     }
   };
 
-  const renderModeButton = (value: (typeof AI_MODE)[keyof typeof AI_MODE]) => {
+  const renderModeButton = (
+    value: (typeof AI_MODE)[keyof typeof AI_MODE],
+    stacked: boolean,
+  ) => {
     const config = MODE_CONFIG[value];
 
     return (
       <Pressable
         key={value}
         onPress={() => setMode(value)}
+        accessibilityRole="button"
+        accessibilityState={{ selected: mode === value }}
+        accessibilityLabel={`${config.label} mode`}
         style={({ pressed }) => ({
-          minWidth: 160,
-          flex: 1,
+          minWidth: stacked ? undefined : 160,
+          flex: stacked ? undefined : 1,
           paddingVertical: 12,
           paddingHorizontal: 12,
           borderRadius: 12,
@@ -315,558 +340,627 @@ export default function AIScreen() {
     !activeRecommendationMutation.error &&
     (!recommendations || recommendations.length === 0);
 
-  return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: Background.primary }}
-      contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 28 }}
-      keyboardShouldPersistTaps="handled"
+  const modeSelector = (
+    <View
+      style={{
+        backgroundColor: Background.surface,
+        borderWidth: 1,
+        borderColor: Border.default,
+        borderRadius: 16,
+        borderCurve: "continuous",
+        padding: 16,
+        gap: 12,
+      }}
     >
-      <View
+      <Text
         style={{
-          backgroundColor: Background.surface,
-          borderWidth: 1,
-          borderColor: Border.default,
-          borderRadius: 16,
-          padding: 16,
-          gap: 10,
-          borderCurve: "continuous",
+          fontSize: 12,
+          fontWeight: "700",
+          color: TextColors.tertiary,
+          letterSpacing: 0.6,
+          textTransform: "uppercase",
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <IconSymbol
-            name="wand.and.stars"
-            size={20}
-            color={Interactive.primary.default}
-          />
-          <Text
-            style={{
-              fontSize: 22,
-              fontWeight: "800",
-              color: TextColors.primary,
-            }}
-          >
-            AI Workspace
-          </Text>
-        </View>
+        Select mode
+      </Text>
 
-        <Text
-          style={{
-            fontSize: 14,
-            lineHeight: 21,
-            color: TextColors.secondary,
-          }}
-        >
-          Use recommendation modes for discovery, or run a synergy check to
-          understand how a specific book or author matches your profile.
-        </Text>
+      <View
+        style={{
+          flexDirection: isSplitLayout ? "column" : "row",
+          gap: 10,
+          flexWrap: "wrap",
+        }}
+      >
+        {renderModeButton(AI_MODE.GENERAL, isSplitLayout)}
+        {renderModeButton(AI_MODE.FAVORITE_AUTHORS, isSplitLayout)}
+        {renderModeButton(AI_MODE.SYNERGY, isSplitLayout)}
       </View>
+    </View>
+  );
 
+  const recommendationControls = (
+    <>
       <View
         style={{
-          backgroundColor: Background.surface,
+          backgroundColor: Feedback.info.background,
           borderWidth: 1,
-          borderColor: Border.default,
-          borderRadius: 16,
-          padding: 12,
-          gap: 10,
+          borderColor: Feedback.info.border,
+          borderRadius: 12,
           borderCurve: "continuous",
+          padding: 14,
+          gap: 6,
         }}
       >
         <Text
           style={{
+            color: Feedback.info.text,
             fontSize: 13,
             fontWeight: "700",
-            color: TextColors.secondary,
           }}
         >
-          Select mode
+          {mode === AI_MODE.FAVORITE_AUTHORS
+            ? "Favorite Authors mode"
+            : "General mode"}
         </Text>
-
-        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-          {renderModeButton(AI_MODE.GENERAL)}
-          {renderModeButton(AI_MODE.FAVORITE_AUTHORS)}
-          {renderModeButton(AI_MODE.SYNERGY)}
-        </View>
+        <Text style={{ color: TextColors.secondary, fontSize: 13 }}>
+          {mode === AI_MODE.FAVORITE_AUTHORS
+            ? "Results are filtered to books written by authors already strong in your profile."
+            : "Results combine your reading pace, genres, and historical ratings."}
+        </Text>
       </View>
 
-      {mode !== AI_MODE.SYNERGY && (
-        <>
-          <View
+      <Pressable
+        onPress={handleGenerateRecommendations}
+        disabled={activeRecommendationMutation.isPending}
+        accessibilityRole="button"
+        accessibilityLabel={
+          mode === AI_MODE.FAVORITE_AUTHORS
+            ? "Generate favorite author picks"
+            : "Generate recommendations"
+        }
+        accessibilityState={{ busy: activeRecommendationMutation.isPending }}
+        style={({ pressed }) => ({
+          backgroundColor: pressed
+            ? Interactive.primary.hover
+            : Interactive.primary.default,
+          paddingVertical: 14,
+          paddingHorizontal: 16,
+          borderRadius: 12,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          minHeight: 52,
+          opacity: activeRecommendationMutation.isPending ? 0.6 : 1,
+          borderCurve: "continuous",
+        })}
+      >
+        {activeRecommendationMutation.isPending ? (
+          <ActivityIndicator size="small" color={TextColors.inverse} />
+        ) : (
+          <IconSymbol name="sparkles" size={20} color={TextColors.inverse} />
+        )}
+        <Text
+          style={{
+            color: TextColors.inverse,
+            fontWeight: "600",
+            fontSize: 15,
+          }}
+        >
+          {mode === AI_MODE.FAVORITE_AUTHORS
+            ? "Generate Favorite Author Picks"
+            : "Generate Recommendations"}
+        </Text>
+      </Pressable>
+    </>
+  );
+
+  const synergyControls = (
+    <>
+      <View
+        style={{
+          backgroundColor: Feedback.info.background,
+          borderWidth: 1,
+          borderColor: Feedback.info.border,
+          borderRadius: 12,
+          borderCurve: "continuous",
+          padding: 14,
+          gap: 6,
+        }}
+      >
+        <Text
+          style={{
+            color: Feedback.info.text,
+            fontSize: 13,
+            fontWeight: "700",
+          }}
+        >
+          Synergy analysis mode
+        </Text>
+        <Text style={{ color: TextColors.secondary, fontSize: 13 }}>
+          Choose a target, type an exact name from your vault, then run
+          analysis.
+        </Text>
+      </View>
+
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <Pressable
+          onPress={() => {
+            setSynergyTarget(SYNERGY_TARGET.BOOK);
+            setSynergyInput("");
+            setSynergyResolveError("");
+            resetSynergySelection();
+          }}
+          accessibilityRole="button"
+          accessibilityState={{
+            selected: synergyTarget === SYNERGY_TARGET.BOOK,
+          }}
+          style={({ pressed }) => ({
+            flex: 1,
+            minHeight: 44,
+            paddingVertical: 10,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor:
+              synergyTarget === SYNERGY_TARGET.BOOK
+                ? Interactive.primary.default
+                : Border.default,
+            backgroundColor:
+              synergyTarget === SYNERGY_TARGET.BOOK
+                ? Feedback.info.background
+                : pressed
+                  ? Background.elevated
+                  : Background.surface,
+            alignItems: "center",
+            justifyContent: "center",
+            borderCurve: "continuous",
+          })}
+        >
+          <Text
             style={{
-              backgroundColor: Feedback.info.background,
-              borderWidth: 1,
-              borderColor: Feedback.info.border,
-              borderRadius: 12,
-              padding: 12,
-              gap: 6,
+              color:
+                synergyTarget === SYNERGY_TARGET.BOOK
+                  ? Interactive.primary.default
+                  : TextColors.primary,
+              fontWeight: "600",
             }}
           >
-            <Text
-              style={{
-                color: Feedback.info.text,
-                fontSize: 13,
-                fontWeight: "700",
-              }}
-            >
-              {mode === AI_MODE.FAVORITE_AUTHORS
-                ? "Favorite Authors mode"
-                : "General mode"}
-            </Text>
-            <Text style={{ color: TextColors.secondary, fontSize: 13 }}>
-              {mode === AI_MODE.FAVORITE_AUTHORS
-                ? "Results are filtered to books written by authors already strong in your profile."
-                : "Results combine your reading pace, genres, and historical ratings."}
-            </Text>
-          </View>
+            Book
+          </Text>
+        </Pressable>
 
-          <Pressable
-            onPress={handleGenerateRecommendations}
-            disabled={activeRecommendationMutation.isPending}
-            style={({ pressed }) => ({
-              backgroundColor: pressed
-                ? Interactive.primary.hover
-                : Interactive.primary.default,
-              paddingVertical: 14,
-              paddingHorizontal: 16,
-              borderRadius: 12,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              opacity: activeRecommendationMutation.isPending ? 0.6 : 1,
-              borderCurve: "continuous",
-            })}
+        <Pressable
+          onPress={() => {
+            setSynergyTarget(SYNERGY_TARGET.AUTHOR);
+            setSynergyInput("");
+            setSynergyResolveError("");
+            resetSynergySelection();
+          }}
+          accessibilityRole="button"
+          accessibilityState={{
+            selected: synergyTarget === SYNERGY_TARGET.AUTHOR,
+          }}
+          style={({ pressed }) => ({
+            flex: 1,
+            minHeight: 44,
+            paddingVertical: 10,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor:
+              synergyTarget === SYNERGY_TARGET.AUTHOR
+                ? Interactive.primary.default
+                : Border.default,
+            backgroundColor:
+              synergyTarget === SYNERGY_TARGET.AUTHOR
+                ? Feedback.info.background
+                : pressed
+                  ? Background.elevated
+                  : Background.surface,
+            alignItems: "center",
+            justifyContent: "center",
+            borderCurve: "continuous",
+          })}
+        >
+          <Text
+            style={{
+              color:
+                synergyTarget === SYNERGY_TARGET.AUTHOR
+                  ? Interactive.primary.default
+                  : TextColors.primary,
+              fontWeight: "600",
+            }}
           >
-            {activeRecommendationMutation.isPending ? (
-              <ActivityIndicator size="small" color={TextColors.inverse} />
-            ) : (
-              <IconSymbol
-                name="sparkles"
-                size={20}
-                color={TextColors.inverse}
-              />
-            )}
+            Author
+          </Text>
+        </Pressable>
+      </View>
+
+      <View
+        style={{
+          backgroundColor: Background.surface,
+          borderWidth: 1,
+          borderColor: Border.default,
+          borderRadius: 12,
+          borderCurve: "continuous",
+          padding: 14,
+          gap: 8,
+        }}
+      >
+        <Text style={{ fontSize: 13, color: TextColors.secondary }}>
+          {synergyTarget === SYNERGY_TARGET.BOOK
+            ? "Step 1: Type the exact title from your vault"
+            : "Step 1: Type the exact author name from your vault"}
+        </Text>
+        <TextInput
+          value={synergyInput}
+          onChangeText={(value) => {
+            setSynergyInput(value);
+            setSynergyResolveError("");
+          }}
+          placeholder={
+            synergyTarget === SYNERGY_TARGET.BOOK
+              ? "e.g., Don Quijote de la Mancha"
+              : "e.g., Gabriel Garcia Marquez"
+          }
+          placeholderTextColor={TextColors.tertiary}
+          autoCapitalize="words"
+          accessibilityLabel="Synergy search input"
+          style={{
+            height: 50,
+            borderWidth: 1.5,
+            borderColor: synergyResolveError
+              ? Feedback.error.border
+              : Border.default,
+            borderRadius: 12,
+            borderCurve: "continuous",
+            paddingHorizontal: 14,
+            backgroundColor: Background.surface,
+            color: TextColors.primary,
+          }}
+        />
+
+        <Text style={{ color: TextColors.tertiary, fontSize: 12 }}>
+          Step 2: Run the analysis to generate profile fit signals.
+        </Text>
+      </View>
+
+      <Pressable
+        onPress={handleAnalyzeSynergy}
+        disabled={isResolvingSynergy}
+        accessibilityRole="button"
+        accessibilityLabel="Analyze synergy"
+        accessibilityState={{ busy: isResolvingSynergy }}
+        style={({ pressed }) => ({
+          backgroundColor: pressed
+            ? Interactive.primary.hover
+            : Interactive.primary.default,
+          paddingVertical: 14,
+          paddingHorizontal: 16,
+          borderRadius: 12,
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 52,
+          opacity: isResolvingSynergy ? 0.6 : 1,
+          borderCurve: "continuous",
+        })}
+      >
+        {isResolvingSynergy ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <ActivityIndicator size="small" color={TextColors.inverse} />
             <Text
               style={{
                 color: TextColors.inverse,
                 fontWeight: "600",
-                fontSize: 16,
+                fontSize: 15,
               }}
             >
-              {mode === AI_MODE.FAVORITE_AUTHORS
-                ? "Generate Favorite Author Picks"
-                : "Generate Recommendations"}
-            </Text>
-          </Pressable>
-
-          {activeRecommendationMutation.error && (
-            <View
-              style={{
-                padding: 12,
-                borderRadius: 10,
-                backgroundColor: Feedback.error.background,
-                borderWidth: 1,
-                borderColor: Feedback.error.border,
-                gap: 8,
-              }}
-            >
-              <Text
-                style={{
-                  color: Feedback.error.text,
-                  fontWeight: "700",
-                  fontSize: 13,
-                }}
-              >
-                Recommendation request failed
-              </Text>
-              <Text selectable style={{ color: Feedback.error.text }}>
-                {getApiErrorMessage(activeRecommendationMutation.error)}
-              </Text>
-            </View>
-          )}
-
-          {showRecommendationEmptyState && (
-            <View
-              style={{
-                padding: 14,
-                borderWidth: 1,
-                borderColor: Border.default,
-                backgroundColor: Background.surface,
-                borderRadius: 12,
-                gap: 6,
-              }}
-            >
-              <Text style={{ color: TextColors.primary, fontWeight: "700" }}>
-                Ready when you are
-              </Text>
-              <Text style={{ color: TextColors.secondary, fontSize: 13 }}>
-                Tap the button above to generate AI picks and add the best ones
-                to your vault.
-              </Text>
-            </View>
-          )}
-
-          {recommendations?.map((recommendation, index) => (
-            <RecommendationCard
-              key={`${recommendation.title}-${index}`}
-              recommendation={recommendation}
-              onAddToVault={() => handleAddToVault(recommendation)}
-              isLoading={false}
-            />
-          ))}
-
-          {activeRecommendationMutation.data?.data && (
-            <View
-              style={{
-                padding: 12,
-                backgroundColor: Background.surface,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: Border.default,
-                gap: 4,
-              }}
-            >
-              <Text style={{ fontSize: 12, color: TextColors.tertiary }}>
-                Generated:{" "}
-                {new Date(
-                  activeRecommendationMutation.data.data.generatedAt,
-                ).toLocaleString()}
-              </Text>
-              <Text style={{ fontSize: 12, color: TextColors.tertiary }}>
-                Mode: {activeRecommendationMutation.data.data.inputMode} •
-                Tokens used: {activeRecommendationMutation.data.data.tokensUsed}
-              </Text>
-            </View>
-          )}
-        </>
-      )}
-
-      {mode === AI_MODE.SYNERGY && (
-        <View style={{ gap: 12 }}>
-          <View
-            style={{
-              backgroundColor: Feedback.info.background,
-              borderWidth: 1,
-              borderColor: Feedback.info.border,
-              borderRadius: 12,
-              padding: 12,
-              gap: 6,
-            }}
-          >
-            <Text
-              style={{
-                color: Feedback.info.text,
-                fontSize: 13,
-                fontWeight: "700",
-              }}
-            >
-              Synergy analysis mode
-            </Text>
-            <Text style={{ color: TextColors.secondary, fontSize: 13 }}>
-              Choose a target, type an exact name from your vault, then run
-              analysis.
+              Analyzing...
             </Text>
           </View>
-
+        ) : (
           <Text
             style={{
-              fontSize: 18,
-              fontWeight: "700",
-              color: TextColors.primary,
+              color: TextColors.inverse,
+              fontWeight: "600",
+              fontSize: 15,
             }}
           >
             Analyze Synergy
           </Text>
+        )}
+      </Pressable>
 
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <Pressable
-              onPress={() => {
-                setSynergyTarget(SYNERGY_TARGET.BOOK);
-                setSynergyInput("");
-                setSynergyResolveError("");
-                resetSynergySelection();
-              }}
-              style={({ pressed }) => ({
-                flex: 1,
-                paddingVertical: 10,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor:
-                  synergyTarget === SYNERGY_TARGET.BOOK
-                    ? Interactive.primary.default
-                    : Border.default,
-                backgroundColor:
-                  synergyTarget === SYNERGY_TARGET.BOOK
-                    ? Feedback.info.background
-                    : pressed
-                      ? Background.elevated
-                      : Background.surface,
-                alignItems: "center",
-                borderCurve: "continuous",
-              })}
-            >
-              <Text
-                style={{
-                  color:
-                    synergyTarget === SYNERGY_TARGET.BOOK
-                      ? Interactive.primary.default
-                      : TextColors.primary,
-                  fontWeight: "600",
-                }}
-              >
-                Book
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => {
-                setSynergyTarget(SYNERGY_TARGET.AUTHOR);
-                setSynergyInput("");
-                setSynergyResolveError("");
-                resetSynergySelection();
-              }}
-              style={({ pressed }) => ({
-                flex: 1,
-                paddingVertical: 10,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor:
-                  synergyTarget === SYNERGY_TARGET.AUTHOR
-                    ? Interactive.primary.default
-                    : Border.default,
-                backgroundColor:
-                  synergyTarget === SYNERGY_TARGET.AUTHOR
-                    ? Feedback.info.background
-                    : pressed
-                      ? Background.elevated
-                      : Background.surface,
-                alignItems: "center",
-                borderCurve: "continuous",
-              })}
-            >
-              <Text
-                style={{
-                  color:
-                    synergyTarget === SYNERGY_TARGET.AUTHOR
-                      ? Interactive.primary.default
-                      : TextColors.primary,
-                  fontWeight: "600",
-                }}
-              >
-                Author
-              </Text>
-            </Pressable>
-          </View>
-
-          <View
+      {synergyResolveError ? (
+        <View
+          style={{
+            borderRadius: 10,
+            borderCurve: "continuous",
+            borderWidth: 1,
+            borderColor: Feedback.error.border,
+            backgroundColor: Feedback.error.background,
+            padding: 12,
+            gap: 4,
+          }}
+        >
+          <Text
             style={{
-              backgroundColor: Background.surface,
-              borderWidth: 1,
-              borderColor: Border.default,
-              borderRadius: 12,
-              padding: 12,
-              gap: 8,
+              color: Feedback.error.text,
+              fontWeight: "700",
+              fontSize: 13,
             }}
           >
-            <Text style={{ fontSize: 14, color: TextColors.secondary }}>
-              {synergyTarget === SYNERGY_TARGET.BOOK
-                ? "Step 1: Type the exact title from your vault"
-                : "Step 1: Type the exact author name from your vault"}
-            </Text>
-            <TextInput
-              value={synergyInput}
-              onChangeText={(value) => {
-                setSynergyInput(value);
-                setSynergyResolveError("");
-              }}
-              placeholder={
-                synergyTarget === SYNERGY_TARGET.BOOK
-                  ? "e.g., Don Quijote de la Mancha"
-                  : "e.g., Gabriel Garcia Marquez"
-              }
-              placeholderTextColor={TextColors.tertiary}
-              autoCapitalize="words"
-              style={{
-                height: 50,
-                borderWidth: 1.5,
-                borderColor: synergyResolveError
-                  ? Feedback.error.border
-                  : Border.default,
-                borderRadius: 12,
-                borderCurve: "continuous",
-                paddingHorizontal: 14,
-                backgroundColor: Background.surface,
-                color: TextColors.primary,
-              }}
-            />
-
-            <Text style={{ color: TextColors.tertiary, fontSize: 12 }}>
-              Step 2: Tap Analyze Synergy to generate profile fit signals.
-            </Text>
-          </View>
-
-          <Pressable
-            onPress={handleAnalyzeSynergy}
-            disabled={isResolvingSynergy}
-            style={({ pressed }) => ({
-              backgroundColor: pressed
-                ? Interactive.primary.hover
-                : Interactive.primary.default,
-              paddingVertical: 14,
-              paddingHorizontal: 16,
-              borderRadius: 12,
-              alignItems: "center",
-              opacity: isResolvingSynergy ? 0.6 : 1,
-              borderCurve: "continuous",
-            })}
-          >
-            {isResolvingSynergy ? (
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-              >
-                <ActivityIndicator size="small" color={TextColors.inverse} />
-                <Text
-                  style={{
-                    color: TextColors.inverse,
-                    fontWeight: "600",
-                    fontSize: 16,
-                  }}
-                >
-                  Analyzing...
-                </Text>
-              </View>
-            ) : (
-              <Text
-                style={{
-                  color: TextColors.inverse,
-                  fontWeight: "600",
-                  fontSize: 16,
-                }}
-              >
-                Analyze Synergy
-              </Text>
-            )}
-          </Pressable>
-
-          {synergyResolveError ? (
-            <View
-              style={{
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: Feedback.error.border,
-                backgroundColor: Feedback.error.background,
-                padding: 12,
-                gap: 4,
-              }}
-            >
-              <Text
-                style={{
-                  color: Feedback.error.text,
-                  fontWeight: "700",
-                  fontSize: 13,
-                }}
-              >
-                Could not resolve input
-              </Text>
-              <Text
-                selectable
-                style={{ color: Feedback.error.text, fontSize: 13 }}
-              >
-                {synergyResolveError}
-              </Text>
-            </View>
-          ) : null}
-
-          {synergySelectionLabel ? (
-            <View
-              style={{
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: Feedback.info.border,
-                backgroundColor: Feedback.info.background,
-                alignSelf: "flex-start",
-                paddingVertical: 6,
-                paddingHorizontal: 12,
-              }}
-            >
-              <Text
-                style={{
-                  color: Feedback.info.text,
-                  fontWeight: "600",
-                  fontSize: 12,
-                }}
-              >
-                Selected: {synergySelectionLabel}
-              </Text>
-            </View>
-          ) : null}
-
-          {activeSynergyQuery.isLoading && (
-            <View
-              style={{
-                padding: 12,
-                borderRadius: 10,
-                backgroundColor: Background.surface,
-                borderWidth: 1,
-                borderColor: Border.default,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              <ActivityIndicator size="small" color={TextColors.secondary} />
-              <Text style={{ color: TextColors.secondary }}>
-                Generating synergy analysis...
-              </Text>
-            </View>
-          )}
-
-          {activeSynergyQuery.error && (
-            <View
-              style={{
-                padding: 12,
-                borderRadius: 10,
-                backgroundColor: Feedback.error.background,
-                borderWidth: 1,
-                borderColor: Feedback.error.border,
-                gap: 8,
-              }}
-            >
-              <Text
-                style={{
-                  color: Feedback.error.text,
-                  fontWeight: "700",
-                  fontSize: 13,
-                }}
-              >
-                Synergy request failed
-              </Text>
-              <Text selectable style={{ color: Feedback.error.text }}>
-                {getApiErrorMessage(activeSynergyQuery.error)}
-              </Text>
-            </View>
-          )}
-
-          {synergyTarget === SYNERGY_TARGET.BOOK &&
-            bookSynergyQuery.data?.data?.compatibility && (
-              <AISynergyCard
-                title="Book-to-Profile Fit"
-                subtitle={synergySelectionLabel}
-                compatibility={bookSynergyQuery.data.data.compatibility}
-              />
-            )}
-
-          {synergyTarget === SYNERGY_TARGET.AUTHOR &&
-            authorSynergyQuery.data?.data?.compatibility && (
-              <AISynergyCard
-                title="Author-to-Profile Fit"
-                subtitle={synergySelectionLabel}
-                compatibility={authorSynergyQuery.data.data.compatibility}
-              />
-            )}
+            Could not resolve input
+          </Text>
+          <Text selectable style={{ color: Feedback.error.text, fontSize: 13 }}>
+            {synergyResolveError}
+          </Text>
         </View>
-      )}
-    </ScrollView>
+      ) : null}
+
+      {synergySelectionLabel ? (
+        <View
+          style={{
+            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: Feedback.info.border,
+            backgroundColor: Feedback.info.background,
+            alignSelf: "flex-start",
+            paddingVertical: 6,
+            paddingHorizontal: 12,
+          }}
+        >
+          <Text
+            style={{
+              color: Feedback.info.text,
+              fontWeight: "600",
+              fontSize: 12,
+            }}
+          >
+            Selected: {synergySelectionLabel}
+          </Text>
+        </View>
+      ) : null}
+    </>
+  );
+
+  const recommendationResults = (
+    <View style={{ gap: 16 }}>
+      {activeRecommendationMutation.error ? (
+        <View
+          style={{
+            padding: 14,
+            borderRadius: 12,
+            borderCurve: "continuous",
+            backgroundColor: Feedback.error.background,
+            borderWidth: 1,
+            borderColor: Feedback.error.border,
+            gap: 6,
+          }}
+        >
+          <Text
+            style={{
+              color: Feedback.error.text,
+              fontWeight: "700",
+              fontSize: 13,
+            }}
+          >
+            Recommendation request failed
+          </Text>
+          <Text selectable style={{ color: Feedback.error.text }}>
+            {getApiErrorMessage(activeRecommendationMutation.error)}
+          </Text>
+        </View>
+      ) : null}
+
+      {showRecommendationEmptyState ? (
+        <View
+          style={{
+            padding: 18,
+            borderWidth: 1,
+            borderColor: Border.default,
+            backgroundColor: Background.surface,
+            borderRadius: 12,
+            borderCurve: "continuous",
+            gap: 6,
+          }}
+        >
+          <Text style={{ color: TextColors.primary, fontWeight: "700" }}>
+            Ready when you are
+          </Text>
+          <Text style={{ color: TextColors.secondary, fontSize: 13 }}>
+            Pick a mode and generate AI picks, then add the best ones to your
+            vault.
+          </Text>
+        </View>
+      ) : null}
+
+      {recommendations && recommendations.length > 0 ? (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
+          {recommendations.map((recommendation, index) => (
+            <View
+              key={`${recommendation.title}-${index}`}
+              style={{ flexGrow: 1, flexBasis: 400, minWidth: 0 }}
+            >
+              <RecommendationCard
+                recommendation={recommendation}
+                onAddToVault={() => handleAddToVault(recommendation)}
+                isLoading={false}
+              />
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {activeRecommendationMutation.data?.data ? (
+        <View
+          style={{
+            padding: 12,
+            backgroundColor: Background.surface,
+            borderRadius: 10,
+            borderCurve: "continuous",
+            borderWidth: 1,
+            borderColor: Border.default,
+            gap: 4,
+          }}
+        >
+          <Text style={{ fontSize: 12, color: TextColors.tertiary }}>
+            Generated:{" "}
+            {new Date(
+              activeRecommendationMutation.data.data.generatedAt,
+            ).toLocaleString()}
+          </Text>
+          <Text style={{ fontSize: 12, color: TextColors.tertiary }}>
+            Mode: {activeRecommendationMutation.data.data.inputMode} • Tokens
+            used: {activeRecommendationMutation.data.data.tokensUsed}
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
+
+  const synergyResults = (
+    <View style={{ gap: 16 }}>
+      {activeSynergyQuery.isLoading ? (
+        <View
+          style={{
+            padding: 14,
+            borderRadius: 12,
+            borderCurve: "continuous",
+            backgroundColor: Background.surface,
+            borderWidth: 1,
+            borderColor: Border.default,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <ActivityIndicator size="small" color={TextColors.secondary} />
+          <Text style={{ color: TextColors.secondary }}>
+            Generating synergy analysis...
+          </Text>
+        </View>
+      ) : null}
+
+      {activeSynergyQuery.error ? (
+        <View
+          style={{
+            padding: 14,
+            borderRadius: 12,
+            borderCurve: "continuous",
+            backgroundColor: Feedback.error.background,
+            borderWidth: 1,
+            borderColor: Feedback.error.border,
+            gap: 6,
+          }}
+        >
+          <Text
+            style={{
+              color: Feedback.error.text,
+              fontWeight: "700",
+              fontSize: 13,
+            }}
+          >
+            Synergy request failed
+          </Text>
+          <Text selectable style={{ color: Feedback.error.text }}>
+            {getApiErrorMessage(activeSynergyQuery.error)}
+          </Text>
+        </View>
+      ) : null}
+
+      {!activeSynergyQuery.isLoading &&
+      !activeSynergyQuery.error &&
+      !synergySelectionLabel ? (
+        <View
+          style={{
+            padding: 18,
+            borderWidth: 1,
+            borderColor: Border.default,
+            backgroundColor: Background.surface,
+            borderRadius: 12,
+            borderCurve: "continuous",
+            gap: 6,
+          }}
+        >
+          <Text style={{ color: TextColors.primary, fontWeight: "700" }}>
+            No analysis yet
+          </Text>
+          <Text style={{ color: TextColors.secondary, fontSize: 13 }}>
+            Type an exact title or author name on the left to see how it fits
+            your reading profile.
+          </Text>
+        </View>
+      ) : null}
+
+      {synergyTarget === SYNERGY_TARGET.BOOK &&
+      bookSynergyQuery.data?.data?.compatibility ? (
+        <AISynergyCard
+          title="Book-to-Profile Fit"
+          subtitle={synergySelectionLabel}
+          compatibility={bookSynergyQuery.data.data.compatibility}
+        />
+      ) : null}
+
+      {synergyTarget === SYNERGY_TARGET.AUTHOR &&
+      authorSynergyQuery.data?.data?.compatibility ? (
+        <AISynergyCard
+          title="Author-to-Profile Fit"
+          subtitle={synergySelectionLabel}
+          compatibility={authorSynergyQuery.data.data.compatibility}
+        />
+      ) : null}
+    </View>
+  );
+
+  const isSynergy = mode === AI_MODE.SYNERGY;
+
+  return (
+    <PageScroll
+      gap={isSplitLayout ? 28 : 20}
+      keyboardShouldPersistTaps="handled"
+    >
+      <PageHeader
+        eyebrow="Discover"
+        title="AI workspace"
+        subtitle="Use recommendation modes for discovery, or run a synergy check to understand how a specific book or author matches your profile."
+      />
+
+      <View
+        style={{
+          flexDirection: isSplitLayout ? "row" : "column",
+          alignItems: "flex-start",
+          gap: 28,
+        }}
+      >
+        <View
+          style={{
+            width: isSplitLayout ? CONTROL_COLUMN_WIDTH : "100%",
+            flexShrink: 0,
+            gap: 16,
+          }}
+        >
+          {modeSelector}
+          {isSynergy ? synergyControls : recommendationControls}
+        </View>
+
+        <View
+          style={{
+            flex: 1,
+            width: isSplitLayout ? undefined : "100%",
+            gap: 16,
+          }}
+        >
+          <SectionHeading
+            title={isSynergy ? "Synergy analysis" : "Recommendations"}
+            caption={
+              isSynergy
+                ? "Profile fit signals for the selected book or author."
+                : "Fresh picks generated from your reading history."
+            }
+          />
+          {isSynergy ? synergyResults : recommendationResults}
+        </View>
+      </View>
+    </PageScroll>
   );
 }
